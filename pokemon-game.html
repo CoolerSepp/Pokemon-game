@@ -1034,16 +1034,16 @@ const G = {
     // Scatter random trainers across the wider map (away from the village, further = stronger)
     const randomTrainers=[];
     let attempts=0;
-    while(randomTrainers.length<12&&attempts<600){
+    while(randomTrainers.length<20&&attempts<1200){
       attempts++;
       const rx=Math.floor(Math.random()*W),ry=Math.floor(Math.random()*H);
       const dist=Math.abs(rx-sx)+Math.abs(ry-sy);
-      if(dist<16)continue;
+      if(dist<11)continue;
       const t=m[ry][rx];
       if(t!==T.GRASS&&t!==T.PATH&&t!==T.SAND)continue;
-      if(randomTrainers.some(o=>Math.abs(o.x-rx)+Math.abs(o.y-ry)<10))continue;
+      if(randomTrainers.some(o=>Math.abs(o.x-rx)+Math.abs(o.y-ry)<8))continue;
       const idx=randomTrainers.length;
-      const tier=Math.min(4,1+Math.floor(dist/45));
+      const tier=Math.min(4,1+Math.floor(dist/40));
       randomTrainers.push({x:rx,y:ry,name:RANDOM_TRAINER_NAMES[idx%RANDOM_TRAINER_NAMES.length],shirt:RANDOM_SHIRTS[idx%RANDOM_SHIRTS.length],tier,idx});
     }
 
@@ -1145,11 +1145,19 @@ const G = {
       }
     }}
 
-    // Draw NPCs in view
+    // Draw NPCs in view, with a small marker above their head so they stand out
     (this.s.currentNpcs||[]).forEach(n=>{
       const nvx=n.x-cx,nvy=n.y-cy;
       if(nvx>=0&&nvx<vw&&nvy>=0&&nvy<vh){
         Sprites.drawCharacter(ctx, nvx*TILE, nvy*TILE, TILE, 0, 0, n.hair, n.shirt);
+        const mx=nvx*TILE+TILE/2,my=nvy*TILE-TILE*0.14;
+        ctx.fillStyle='#ffcc00';
+        ctx.beginPath();ctx.arc(mx,my,TILE*0.13,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#1a1a1a';ctx.lineWidth=1;ctx.stroke();
+        ctx.fillStyle='#1a1a1a';
+        ctx.font='bold '+Math.floor(TILE*0.2)+'px sans-serif';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText('!',mx,my+1);
       }
     });
 
@@ -1171,6 +1179,9 @@ const G = {
       mc.fillStyle=mmCols[this.s.map[y][x]]||'#333';
       mc.fillRect(x*sc,y*sc,Math.ceil(sc),Math.ceil(sc));
     }
+    // NPC markers, so trainers scattered across the map can actually be found
+    mc.fillStyle='#ff5030';
+    (this.s.currentNpcs||[]).forEach(n=>{ mc.fillRect(n.x*sc-1.5,n.y*sc-1.5,3,3); });
     // player dot with glow
     mc.fillStyle='rgba(255,255,0,0.3)';
     mc.beginPath();mc.arc(this.s.px*sc,this.s.py*sc,4,0,Math.PI*2);mc.fill();
@@ -1226,7 +1237,7 @@ const G = {
     const tile=this.s.map[ny][nx];
     const walkable=this.s.inHouse?IW.has(tile):TW.has(tile);
     if(!walkable){this.renderWorld();return;}
-    if((this.s.currentNpcs||[]).some(n=>n.x===nx&&n.y===ny)){this.renderWorld();return;}
+    if((this.s.currentNpcs||[]).some(n=>n.x===nx&&n.y===ny)){this.renderWorld();this.interact();return;}
     this.s.px=nx;this.s.py=ny;
     if(!this.s.inHouse&&DOOR_HOUSE[tile]){this.enterHouse(DOOR_HOUSE[tile]);return;}
     if(this.s.inHouse&&tile===T.EXITDOOR){this.exitHouse();return;}
