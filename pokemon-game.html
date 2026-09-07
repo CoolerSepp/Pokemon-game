@@ -188,7 +188,7 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
   <div id="scr-world" class="scr">
     <div id="hud">
       <div class="hud-l"><span id="h-trainer"></span><span id="h-house" style="color:#ffcc00;font-size:0.8em;margin-left:6px;"></span><div class="hud-pokemon"><span id="h-poke"></span><div class="hud-hp-bar"><div class="hud-hp-fill" id="h-hp-fill"></div></div><span id="h-hp-text" style="font-size:0.75em;color:#889;margin-left:4px;"></span></div></div>
-      <div class="hud-r"><span class="potion-ct" id="h-potions"></span><span id="h-battles" style="color:#556;font-size:0.8em;"></span><button class="hud-btn" onclick="G.openTeam()">Team</button><button class="hud-btn" onclick="G.openPotions()">Heilen</button><button class="hud-btn" onclick="G.openQuests()">Quests</button></div>
+      <div class="hud-r"><span class="potion-ct" id="h-potions"></span><span id="h-cash" style="color:#ffd860;font-weight:600;"></span><span id="h-battles" style="color:#556;font-size:0.8em;"></span><button class="hud-btn" onclick="G.openTeam()">Team</button><button class="hud-btn" onclick="G.openPotions()">Heilen</button><button class="hud-btn" onclick="G.openQuests()">Quests</button></div>
     </div>
     <canvas id="world-canvas"></canvas>
   </div>
@@ -207,6 +207,22 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
   <div class="overlay" id="ov-potions"><div class="ov-title">Heiltranke</div><p id="pot-info" style="color:#889;margin-bottom:12px;font-size:0.9em;"></p><div class="ov-grid" id="pot-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closePotions()">Schliessen</button></div></div>
   <div class="overlay" id="ov-switch"><div class="ov-title">Pokemon wechseln</div><div class="ov-grid" id="switch-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeSwitch()">Abbrechen</button></div></div>
   <div class="overlay" id="ov-quests"><div class="ov-title">Quests</div><div id="quest-list" style="width:100%;max-width:600px;"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeQuests()">Schliessen</button></div></div>
+  <div class="overlay" id="ov-shop">
+    <div class="ov-title">Pokemon-Laden</div>
+    <p style="color:#889;margin-bottom:14px;font-size:0.9em;">Dein PokeCash: <span id="shop-cash" style="color:#ffd860;font-weight:700;"></span></p>
+    <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px;">
+      <div style="background:#0e1520;border:1px solid #1a2a3a;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+        <div><div style="font-weight:700;">Heiltrank</div><div style="font-size:0.75em;color:#889;">Fullt einen Heiltrank in dein Inventar</div></div>
+        <button class="btn btn-green" style="min-width:auto;padding:8px 14px;" onclick="G.buyPotion()">30 &#128176;</button>
+      </div>
+      <div style="background:#0e1520;border:1px solid #1a2a3a;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+        <div><div style="font-weight:700;">Pokemon-Futter</div><div style="font-size:0.75em;color:#889;">Gibt einem Pokemon deiner Wahl 40 EP</div></div>
+        <button class="btn btn-green" style="min-width:auto;padding:8px 14px;" onclick="G.buyFood()">80 &#128176;</button>
+      </div>
+    </div>
+    <div id="shop-food-select" style="width:100%;max-width:600px;display:none;"></div>
+    <div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeShop()">Schliessen</button></div>
+  </div>
   <div class="overlay" id="ov-dialogue" style="align-items:center;justify-content:flex-end;padding-bottom:6vh;" onclick="G.advanceDialogue()">
     <div class="dialogue-box"><div class="dlg-name" id="dlg-name"></div><div class="dlg-text" id="dlg-text"></div><div class="dlg-next">&#9660; weiter</div></div>
   </div>
@@ -725,13 +741,13 @@ const TRAINERS=[
 // ===================== STORY / QUESTS / NPCs =====================
 const QUESTS={
   q1:{id:'q1',giver:'lab',name:'Erste Schritte',desc:'Gewinne 3 Kampfe gegen wilde Pokemon.',
-    check:s=>s.battlesWon>=3,progress:s=>Math.min(s.battlesWon,3)+'/3',reward:{potions:3}},
+    check:s=>s.battlesWon>=3,progress:s=>Math.min(s.battlesWon,3)+'/3',reward:{potions:3,cash:50}},
   q2:{id:'q2',giver:'v1',name:'Pokemon-Sammler',desc:'Fange 3 wilde Pokemon.',
-    check:s=>(s.caughtCount||0)>=3,progress:s=>Math.min(s.caughtCount||0,3)+'/3',reward:{potions:2}},
+    check:s=>(s.caughtCount||0)>=3,progress:s=>Math.min(s.caughtCount||0,3)+'/3',reward:{potions:2,cash:60}},
   q3:{id:'q3',giver:'v2',name:'Beweise deine Starke',desc:'Bringe ein Pokemon auf Level 15.',
-    check:s=>s.team.some(p=>p.lv>=15),progress:s=>Math.max(...s.team.map(p=>p.lv))+'/15',reward:{potions:5}},
+    check:s=>s.team.some(p=>p.lv>=15),progress:s=>Math.max(...s.team.map(p=>p.lv))+'/15',reward:{potions:5,cash:100}},
   q4:{id:'q4',giver:'rival',name:'Trainerherausforderung',desc:'Besiege beide Trainer im Dorf.',
-    check:s=>!!(s.flags.t1Beaten&&s.flags.t2Beaten),progress:s=>((s.flags.t1Beaten?1:0)+(s.flags.t2Beaten?1:0))+'/2',reward:{potions:4}},
+    check:s=>!!(s.flags.t1Beaten&&s.flags.t2Beaten),progress:s=>((s.flags.t1Beaten?1:0)+(s.flags.t2Beaten?1:0))+'/2',reward:{potions:4,cash:150}},
 };
 function questStatus(qid,s){
   const st=(s.quests||{})[qid];
@@ -743,8 +759,9 @@ function startQuest(qid){ G.s.quests=G.s.quests||{}; if(!G.s.quests[qid])G.s.que
 function completeQuest(qid){
   const q=QUESTS[qid];G.s.quests[qid]='completed';
   if(q.reward.potions)G.s.potions+=q.reward.potions;
+  if(q.reward.cash)G.s.cash=(G.s.cash||0)+q.reward.cash;
   G.updateHud();G.saveGame();
-  G.popup(`Quest abgeschlossen: ${q.name}!<div class="lvl-sub">+${q.reward.potions} Heiltranke</div>`,'caught-popup',2400);
+  G.popup(`Quest abgeschlossen: ${q.name}!<div class="lvl-sub">+${q.reward.potions} Heiltranke, +${q.reward.cash} PokeCash</div>`,'caught-popup',2400);
 }
 
 function professorLines(s){
@@ -796,16 +813,29 @@ const HOUSES={
     onEnd:()=>{ const s=G.s; const st=questStatus('q2',s); if(st==='none')startQuest('q2'); else if(st==='ready')completeQuest('q2'); }}},
   v2:{name:'Wohnhaus',npc:{name:'Anwohner Tom',shirt:'#a06020',hair:'#1a1a1a',lines:s=>villagerLines2(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q3',s); if(st==='none')startQuest('q3'); else if(st==='ready')completeQuest('q3'); }}},
+  shop:{name:'Pokemon-Laden',npc:{name:'Handlerin Mia',shirt:'#e0a030',hair:'#601010',
+    lines:()=>['Willkommen in meinem Laden!','Ich habe Heiltranke und starkendes Pokemon-Futter im Angebot - schau es dir an!'],
+    onEnd:()=>{ G.openShop(); }}},
 };
+
+// Random wandering trainers scattered across the map
+const RANDOM_TRAINER_NAMES=['Wanderer Ben','Youngster Timo','Camper Lena','Wanderin Sofia','Angler Paul','Schulerin Nina','Kraftprotz Max','Rocker Dennis','Wanderin Petra','Sammler Jonas','Youngster Finn','Camper Greta'];
+const RANDOM_SHIRTS=['#2050a0','#c04070','#40a040','#a0a020','#8040a0','#c07020','#409090','#6060c0'];
+function buildRandomTrainerNpc(rt){
+  const flagId='rt'+rt.idx+'Beaten';
+  return {x:rt.x,y:rt.y,name:rt.name,shirt:rt.shirt,hair:'#202020',
+    lines:s=>s.flags[flagId]?[`${rt.name}: Gut gekampft!`]:[`${rt.name}: Ich fordere dich zu einem Kampf heraus!`],
+    onEnd:()=>{ if(!G.s.flags[flagId]) setTimeout(()=>G.startTrainerBattle(flagId,rt.name,rt.tier,rt.tier*2),200); }};
+}
 
 const TE={fire:{grass:2,water:.5,fire:.5,ice:2,rock:.5,dragon:.5},water:{fire:2,grass:.5,water:.5,ground:2,rock:2,dragon:.5},grass:{water:2,fire:.5,grass:.5,ground:2,rock:2,poison:.5,flying:.5},electric:{water:2,grass:.5,electric:.5,ground:0,flying:2,dragon:.5},normal:{rock:.5,ghost:0},poison:{grass:2,poison:.5,ground:.5,rock:.5,ghost:.5},ground:{fire:2,electric:2,grass:.5,poison:2,rock:2,flying:0},flying:{grass:2,electric:.5,fighting:2,rock:.5},psychic:{fighting:2,poison:2,psychic:.5},rock:{fire:2,ice:2,flying:2,fighting:.5,ground:.5},ice:{grass:2,ground:2,flying:2,dragon:2,fire:.5,water:.5,ice:.5},dragon:{dragon:2},ghost:{ghost:2,psychic:2,normal:0},fighting:{normal:2,rock:2,ice:2,ghost:0,flying:.5,psychic:.5}};
 
 const T={GRASS:0,TALL:1,WATER:2,TREE:3,ROCK:4,PATH:5,FLOWER:6,SAND:7,BRIDGE:8,
   ROOFL:9,ROOFM:10,ROOFR:11,WALLL:12,WALLR:13,DOOR_LAB:14,DOOR_RIVAL:15,DOOR_V1:16,DOOR_V2:17,
-  FLOOR:18,IWALL:19,EXITDOOR:20};
-const TW=new Set([T.GRASS,T.TALL,T.PATH,T.FLOWER,T.SAND,T.BRIDGE,T.DOOR_LAB,T.DOOR_RIVAL,T.DOOR_V1,T.DOOR_V2]);
+  FLOOR:18,IWALL:19,EXITDOOR:20,DOOR_SHOP:21};
+const TW=new Set([T.GRASS,T.TALL,T.PATH,T.FLOWER,T.SAND,T.BRIDGE,T.DOOR_LAB,T.DOOR_RIVAL,T.DOOR_V1,T.DOOR_V2,T.DOOR_SHOP]);
 const IW=new Set([T.FLOOR,T.EXITDOOR]);
-const DOOR_HOUSE={[T.DOOR_LAB]:'lab',[T.DOOR_RIVAL]:'rival',[T.DOOR_V1]:'v1',[T.DOOR_V2]:'v2'};
+const DOOR_HOUSE={[T.DOOR_LAB]:'lab',[T.DOOR_RIVAL]:'rival',[T.DOOR_V1]:'v1',[T.DOOR_V2]:'v2',[T.DOOR_SHOP]:'shop'};
 const TILE=32;
 
 // ===================== GAME =====================
@@ -917,7 +947,7 @@ const G = {
 
   // World gen
   genWorld() {
-    const W=80,H=80;
+    const W=150,H=150;
     this.s.mw=W;this.s.mh=H;
     const seed = Math.floor(Math.random()*99999);
     Noise.init(seed);
@@ -945,7 +975,7 @@ const G = {
     }}
 
     // Paths using random walks
-    for(let p=0;p<6;p++){
+    for(let p=0;p<14;p++){
       let cx,cy;
       if(p<2){cx=0;cy=Math.floor(Math.random()*H);}
       else if(p<4){cx=Math.floor(Math.random()*W);cy=0;}
@@ -999,9 +1029,27 @@ const G = {
     placeHouse(sx+6,sy-6,T.DOOR_RIVAL);
     placeHouse(sx-6,sy+4,T.DOOR_V1);
     placeHouse(sx+6,sy+4,T.DOOR_V2);
+    placeHouse(sx,sy+4,T.DOOR_SHOP);
+
+    // Scatter random trainers across the wider map (away from the village, further = stronger)
+    const randomTrainers=[];
+    let attempts=0;
+    while(randomTrainers.length<12&&attempts<600){
+      attempts++;
+      const rx=Math.floor(Math.random()*W),ry=Math.floor(Math.random()*H);
+      const dist=Math.abs(rx-sx)+Math.abs(ry-sy);
+      if(dist<16)continue;
+      const t=m[ry][rx];
+      if(t!==T.GRASS&&t!==T.PATH&&t!==T.SAND)continue;
+      if(randomTrainers.some(o=>Math.abs(o.x-rx)+Math.abs(o.y-ry)<10))continue;
+      const idx=randomTrainers.length;
+      const tier=Math.min(4,1+Math.floor(dist/45));
+      randomTrainers.push({x:rx,y:ry,name:RANDOM_TRAINER_NAMES[idx%RANDOM_TRAINER_NAMES.length],shirt:RANDOM_SHIRTS[idx%RANDOM_SHIRTS.length],tier,idx});
+    }
 
     this.s.map=m;this.s.px=sx;this.s.py=sy;
-    this.s.worldNpcs=[
+    this.s.randomTrainers=randomTrainers;
+    const fixedNpcs=[
       {x:sx,y:sy-2,name:'Wanderin Mara',shirt:'#c0a020',hair:'#5a4020',lines:s=>wandererLines(s)},
       {x:sx-8,y:sy,name:'Trainer Kevin',shirt:'#2050a0',hair:'#202020',
         lines:s=>s.flags.t1Beaten?['Gut gekampft! Du bist wirklich stark geworden.']:['Na, hast du Mut fur einen Kampf?'],
@@ -1010,6 +1058,7 @@ const G = {
         lines:s=>s.flags.t2Beaten?['Respekt, du hast mich fair besiegt!']:['Ich fordere dich zu einem Kampf heraus!'],
         onEnd:()=>{ if(!G.s.flags.t2Beaten) setTimeout(()=>G.startTrainerBattle('t2Beaten','Trainerin Julia',2,2),200); }},
     ];
+    this.s.worldNpcs=fixedNpcs.concat(randomTrainers.map(buildRandomTrainerNpc));
     this.s.currentNpcs=this.s.worldNpcs;
   },
 
@@ -1075,7 +1124,7 @@ const G = {
         ctx.drawImage(this.tileCache.wallL,px,py);
       } else if(t===T.WALLR){
         ctx.drawImage(this.tileCache.wallR,px,py);
-      } else if(t===T.DOOR_LAB||t===T.DOOR_RIVAL||t===T.DOOR_V1||t===T.DOOR_V2){
+      } else if(t===T.DOOR_LAB||t===T.DOOR_RIVAL||t===T.DOOR_V1||t===T.DOOR_V2||t===T.DOOR_SHOP){
         ctx.drawImage(this.tileCache.door,px,py);
       } else if(t===T.FLOOR){
         ctx.drawImage(this.tileCache.floor,px,py);
@@ -1117,7 +1166,7 @@ const G = {
     if(this.s.inHouse){mc.clearRect(0,0,140,140);return;}
     const sc=140/this.s.mw;
     mc.clearRect(0,0,140,140);
-    const mmCols={[T.GRASS]:'#5a9a4a',[T.TALL]:'#3a7a2a',[T.WATER]:'#2868b0',[T.TREE]:'#2a5a20',[T.ROCK]:'#5a5a5a',[T.PATH]:'#c0a860',[T.FLOWER]:'#6aaa5a',[T.SAND]:'#d0b870',[T.BRIDGE]:'#8a6a3a',[T.ROOFL]:'#a03020',[T.ROOFM]:'#a03020',[T.ROOFR]:'#a03020',[T.WALLL]:'#e0d0a0',[T.WALLR]:'#e0d0a0',[T.DOOR_LAB]:'#6a4020',[T.DOOR_RIVAL]:'#6a4020',[T.DOOR_V1]:'#6a4020',[T.DOOR_V2]:'#6a4020'};
+    const mmCols={[T.GRASS]:'#5a9a4a',[T.TALL]:'#3a7a2a',[T.WATER]:'#2868b0',[T.TREE]:'#2a5a20',[T.ROCK]:'#5a5a5a',[T.PATH]:'#c0a860',[T.FLOWER]:'#6aaa5a',[T.SAND]:'#d0b870',[T.BRIDGE]:'#8a6a3a',[T.ROOFL]:'#a03020',[T.ROOFM]:'#a03020',[T.ROOFR]:'#a03020',[T.WALLL]:'#e0d0a0',[T.WALLR]:'#e0d0a0',[T.DOOR_LAB]:'#6a4020',[T.DOOR_RIVAL]:'#6a4020',[T.DOOR_V1]:'#6a4020',[T.DOOR_V2]:'#6a4020',[T.DOOR_SHOP]:'#6a4020'};
     for(let y=0;y<this.s.mh;y++)for(let x=0;x<this.s.mw;x++){
       mc.fillStyle=mmCols[this.s.map[y][x]]||'#333';
       mc.fillRect(x*sc,y*sc,Math.ceil(sc),Math.ceil(sc));
@@ -1137,6 +1186,7 @@ const G = {
     const fl=document.getElementById('h-hp-fill');
     if(a){const p=Math.max(0,a.hp/a.mhp*100);fl.style.width=p+'%';fl.style.background=p>50?'#40a040':p>25?'#b0a020':'#c03030';document.getElementById('h-hp-text').textContent=`${a.hp}/${a.mhp}`;}
     document.getElementById('h-potions').textContent=`\u{1F9EA} ${this.s.potions}`;
+    document.getElementById('h-cash').textContent=`\u{1F4B0} ${this.s.cash||0}`;
     document.getElementById('h-battles').textContent=`⚔️ ${this.s.battlesWon}`;
     document.getElementById('h-house').textContent=this.s.inHouse?('\u{1F3E0} '+(HOUSES[this.s.inHouse].name||'Haus')):'';
   },
@@ -1329,14 +1379,18 @@ const G = {
     else{this.bl('Alle Pokemon besiegt!');this.s.battleOver=true;this.battleBusy=false;this.rBA();}},
 
   bVic(){this.s.battleOver=true;this.s.battlesWon++;
-    let vicMsg=`${this.s.enemy.nm} besiegt!`;
+    let vicMsg=`${this.s.enemy.nm} besiegt!`,cashMsg='';
     if(this.s.trainerBattle){
       if(this.s.trainerFlag){this.s.flags[this.s.trainerFlag]=true;this.s.trainerFlag=null;vicMsg='Trainer besiegt!';}
       else{this.s.flags.rivalWins=(this.s.flags.rivalWins||0)+1;vicMsg='Rivale besiegt!';}
+      const cash=Math.floor(this.s.enemy.lv*5+this.s.enemy.tier*20);
+      this.s.cash=(this.s.cash||0)+cash;
+      cashMsg=` +${cash} PokeCash`;
+      this.updateHud();
     }
     const e=this.s.enemy,p=this.s.team[this.s.active];
     const xp=Math.floor(e.lv*18+e.tier*15);p.xp+=xp;
-    this.bl(`${vicMsg} +${xp} XP`);
+    this.bl(`${vicMsg} +${xp} XP${cashMsg}`);
     while(p.xp>=p.xpN){p.xp-=p.xpN;this.lvUp(p);this.bl(`${p.nm} erreicht Level ${p.lv}!`);}
     this.renderB();this.battleBusy=false;this.rBA();},
 
@@ -1396,18 +1450,47 @@ const G = {
   },
   giverName(houseId){return HOUSES[houseId]?HOUSES[houseId].npc.name:'?';},
 
+  // Shop
+  openShop(){if(this.s.inBattle)return;Au.cl();document.getElementById('ov-shop').classList.add('on');this.rShop();},
+  closeShop(){document.getElementById('ov-shop').classList.remove('on');const el=document.getElementById('shop-food-select');el.style.display='none';el.innerHTML='';},
+  rShop(){document.getElementById('shop-cash').textContent=this.s.cash||0;},
+  buyPotion(){
+    if((this.s.cash||0)<30){this.popup('Nicht genug PokeCash!','caught-popup',1500);return;}
+    Au.cl();this.s.cash-=30;this.s.potions++;this.updateHud();this.rShop();this.saveGame();
+  },
+  buyFood(){
+    if((this.s.cash||0)<80){this.popup('Nicht genug PokeCash!','caught-popup',1500);return;}
+    Au.cl();this.s.cash-=80;this.updateHud();this.rShop();this.saveGame();
+    const el=document.getElementById('shop-food-select');
+    el.style.display='block';
+    el.innerHTML='<p style="color:#889;font-size:0.85em;margin:10px 0 6px;">Wahle ein Pokemon fur das Futter:</p>';
+    const grid=document.createElement('div');grid.className='ov-grid';
+    this.s.team.forEach((p,i)=>{
+      const c=this.mkCard(p,i,false);
+      c.onclick=()=>{
+        Au.cl();
+        p.xp+=40;
+        while(p.xp>=p.xpN){p.xp-=p.xpN;this.lvUp(p);}
+        el.style.display='none';el.innerHTML='';
+        this.updateHud();this.saveGame();
+      };
+      grid.appendChild(c);
+    });
+    el.appendChild(grid);
+  },
+
   // Save/Load
   saveGame(){try{
     const inH=this.s.inHouse;
     const map=inH?this.s.outdoorPos.map:this.s.map,mw=inH?this.s.outdoorPos.mw:this.s.mw,mh=inH?this.s.outdoorPos.mh:this.s.mh;
     const px=inH?this.s.outdoorPos.px:this.s.px,py=inH?this.s.outdoorPos.py:this.s.py;
-    localStorage.setItem('pkmn2',JSON.stringify({char:this.s.char,team:this.s.team,active:this.s.active,potions:this.s.potions,lastPD:this.s.lastPD,battlesWon:this.s.battlesWon,caughtCount:this.s.caughtCount,px,py,map,mw,mh,seed:this.s.seed,flags:this.s.flags,quests:this.s.quests}));
+    localStorage.setItem('pkmn2',JSON.stringify({char:this.s.char,team:this.s.team,active:this.s.active,potions:this.s.potions,cash:this.s.cash,lastPD:this.s.lastPD,battlesWon:this.s.battlesWon,caughtCount:this.s.caughtCount,px,py,map,mw,mh,seed:this.s.seed,flags:this.s.flags,quests:this.s.quests,randomTrainers:this.s.randomTrainers}));
   }catch(e){}},
   loadGame(){try{const r=localStorage.getItem('pkmn2');if(!r)return false;const d=JSON.parse(r);if(!d.char||!d.team||!d.map)return false;
-    this.s={char:d.char,team:d.team,active:d.active||0,potions:d.potions!==undefined?d.potions:5,lastPD:d.lastPD||null,battlesWon:d.battlesWon||0,caughtCount:d.caughtCount||0,px:d.px,py:d.py,map:d.map,mw:d.mw,mh:d.mh,seed:d.seed||0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,enemy:null,flags:d.flags||{},quests:d.quests||{},inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1}};
+    this.s={char:d.char,team:d.team,active:d.active||0,potions:d.potions!==undefined?d.potions:5,cash:d.cash||0,lastPD:d.lastPD||null,battlesWon:d.battlesWon||0,caughtCount:d.caughtCount||0,px:d.px,py:d.py,map:d.map,mw:d.mw,mh:d.mh,seed:d.seed||0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,enemy:null,flags:d.flags||{},quests:d.quests||{},randomTrainers:d.randomTrainers||[],inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1}};
     this.s.team.forEach(p=>this.rcP(p));
     const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
-    this.s.worldNpcs=[
+    const fixedNpcs=[
       {x:sx,y:sy-2,name:'Wanderin Mara',shirt:'#c0a020',hair:'#5a4020',lines:s=>wandererLines(s)},
       {x:sx-8,y:sy,name:'Trainer Kevin',shirt:'#2050a0',hair:'#202020',
         lines:s=>s.flags.t1Beaten?['Gut gekampft! Du bist wirklich stark geworden.']:['Na, hast du Mut fur einen Kampf?'],
@@ -1416,10 +1499,11 @@ const G = {
         lines:s=>s.flags.t2Beaten?['Respekt, du hast mich fair besiegt!']:['Ich fordere dich zu einem Kampf heraus!'],
         onEnd:()=>{ if(!G.s.flags.t2Beaten) setTimeout(()=>G.startTrainerBattle('t2Beaten','Trainerin Julia',2,2),200); }},
     ];
+    this.s.worldNpcs=fixedNpcs.concat(this.s.randomTrainers.map(buildRandomTrainerNpc));
     this.s.currentNpcs=this.s.worldNpcs;
     return true;}catch(e){return false;}},
 
-  startNewGame(){Au.cl();this.s={char:this._cc,team:[this.mkP(this._sc,5)],active:0,potions:5,lastPD:new Date().toDateString(),battlesWon:0,caughtCount:0,px:0,py:0,map:[],mw:0,mh:0,seed:0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,enemy:null,flags:{},quests:{},inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1}};this.genWorld();this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();this.saveGame();},350);},
+  startNewGame(){Au.cl();this.s={char:this._cc,team:[this.mkP(this._sc,5)],active:0,potions:5,cash:50,lastPD:new Date().toDateString(),battlesWon:0,caughtCount:0,px:0,py:0,map:[],mw:0,mh:0,seed:0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,enemy:null,flags:{},quests:{},randomTrainers:[],inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1}};this.genWorld();this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();this.saveGame();},350);},
   resumeGame(){Au.cl();this.refreshPot();if(this.s.team[this.s.active].hp<=0){const i=this.s.team.findIndex(p=>p.hp>0);if(i>=0)this.s.active=i;}this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();},350);},
 };
 
