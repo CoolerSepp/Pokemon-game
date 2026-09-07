@@ -188,7 +188,7 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
   <div id="scr-world" class="scr">
     <div id="hud">
       <div class="hud-l"><span id="h-trainer"></span><span id="h-house" style="color:#ffcc00;font-size:0.8em;margin-left:6px;"></span><div class="hud-pokemon"><span id="h-poke"></span><div class="hud-hp-bar"><div class="hud-hp-fill" id="h-hp-fill"></div></div><span id="h-hp-text" style="font-size:0.75em;color:#889;margin-left:4px;"></span></div></div>
-      <div class="hud-r"><span class="potion-ct" id="h-potions"></span><span id="h-battles" style="color:#556;font-size:0.8em;"></span><button class="hud-btn" onclick="G.openTeam()">Team</button><button class="hud-btn" onclick="G.openPotions()">Heilen</button></div>
+      <div class="hud-r"><span class="potion-ct" id="h-potions"></span><span id="h-battles" style="color:#556;font-size:0.8em;"></span><button class="hud-btn" onclick="G.openTeam()">Team</button><button class="hud-btn" onclick="G.openPotions()">Heilen</button><button class="hud-btn" onclick="G.openQuests()">Quests</button></div>
     </div>
     <canvas id="world-canvas"></canvas>
   </div>
@@ -206,6 +206,7 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
   <div class="overlay" id="ov-team"><div class="ov-title">Dein Team</div><div class="ov-grid" id="team-grid"></div><div id="team-detail"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeTeam()">Schliessen</button></div></div>
   <div class="overlay" id="ov-potions"><div class="ov-title">Heiltranke</div><p id="pot-info" style="color:#889;margin-bottom:12px;font-size:0.9em;"></p><div class="ov-grid" id="pot-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closePotions()">Schliessen</button></div></div>
   <div class="overlay" id="ov-switch"><div class="ov-title">Pokemon wechseln</div><div class="ov-grid" id="switch-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeSwitch()">Abbrechen</button></div></div>
+  <div class="overlay" id="ov-quests"><div class="ov-title">Quests</div><div id="quest-list" style="width:100%;max-width:600px;"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeQuests()">Schliessen</button></div></div>
   <div class="overlay" id="ov-dialogue" style="align-items:center;justify-content:flex-end;padding-bottom:6vh;" onclick="G.advanceDialogue()">
     <div class="dialogue-box"><div class="dlg-name" id="dlg-name"></div><div class="dlg-text" id="dlg-text"></div><div class="dlg-next">&#9660; weiter</div></div>
   </div>
@@ -721,30 +722,80 @@ const TRAINERS=[
 {id:'lucia',nm:'Lucia',spr:'\u{1F469}',hair:'#e0d040'},
 ];
 
-// ===================== STORY / NPCs =====================
+// ===================== STORY / QUESTS / NPCs =====================
+const QUESTS={
+  q1:{id:'q1',giver:'lab',name:'Erste Schritte',desc:'Gewinne 3 Kampfe gegen wilde Pokemon.',
+    check:s=>s.battlesWon>=3,progress:s=>Math.min(s.battlesWon,3)+'/3',reward:{potions:3}},
+  q2:{id:'q2',giver:'v1',name:'Pokemon-Sammler',desc:'Fange 3 wilde Pokemon.',
+    check:s=>(s.caughtCount||0)>=3,progress:s=>Math.min(s.caughtCount||0,3)+'/3',reward:{potions:2}},
+  q3:{id:'q3',giver:'v2',name:'Beweise deine Starke',desc:'Bringe ein Pokemon auf Level 15.',
+    check:s=>s.team.some(p=>p.lv>=15),progress:s=>Math.max(...s.team.map(p=>p.lv))+'/15',reward:{potions:5}},
+  q4:{id:'q4',giver:'rival',name:'Trainerherausforderung',desc:'Besiege beide Trainer im Dorf.',
+    check:s=>!!(s.flags.t1Beaten&&s.flags.t2Beaten),progress:s=>((s.flags.t1Beaten?1:0)+(s.flags.t2Beaten?1:0))+'/2',reward:{potions:4}},
+};
+function questStatus(qid,s){
+  const st=(s.quests||{})[qid];
+  if(!st)return 'none';
+  if(st==='completed')return 'done';
+  return QUESTS[qid].check(s)?'ready':'active';
+}
+function startQuest(qid){ G.s.quests=G.s.quests||{}; if(!G.s.quests[qid])G.s.quests[qid]='active'; G.saveGame(); }
+function completeQuest(qid){
+  const q=QUESTS[qid];G.s.quests[qid]='completed';
+  if(q.reward.potions)G.s.potions+=q.reward.potions;
+  G.updateHud();G.saveGame();
+  G.popup(`Quest abgeschlossen: ${q.name}!<div class="lvl-sub">+${q.reward.potions} Heiltranke</div>`,'caught-popup',2400);
+}
+
 function professorLines(s){
-  if(!s.flags.metProfessor) return ['Willkommen in meinem Labor, Trainer!','Ich bin Professor Eichenholz und erforsche die Pokemon dieser Region.','Nimm diese zwei zusatzlichen Heiltranke fur den Start deiner Reise mit!'];
+  if(!s.flags.metProfessor) return ['Willkommen in meinem Labor, Trainer!','Ich bin Professor Eichenholz und erforsche die Pokemon dieser Region.','Nimm diese zwei zusatzlichen Heiltranke fur den Start deiner Reise mit!','Als kleine Aufgabe: Gewinne 3 Kampfe gegen wilde Pokemon, ich habe etwas fur dich!'];
+  const st=questStatus('q1',s);
+  if(st==='ready') return ['Du hast schon 3 Kampfe gewonnen? Fantastisch! Hier ist deine Belohnung.'];
+  if(st==='active') return [`Wie lauft die Aufgabe? Fortschritt: ${QUESTS.q1.progress(s)}.`];
   if(s.battlesWon<10) return ['Wie lauft dein Abenteuer? Fange fleissig weitere Pokemon!'];
   if(s.battlesWon<30) return ['Beeindruckend! Mit der Zeit tauchen immer starkere wilde Pokemon auf.'];
   return ['Man erzahlt sich, dass legendare Pokemon in den entferntesten Winkeln der Welt umherstreifen...'];
 }
 function rivalLines(s){
   const w=s.flags.rivalWins||0;
-  if(!s.flags.metRival) return ['Na, bist du bereit fur dein erstes Abenteuer?','Zeig mir mal, was dein Pokemon drauf hat!'];
+  if(!s.flags.metRival) return ['Na, bist du bereit fur dein erstes Abenteuer?','Zeig mir mal, was dein Pokemon drauf hat!','Ubrigens, im Dorf gibt es andere Trainer - besiege beide, dann hab ich was Feines fur dich!'];
+  const st=questStatus('q4',s);
+  if(st==='ready') return ['Du hast wirklich beide Trainer besiegt? Respekt! Hier, nimm das.','Aber jetzt zu uns beiden...'];
   if(w===0) return ['Diesmal gewinne ich, das schwore ich dir!'];
   return [`Du hast mich schon ${w}x besiegt... Aber diesmal wird es anders!`];
 }
-function villagerLines1(){ return ['Hast du gewusst? Wasser-Pokemon sind stark gegen Feuer-Pokemon.','Die Heiltranke erneuern sich jeden Tag - nutze sie weise!']; }
-function villagerLines2(){ return ['Ich hab gehort, im hohen Gras trifft man auf wilde Pokemon.','Trainiere dein Team, um gegen starkere Gegner zu bestehen!']; }
+function villagerLines1(s){
+  const st=questStatus('q2',s);
+  if(st==='none') return ['Hast du gewusst? Wasser-Pokemon sind stark gegen Feuer-Pokemon.','Kannst du mir von 3 gefangenen wilden Pokemon berichten? Ich sammle Notizen daruber!'];
+  if(st==='ready') return ['Du hast schon 3 Pokemon gefangen? Wunderbar, hier ist mein Dank!'];
+  if(st==='active') return [`Hast du schon 3 Pokemon gefangen? Fortschritt: ${QUESTS.q2.progress(s)}.`];
+  return ['Die Heiltranke erneuern sich jeden Tag - nutze sie weise!'];
+}
+function villagerLines2(s){
+  const st=questStatus('q3',s);
+  if(st==='none') return ['Ich hab gehort, im hohen Gras trifft man auf wilde Pokemon.','Trainiere dein Team, bis eines Level 15 erreicht - dann hab ich was fur dich!'];
+  if(st==='ready') return ['Level 15 schon erreicht? Starke Leistung! Hier, nimm das.'];
+  if(st==='active') return [`Wie weit bist du? Fortschritt: ${QUESTS.q3.progress(s)}.`];
+  return ['Trainiere dein Team, um gegen starkere Gegner zu bestehen!'];
+}
 function wandererLines(){ return ['Sehr effektive Treffer verursachen doppelten Schaden!','Pass auf deine Heiltranke auf, du bekommst nur 5 pro Tag.']; }
 
 const HOUSES={
   lab:{name:'Pokemon-Labor',npc:{name:'Professor Eichenholz',shirt:'#f0f0f0',hair:'#3a2a1a',lines:s=>professorLines(s),
-    onEnd:()=>{ if(!G.s.flags.metProfessor){ G.s.flags.metProfessor=true; G.s.potions+=2; G.updateHud(); G.saveGame(); } }}},
+    onEnd:()=>{ const s=G.s;
+      if(!s.flags.metProfessor){ s.flags.metProfessor=true; s.potions+=2; startQuest('q1'); G.updateHud(); G.saveGame(); return; }
+      if(questStatus('q1',s)==='ready') completeQuest('q1');
+    }}},
   rival:{name:'Rivalenhaus',npc:{name:'Rivale Gary',shirt:'#2a6a2a',hair:'#e0a020',lines:s=>rivalLines(s),
-    onEnd:()=>{ G.s.flags.metRival=true; setTimeout(()=>G.startRivalBattle(),200); }}},
-  v1:{name:'Wohnhaus',npc:{name:'Anwohnerin Lisa',shirt:'#8040a0',hair:'#402a1a',lines:s=>villagerLines1(s)}},
-  v2:{name:'Wohnhaus',npc:{name:'Anwohner Tom',shirt:'#a06020',hair:'#1a1a1a',lines:s=>villagerLines2(s)}},
+    onEnd:()=>{ const s=G.s;
+      if(!s.flags.metRival){ s.flags.metRival=true; startQuest('q4'); }
+      else if(questStatus('q4',s)==='ready') completeQuest('q4');
+      setTimeout(()=>G.startRivalBattle(),200);
+    }}},
+  v1:{name:'Wohnhaus',npc:{name:'Anwohnerin Lisa',shirt:'#8040a0',hair:'#402a1a',lines:s=>villagerLines1(s),
+    onEnd:()=>{ const s=G.s; const st=questStatus('q2',s); if(st==='none')startQuest('q2'); else if(st==='ready')completeQuest('q2'); }}},
+  v2:{name:'Wohnhaus',npc:{name:'Anwohner Tom',shirt:'#a06020',hair:'#1a1a1a',lines:s=>villagerLines2(s),
+    onEnd:()=>{ const s=G.s; const st=questStatus('q3',s); if(st==='none')startQuest('q3'); else if(st==='ready')completeQuest('q3'); }}},
 };
 
 const TE={fire:{grass:2,water:.5,fire:.5,ice:2,rock:.5,dragon:.5},water:{fire:2,grass:.5,water:.5,ground:2,rock:2,dragon:.5},grass:{water:2,fire:.5,grass:.5,ground:2,rock:2,poison:.5,flying:.5},electric:{water:2,grass:.5,electric:.5,ground:0,flying:2,dragon:.5},normal:{rock:.5,ghost:0},poison:{grass:2,poison:.5,ground:.5,rock:.5,ghost:.5},ground:{fire:2,electric:2,grass:.5,poison:2,rock:2,flying:0},flying:{grass:2,electric:.5,fighting:2,rock:.5},psychic:{fighting:2,poison:2,psychic:.5},rock:{fire:2,ice:2,flying:2,fighting:.5,ground:.5},ice:{grass:2,ground:2,flying:2,dragon:2,fire:.5,water:.5,ice:.5},dragon:{dragon:2},ghost:{ghost:2,psychic:2,normal:0},fighting:{normal:2,rock:2,ice:2,ghost:0,flying:.5,psychic:.5}};
@@ -950,7 +1001,15 @@ const G = {
     placeHouse(sx+6,sy+4,T.DOOR_V2);
 
     this.s.map=m;this.s.px=sx;this.s.py=sy;
-    this.s.worldNpcs=[{x:sx,y:sy-2,name:'Wanderin Mara',shirt:'#c0a020',hair:'#5a4020',lines:s=>wandererLines(s)}];
+    this.s.worldNpcs=[
+      {x:sx,y:sy-2,name:'Wanderin Mara',shirt:'#c0a020',hair:'#5a4020',lines:s=>wandererLines(s)},
+      {x:sx-8,y:sy,name:'Trainer Kevin',shirt:'#2050a0',hair:'#202020',
+        lines:s=>s.flags.t1Beaten?['Gut gekampft! Du bist wirklich stark geworden.']:['Na, hast du Mut fur einen Kampf?'],
+        onEnd:()=>{ if(!G.s.flags.t1Beaten) setTimeout(()=>G.startTrainerBattle('t1Beaten','Trainer Kevin',1,0),200); }},
+      {x:sx+8,y:sy,name:'Trainerin Julia',shirt:'#c04070',hair:'#804020',
+        lines:s=>s.flags.t2Beaten?['Respekt, du hast mich fair besiegt!']:['Ich fordere dich zu einem Kampf heraus!'],
+        onEnd:()=>{ if(!G.s.flags.t2Beaten) setTimeout(()=>G.startTrainerBattle('t2Beaten','Trainerin Julia',2,2),200); }},
+    ];
     this.s.currentNpcs=this.s.worldNpcs;
   },
 
@@ -1096,8 +1155,9 @@ const G = {
       if(km[e.key]){e.preventDefault();if(!held[e.key]){held[e.key]=true;this.move(km[e.key][0],km[e.key][1]);}}
       if(e.key==='p'||e.key==='P')this.openTeam();
       if(e.key==='h'||e.key==='H')this.openPotions();
+      if(e.key==='q'||e.key==='Q')this.openQuests();
       if(e.key==='e'||e.key==='E'||e.key==='Enter'){e.preventDefault();this.interact();}
-      if(e.key==='Escape'){this.closeTeam();this.closePotions();this.closeSwitch();}
+      if(e.key==='Escape'){this.closeTeam();this.closePotions();this.closeSwitch();this.closeQuests();}
     });
     document.addEventListener('keyup',e=>{held[e.key]=false;});
     let ml=null;
@@ -1210,13 +1270,20 @@ const G = {
     const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
     setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();this.bl(`Ein wildes ${this.s.enemy.nm} (Lv.${this.s.enemy.lv}) erscheint!`);this.rBA();},350);},400);},
 
-  startRivalBattle(){Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=true;
+  startRivalBattle(){Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=true;this.s.trainerFlag=null;
     const w=this.s.flags.rivalWins||0;
     const lvl=Math.max(5,this.s.team[this.s.active].lv+w*2);
     const pool=DB.filter(d=>d.tier===1||d.tier===2);
     this.s.enemy=this.mkP(pool[w%pool.length],lvl);
     const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
     setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();this.bl('Rivale Gary fordert dich zum Kampf heraus!');this.rBA();},350);},400);},
+
+  startTrainerBattle(flagId,trainerName,tier,lvBonus){Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=true;this.s.trainerFlag=flagId;
+    const lvl=Math.max(5,this.s.team[this.s.active].lv+lvBonus);
+    const pool=DB.filter(d=>d.tier===tier);
+    this.s.enemy=this.mkP(pool[Math.floor(Math.random()*pool.length)],lvl);
+    const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
+    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();this.bl(`${trainerName} fordert dich zum Kampf heraus!`);this.rBA();},350);},400);},
 
   renderB(){const p=this.s.team[this.s.active],e=this.s.enemy;
     document.getElementById('b-p-spr').textContent=p.spr;document.getElementById('b-e-spr').textContent=e.spr;
@@ -1262,17 +1329,21 @@ const G = {
     else{this.bl('Alle Pokemon besiegt!');this.s.battleOver=true;this.battleBusy=false;this.rBA();}},
 
   bVic(){this.s.battleOver=true;this.s.battlesWon++;
-    if(this.s.trainerBattle)this.s.flags.rivalWins=(this.s.flags.rivalWins||0)+1;
+    let vicMsg=`${this.s.enemy.nm} besiegt!`;
+    if(this.s.trainerBattle){
+      if(this.s.trainerFlag){this.s.flags[this.s.trainerFlag]=true;this.s.trainerFlag=null;vicMsg='Trainer besiegt!';}
+      else{this.s.flags.rivalWins=(this.s.flags.rivalWins||0)+1;vicMsg='Rivale besiegt!';}
+    }
     const e=this.s.enemy,p=this.s.team[this.s.active];
     const xp=Math.floor(e.lv*18+e.tier*15);p.xp+=xp;
-    this.bl(this.s.trainerBattle?`Rivale besiegt! +${xp} XP`:`${e.nm} besiegt! +${xp} XP`);
+    this.bl(`${vicMsg} +${xp} XP`);
     while(p.xp>=p.xpN){p.xp-=p.xpN;this.lvUp(p);this.bl(`${p.nm} erreicht Level ${p.lv}!`);}
     this.renderB();this.battleBusy=false;this.rBA();},
 
   async bCat(){if(this.s.battleOver||this.battleBusy||this.s.trainerBattle)return;this.battleBusy=true;
     const e=this.s.enemy;let rate=(1-e.hp/e.mhp)*0.55+0.08;if(e.tier>=3)rate*=0.45;if(e.tier>=4)rate*=0.25;
     this.bl('Pokeball!');const an=document.createElement('div');an.className='catch-anim';an.innerHTML='<div class="catch-ball">⚪</div>';document.body.appendChild(an);await this.w(800);
-    if(Math.random()<rate){Au.cat();an.innerHTML+='<div class="catch-result" style="color:#44dd44;">Gefangen!</div>';this.s.team.push({...e});this.s.battleOver=true;this.s.battlesWon++;const xp=Math.floor(e.lv*12);const p=this.s.team[this.s.active];p.xp+=xp;while(p.xp>=p.xpN){p.xp-=p.xpN;this.lvUp(p);}this.bl(`${e.nm} gefangen! +${xp} XP`);}
+    if(Math.random()<rate){Au.cat();an.innerHTML+='<div class="catch-result" style="color:#44dd44;">Gefangen!</div>';this.s.team.push({...e});this.s.battleOver=true;this.s.battlesWon++;this.s.caughtCount=(this.s.caughtCount||0)+1;const xp=Math.floor(e.lv*12);const p=this.s.team[this.s.active];p.xp+=xp;while(p.xp>=p.xpN){p.xp-=p.xpN;this.lvUp(p);}this.bl(`${e.nm} gefangen! +${xp} XP`);}
     else{Au.fail();an.innerHTML+='<div class="catch-result" style="color:#dd4444;">Entkommen!</div>';this.bl('Entkommen!');}
     await this.w(1200);an.remove();
     if(!this.s.battleOver){const p=this.s.team[this.s.active];const em=e.moves[Math.floor(Math.random()*e.moves.length)];const r=this.cD(e.atk,p.def,em,e.t,p.t,e.lv);p.hp=Math.max(0,p.hp-r.dmg);this.aS('player','hit');Au.hit();this.sDmg('player',r.dmg,r.crit);this.bl(`${e.nm}: ${em.name}! ${r.dmg}`);this.renderB();if(p.hp<=0){this.hFaint();return;}}
@@ -1289,7 +1360,7 @@ const G = {
     if(Math.random()<ch){Au.fl();this.bl('Geflohen!');this.s.battleOver=true;this.battleBusy=false;this.rBA();}
     else{this.bl('Flucht fehlgeschlagen!');await this.w(300);const e=this.s.enemy;const em=e.moves[Math.floor(Math.random()*e.moves.length)];const r=this.cD(e.atk,p.def,em,e.t,p.t,e.lv);p.hp=Math.max(0,p.hp-r.dmg);this.aS('player','hit');Au.hit();this.sDmg('player',r.dmg,r.crit);this.bl(`${e.nm}: ${em.name}! ${r.dmg}`);this.renderB();if(p.hp<=0){this.hFaint();return;}this.battleBusy=false;this.rBA();}},
 
-  endB(){Au.cl();this.s.inBattle=false;this.s.battleOver=false;this.s.trainerBattle=false;document.getElementById('b-log').innerHTML='';this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();this.saveGame();},350);},
+  endB(){Au.cl();this.s.inBattle=false;this.s.battleOver=false;this.s.trainerBattle=false;this.s.trainerFlag=null;document.getElementById('b-log').innerHTML='';this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();this.saveGame();},350);},
   w(ms){return new Promise(r=>setTimeout(r,ms));},
 
   // Team/Potions
@@ -1304,22 +1375,51 @@ const G = {
   closePotions(){document.getElementById('ov-potions').classList.remove('on');},
   rPG(){const g=document.getElementById('pot-grid');g.innerHTML='';this.s.team.forEach((p,i)=>{const need=p.hp<p.mhp;const c=this.mkCard(p,i,false);if(!need)c.classList.add('active');const info=document.createElement('div');info.style.cssText='font-size:0.7em;margin-top:4px;';if(need&&this.s.potions>0){info.textContent='Heilen';info.style.color='#4a4';c.onclick=()=>{Au.cl();p.hp=p.mhp;this.s.potions--;document.getElementById('pot-info').textContent=`Heiltranke: ${this.s.potions}/5`;this.rPG();this.updateHud();this.saveGame();};}else if(!need){info.textContent='Voll';info.style.color='#556';}else{info.textContent='Keine Tranke';info.style.color='#a33';}c.appendChild(info);g.appendChild(c);});},
 
+  // Quests
+  openQuests(){if(this.s.inBattle)return;Au.cl();document.getElementById('ov-quests').classList.add('on');this.rQL();},
+  closeQuests(){document.getElementById('ov-quests').classList.remove('on');},
+  rQL(){
+    const el=document.getElementById('quest-list');
+    const entries=Object.keys(this.s.quests||{});
+    if(entries.length===0){el.innerHTML='<p style="color:#667;">Noch keine Aufgaben angenommen. Sprich mit den Bewohnern im Dorf!</p>';return;}
+    el.innerHTML=entries.map(qid=>{
+      const q=QUESTS[qid];const st=this.s.quests[qid];
+      const ready=st!=='completed'&&q.check(this.s);
+      const statusTxt=st==='completed'?'Abgeschlossen':(ready?'Bereit zur Abgabe! Sprich mit '+this.giverName(q.giver):'In Arbeit: '+q.progress(this.s));
+      const color=st==='completed'?'#4a4':(ready?'#ffcc00':'#889');
+      return `<div style="background:#0e1520;border:1px solid #1a2a3a;border-radius:10px;padding:10px 14px;margin-bottom:8px;text-align:left;">
+        <div style="font-weight:700;color:#ddd;">${q.name}</div>
+        <div style="font-size:0.85em;color:#889;margin:3px 0;">${q.desc}</div>
+        <div style="font-size:0.8em;color:${color};">${statusTxt}</div>
+      </div>`;
+    }).join('');
+  },
+  giverName(houseId){return HOUSES[houseId]?HOUSES[houseId].npc.name:'?';},
+
   // Save/Load
   saveGame(){try{
     const inH=this.s.inHouse;
     const map=inH?this.s.outdoorPos.map:this.s.map,mw=inH?this.s.outdoorPos.mw:this.s.mw,mh=inH?this.s.outdoorPos.mh:this.s.mh;
     const px=inH?this.s.outdoorPos.px:this.s.px,py=inH?this.s.outdoorPos.py:this.s.py;
-    localStorage.setItem('pkmn2',JSON.stringify({char:this.s.char,team:this.s.team,active:this.s.active,potions:this.s.potions,lastPD:this.s.lastPD,battlesWon:this.s.battlesWon,px,py,map,mw,mh,seed:this.s.seed,flags:this.s.flags}));
+    localStorage.setItem('pkmn2',JSON.stringify({char:this.s.char,team:this.s.team,active:this.s.active,potions:this.s.potions,lastPD:this.s.lastPD,battlesWon:this.s.battlesWon,caughtCount:this.s.caughtCount,px,py,map,mw,mh,seed:this.s.seed,flags:this.s.flags,quests:this.s.quests}));
   }catch(e){}},
   loadGame(){try{const r=localStorage.getItem('pkmn2');if(!r)return false;const d=JSON.parse(r);if(!d.char||!d.team||!d.map)return false;
-    this.s={char:d.char,team:d.team,active:d.active||0,potions:d.potions!==undefined?d.potions:5,lastPD:d.lastPD||null,battlesWon:d.battlesWon||0,px:d.px,py:d.py,map:d.map,mw:d.mw,mh:d.mh,seed:d.seed||0,inBattle:false,battleOver:false,trainerBattle:false,enemy:null,flags:d.flags||{},inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1}};
+    this.s={char:d.char,team:d.team,active:d.active||0,potions:d.potions!==undefined?d.potions:5,lastPD:d.lastPD||null,battlesWon:d.battlesWon||0,caughtCount:d.caughtCount||0,px:d.px,py:d.py,map:d.map,mw:d.mw,mh:d.mh,seed:d.seed||0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,enemy:null,flags:d.flags||{},quests:d.quests||{},inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1}};
     this.s.team.forEach(p=>this.rcP(p));
     const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
-    this.s.worldNpcs=[{x:sx,y:sy-2,name:'Wanderin Mara',shirt:'#c0a020',hair:'#5a4020',lines:s=>wandererLines(s)}];
+    this.s.worldNpcs=[
+      {x:sx,y:sy-2,name:'Wanderin Mara',shirt:'#c0a020',hair:'#5a4020',lines:s=>wandererLines(s)},
+      {x:sx-8,y:sy,name:'Trainer Kevin',shirt:'#2050a0',hair:'#202020',
+        lines:s=>s.flags.t1Beaten?['Gut gekampft! Du bist wirklich stark geworden.']:['Na, hast du Mut fur einen Kampf?'],
+        onEnd:()=>{ if(!G.s.flags.t1Beaten) setTimeout(()=>G.startTrainerBattle('t1Beaten','Trainer Kevin',1,0),200); }},
+      {x:sx+8,y:sy,name:'Trainerin Julia',shirt:'#c04070',hair:'#804020',
+        lines:s=>s.flags.t2Beaten?['Respekt, du hast mich fair besiegt!']:['Ich fordere dich zu einem Kampf heraus!'],
+        onEnd:()=>{ if(!G.s.flags.t2Beaten) setTimeout(()=>G.startTrainerBattle('t2Beaten','Trainerin Julia',2,2),200); }},
+    ];
     this.s.currentNpcs=this.s.worldNpcs;
     return true;}catch(e){return false;}},
 
-  startNewGame(){Au.cl();this.s={char:this._cc,team:[this.mkP(this._sc,5)],active:0,potions:5,lastPD:new Date().toDateString(),battlesWon:0,px:0,py:0,map:[],mw:0,mh:0,seed:0,inBattle:false,battleOver:false,trainerBattle:false,enemy:null,flags:{},inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1}};this.genWorld();this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();this.saveGame();},350);},
+  startNewGame(){Au.cl();this.s={char:this._cc,team:[this.mkP(this._sc,5)],active:0,potions:5,lastPD:new Date().toDateString(),battlesWon:0,caughtCount:0,px:0,py:0,map:[],mw:0,mh:0,seed:0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,enemy:null,flags:{},quests:{},inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1}};this.genWorld();this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();this.saveGame();},350);},
   resumeGame(){Au.cl();this.refreshPot();if(this.s.team[this.s.active].hp<=0){const i=this.s.team.findIndex(p=>p.hp>0);if(i>=0)this.s.active=i;}this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();},350);},
 };
 
