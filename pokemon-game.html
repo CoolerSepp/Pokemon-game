@@ -223,6 +223,7 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
   <div class="overlay" id="ov-team"><div class="ov-title">Dein Team</div><div class="ov-grid" id="team-grid"></div><div id="team-detail"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeTeam()">Schliessen</button></div></div>
   <div class="overlay" id="ov-potions"><div class="ov-title">Heiltranke</div><p id="pot-info" style="color:#889;margin-bottom:12px;font-size:0.9em;"></p><div class="ov-grid" id="pot-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closePotions()">Schliessen</button></div></div>
   <div class="overlay" id="ov-switch"><div class="ov-title">Pokemon wechseln</div><div class="ov-grid" id="switch-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeSwitch()">Abbrechen</button></div></div>
+  <div class="overlay" id="ov-battle-item"><div class="ov-title">Heiltrank einsetzen</div><p id="battle-item-info" style="color:#889;margin-bottom:10px;font-size:0.85em;"></p><div class="ov-grid" id="battle-item-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeBattleItem()">Abbrechen</button></div></div>
   <div class="overlay" id="ov-quests"><div class="ov-title">Quests</div><div id="quest-list" style="width:100%;max-width:600px;"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeQuests()">Schliessen</button></div></div>
   <div class="overlay" id="ov-dex"><div class="ov-title">Pokedex</div><p id="dex-info" style="color:#889;margin-bottom:10px;font-size:0.9em;"></p><div class="ov-grid" id="dex-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeDex()">Schliessen</button></div></div>
   <div class="overlay" id="ov-shop">
@@ -1585,7 +1586,7 @@ const G = {
       if(e.key==='q'||e.key==='Q')this.openQuests();
       if(e.key==='x'||e.key==='X')this.openDex();
       if(e.key==='e'||e.key==='E'||e.key==='Enter'){e.preventDefault();this.interact();}
-      if(e.key==='Escape'){this.closeTeam();this.closePotions();this.closeSwitch();this.closeQuests();this.closeDex();this.closeShop();}
+      if(e.key==='Escape'){this.closeTeam();this.closePotions();this.closeSwitch();this.closeQuests();this.closeDex();this.closeShop();this.closeBattleItem();}
     });
     document.addEventListener('keyup',e=>{held[e.key]=false;});
     let ml=null;
@@ -1727,7 +1728,7 @@ const G = {
     if(this.s.battleOver){a.innerHTML=`<button class="btn btn-gold" onclick="G.endB()">Weiter</button>`;return;}
     const p=this.s.team[this.s.active];let h='';
     p.moves.forEach((m,i)=>{h+=`<button class="btn btn-blue" onclick="G.bAtk(${i})" title="${m.pow} Starke">${m.name}<span style="font-size:0.7em;display:block;color:#889;">${m.pow}</span></button>`;});
-    h+=`<button class="btn btn-blue" onclick="G.bSw()">Wechseln</button>`;
+    h+=`<button class="btn btn-blue" onclick="G.bSw()">Wechseln</button><button class="btn btn-blue" onclick="G.bItem()">\u{1F9EA} Heiltrank</button>`;
     if(!this.s.trainerBattle){h+=`<button class="btn btn-green" onclick="G.bCat()">Fangen</button><button class="btn btn-red" onclick="G.bRun()">Fliehen</button>`;}
     a.innerHTML=h;},
 
@@ -1787,6 +1788,41 @@ const G = {
     const ov=document.getElementById('ov-switch');ov.classList.add('on');const g=document.getElementById('switch-grid');g.innerHTML='';
     this.s.team.forEach((p,i)=>{if(i===this.s.active||p.hp<=0)return;const c=this.mkCard(p,i,false);c.onclick=async()=>{Au.cl();this.s.active=i;ov.classList.remove('on');this.bl(`${p.nm} eingewechselt!`);this.renderB();await this.w(300);const e=this.s.enemy,pl=this.s.team[this.s.active];const em=e.moves[Math.floor(Math.random()*e.moves.length)];const r=this.cD(e.atk,pl.def,em,e.t,pl.t,e.lv);pl.hp=Math.max(0,pl.hp-r.dmg);this.aS('player','hit');Au.hit();this.sDmg('player',r.dmg,r.crit);this.bl(`${e.nm}: ${em.name}! ${r.dmg}`);this.renderB();if(pl.hp<=0)this.hFaint();this.rBA();};g.appendChild(c);});},
   closeSwitch(){document.getElementById('ov-switch').classList.remove('on');},
+
+  bItem(){if(this.s.battleOver||this.battleBusy)return;
+    if((this.s.potions||0)<=0){this.bl('Keine Heiltranke mehr ubrig!');return;}
+    Au.cl();
+    const ov=document.getElementById('ov-battle-item');ov.classList.add('on');
+    document.getElementById('battle-item-info').textContent=`Heiltranke: ${this.s.potions}`;
+    const g=document.getElementById('battle-item-grid');g.innerHTML='';
+    this.s.team.forEach((p,i)=>{
+      const need=p.hp<p.mhp;
+      const c=this.mkCard(p,i,false);
+      const info=document.createElement('div');info.style.cssText='font-size:0.7em;margin-top:4px;';
+      if(need&&this.s.potions>0){
+        info.textContent=p.hp<=0?'Wiederbeleben':'Heilen';info.style.color='#4a4';
+        c.onclick=async()=>{
+          Au.cl();ov.classList.remove('on');this.battleBusy=true;
+          const wasFainted=p.hp<=0;
+          p.hp=p.mhp;this.s.potions--;
+          this.updateHud();this.saveGame();
+          this.bl(wasFainted?`${p.nm} wurde wiederbelebt!`:`${p.nm} wurde geheilt!`);
+          this.renderB();
+          await this.w(300);
+          const e=this.s.enemy,pl=this.s.team[this.s.active];
+          const em=e.moves[Math.floor(Math.random()*e.moves.length)];
+          const r=this.cD(e.atk,pl.def,em,e.t,pl.t,e.lv);
+          pl.hp=Math.max(0,pl.hp-r.dmg);this.aS('player','hit');Au.hit();this.sDmg('player',r.dmg,r.crit);
+          this.bl(`${e.nm}: ${em.name}! ${r.dmg}`);this.renderB();
+          if(pl.hp<=0){this.hFaint();return;}
+          this.battleBusy=false;this.rBA();
+        };
+      } else if(!need){info.textContent='Voll';info.style.color='#556';c.style.opacity='0.6';}
+      else {info.textContent='Keine Tranke';info.style.color='#a33';c.style.opacity='0.6';}
+      c.appendChild(info);g.appendChild(c);
+    });
+  },
+  closeBattleItem(){document.getElementById('ov-battle-item').classList.remove('on');},
 
   async bRun(){if(this.s.battleOver||this.battleBusy||this.s.trainerBattle)return;this.battleBusy=true;
     const p=this.s.team[this.s.active],ch=Math.max(0.2,Math.min(0.95,0.5+(p.spd-this.s.enemy.spd)*0.01));
