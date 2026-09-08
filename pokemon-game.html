@@ -1462,6 +1462,11 @@ const TRAINERS=[
 
 // ===================== STORY / QUESTS / NPCs =====================
 const QUESTS={
+  q0:{id:'q0',giverName:'Schicksal',name:'Hauptquest: Die Welt reparieren',
+    desc:'Die Welt zerbarst, als deine Reise begann. Nur wer alle drei Orden gewinnt und den Champion der Pokemon-Liga bezwingt, kann sie wieder heilen.',
+    check:s=>!!(s.flags.badgeR1&&s.flags.badgeR2&&s.flags.badgeR3&&s.flags.champion),
+    progress:s=>{const b=(s.flags.badgeR1?1:0)+(s.flags.badgeR2?1:0)+(s.flags.badgeR3?1:0);return `${b}/3 Orden, Champion: ${s.flags.champion?'besiegt':'noch offen'}`;},
+    reward:{}},
   q1:{id:'q1',giverName:'Professor Eichenholz',name:'Erste Schritte',desc:'Gewinne 3 Kampfe gegen wilde Pokemon.',
     check:s=>s.battlesWon>=3,progress:s=>Math.min(s.battlesWon,3)+'/3',reward:{potions:3,cash:50}},
   q2:{id:'q2',giverName:'Anwohnerin Lisa',name:'Pokemon-Sammler',desc:'Fange 3 wilde Pokemon.',
@@ -2511,7 +2516,7 @@ const G = {
         const wasChampion=this.s.gymFlag==='champion';
         this.s.flags[this.s.gymFlag]=true;this.s.gymFlag=null;
         cash*=wasChampion?5:3;
-        if(wasChampion){ vicMsg='Champion besiegt! Du bist Pokemon-Meister/in!'; setTimeout(()=>this.showEnding(),1200); }
+        if(wasChampion){ vicMsg='Champion besiegt! Du bist Pokemon-Meister/in!'; this.s.quests=this.s.quests||{}; this.s.quests.q0='completed'; setTimeout(()=>this.showEnding(),1200); }
         else{ vicMsg='Meister besiegt! Orden erhalten!'; this.popup('Orden erhalten!<div class="lvl-sub">Du hast den Arena-Meister besiegt!</div>','caught-popup',2600); }
       } else if(this.s.trainerFlag){this.s.flags[this.s.trainerFlag]=true;this.s.trainerFlag=null;vicMsg='Trainer besiegt!';}
       else{this.s.flags.rivalWins=(this.s.flags.rivalWins||0)+1;vicMsg='Rivale besiegt!';}
@@ -2600,14 +2605,17 @@ const G = {
   closeQuests(){document.getElementById('ov-quests').classList.remove('on');},
   rQL(){
     const el=document.getElementById('quest-list');
-    const entries=Object.keys(this.s.quests||{});
+    const entries=Object.keys(this.s.quests||{}).sort((a,b)=>(a==='q0'?-1:b==='q0'?1:0));
     if(entries.length===0){el.innerHTML='<p style="color:#667;">Noch keine Aufgaben angenommen. Sprich mit den Bewohnern im Dorf!</p>';return;}
     el.innerHTML=entries.map(qid=>{
       const q=QUESTS[qid];const st=this.s.quests[qid];
+      const isMain=qid==='q0';
       const ready=st!=='completed'&&q.check(this.s);
-      const statusTxt=st==='completed'?'Abgeschlossen':(ready?'Bereit zur Abgabe! Sprich mit '+q.giverName:'In Arbeit: '+q.progress(this.s));
+      const statusTxt=st==='completed'?'Abgeschlossen':(ready?(isMain?'Bereit! Werde jetzt Pokemon-Meister!':'Bereit zur Abgabe! Sprich mit '+q.giverName):'In Arbeit: '+q.progress(this.s));
       const color=st==='completed'?'#4a4':(ready?'#ffcc00':'#889');
-      return `<div style="background:#0e1520;border:1px solid #1a2a3a;border-radius:10px;padding:10px 14px;margin-bottom:8px;text-align:left;">
+      const style=isMain?'background:linear-gradient(135deg,#241a08,#150f04);border:2px solid #ffcc00;border-radius:10px;padding:10px 14px;margin-bottom:10px;text-align:left;box-shadow:0 0 14px rgba(255,204,0,0.15);':'background:#0e1520;border:1px solid #1a2a3a;border-radius:10px;padding:10px 14px;margin-bottom:8px;text-align:left;';
+      return `<div style="${style}">
+        ${isMain?'<div style="font-size:0.7em;color:#ffcc00;letter-spacing:1px;margin-bottom:2px;">★ HAUPTQUEST</div>':''}
         <div style="font-weight:700;color:#ddd;">${q.name}</div>
         <div style="font-size:0.85em;color:#889;margin:3px 0;">${q.desc}</div>
         <div style="font-size:0.8em;color:${color};">${statusTxt}</div>
@@ -2763,6 +2771,7 @@ const G = {
       region,regions,px:snap.px,py:snap.py,map:snap.map,mw:snap.mw,mh:snap.mh,randomTrainers:snap.randomTrainers||[],
       inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:d.flags||{},quests:d.quests||{},dex:d.dex||{},
       inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
+    if(!this.s.quests.q0){this.s.quests.q0=(this.s.flags.badgeR1&&this.s.flags.badgeR2&&this.s.flags.badgeR3&&this.s.flags.champion)?'completed':'active';}
     this.s.team.forEach(p=>this.rcP(p));
     const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
     if(region!=='r3'&&region!=='r4'){
@@ -2773,7 +2782,7 @@ const G = {
     this.s.currentNpcs=this.s.worldNpcs;
     return true;}catch(e){return false;}},
 
-  startNewGame(){Au.cl();this.s={char:this._cc,team:[this.mkP(this._sc,5)],active:0,potions:5,cash:50,lastPD:new Date().toDateString(),battlesWon:0,caughtCount:0,region:'r1',regions:{},px:0,py:0,map:[],mw:0,mh:0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:{},quests:{},dex:{},randomTrainers:[],inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
+  startNewGame(){Au.cl();this.s={char:this._cc,team:[this.mkP(this._sc,5)],active:0,potions:5,cash:50,lastPD:new Date().toDateString(),battlesWon:0,caughtCount:0,region:'r1',regions:{},px:0,py:0,map:[],mw:0,mh:0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:{},quests:{q0:'active'},dex:{},randomTrainers:[],inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
     this.s.dex[this._sc.id]='caught';
     this.genWorld('r1');
     this.playWorldCinematic({reverse:false,caption:'Eine neue Welt entsteht...'},()=>{
