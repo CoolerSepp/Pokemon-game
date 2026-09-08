@@ -205,7 +205,7 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
   <div id="scr-world" class="scr">
     <div id="hud">
       <div class="hud-l"><span id="h-trainer"></span><span id="h-house" style="color:#ffcc00;font-size:0.8em;margin-left:6px;"></span><div class="hud-pokemon"><span id="h-poke"></span><div class="hud-hp-bar"><div class="hud-hp-fill" id="h-hp-fill"></div></div><span id="h-hp-text" style="font-size:0.75em;color:#889;margin-left:4px;"></span></div></div>
-      <div class="hud-r"><span class="potion-ct" id="h-potions"></span><span id="h-cash" style="color:#ffd860;font-weight:600;"></span><span id="h-battles" style="color:#556;font-size:0.8em;"></span><button class="hud-btn" onclick="G.openTeam()">Team</button><button class="hud-btn" onclick="G.openPotions()">Heilen</button><button class="hud-btn" onclick="G.openQuests()">Quests</button><button class="hud-btn" onclick="G.openDex()">Dex</button></div>
+      <div class="hud-r"><span class="potion-ct" id="h-potions"></span><span id="h-cash" style="color:#ffd860;font-weight:600;"></span><span id="h-badges" style="color:#e0a020;font-weight:600;"></span><span id="h-battles" style="color:#556;font-size:0.8em;"></span><button class="hud-btn" onclick="G.openTeam()">Team</button><button class="hud-btn" onclick="G.openPotions()">Heilen</button><button class="hud-btn" onclick="G.openQuests()">Quests</button><button class="hud-btn" onclick="G.openDex()">Dex</button></div>
     </div>
     <canvas id="world-canvas"></canvas>
   </div>
@@ -759,6 +759,195 @@ const Sprites = {
     ctx.fillRect(x + 8.7*p, y + 3*p, 1.2*p, 0.8*p);
   },
 
+  // ===== Frost-region theme: a bright ice/snow palette for the third region =====
+  grassTileFrost(ctx, s) {
+    const g1=[210,230,240], g2=[190,215,228], g3=[230,244,250];
+    ctx.fillStyle=`rgb(${g1[0]},${g1[1]},${g1[2]})`; ctx.fillRect(0,0,s,s);
+    for (let i=0;i<8;i++){ const x=(i*37+5)%s, y=(i*23+7)%s; ctx.fillStyle=`rgb(${g2[0]},${g2[1]},${g2[2]})`; ctx.fillRect(x,y,2,2); }
+    for (let i=0;i<4;i++){ const x=(i*29+13)%s, y=(i*41+3)%s; ctx.fillStyle=`rgb(${g3[0]},${g3[1]},${g3[2]})`; ctx.fillRect(x,y,1,2); }
+  },
+  tallGrassTileFrost(ctx, s, frame) {
+    this.grassTileFrost(ctx,s);
+    const cols=['#a8c8dc','#88b0c8','#c0dceb','#98bcd0'];
+    const sway=Math.sin(frame*0.05)*2;
+    for (let i=0;i<6;i++){
+      const bx=(i*11+3)%(s-4), by=s-4-(i*7%12);
+      ctx.fillStyle=cols[i%cols.length];
+      ctx.fillRect(bx+sway*(i%2?1:-1),by,2,-(6+i%4));
+      ctx.fillRect(bx+2+sway*(i%2?-1:1),by-2,2,-(5+i%3));
+    }
+  },
+  waterTileFrost(ctx, s, frame) {
+    const t=frame*0.03;
+    for (let y=0;y<s;y++){ for (let x=0;x<s;x++){
+      const wave=Math.sin(x*0.3+t*3)*8+Math.sin(y*0.2+t*2)*6;
+      const r=40+wave*0.6, g=110+wave*0.8, b=180+wave;
+      ctx.fillStyle=`rgb(${Math.max(0,Math.min(255,r|0))},${Math.max(0,Math.min(255,g|0))},${Math.max(0,Math.min(255,b|0))})`;
+      ctx.fillRect(x,y,1,1);
+    }}
+    const hx=((frame*0.5)%s);
+    ctx.fillStyle='rgba(230,245,255,0.35)';
+    ctx.fillRect(hx,s*0.3,6,2);
+    ctx.fillRect((hx+s/2)%s,s*0.7,4,1);
+  },
+  treeTileFrost(ctx, s) {
+    ctx.fillStyle='#5a4a3a'; ctx.fillRect(s*0.35,s*0.55,s*0.3,s*0.45);
+    ctx.fillStyle='#463828'; ctx.fillRect(s*0.38,s*0.6,s*0.08,s*0.35);
+    const greens=['#1a4838','#225840','#2a6a48','#1e5a3e'];
+    const shapes=[[s*0.1,s*0.3,s*0.8,s*0.35],[s*0.15,s*0.15,s*0.7,s*0.3],[s*0.25,s*0.02,s*0.5,s*0.25]];
+    shapes.forEach((sh,i)=>{ ctx.fillStyle=greens[i]; ctx.beginPath(); ctx.ellipse(sh[0]+sh[2]/2, sh[1]+sh[3]/2, sh[2]/2, sh[3]/2, 0,0,Math.PI*2); ctx.fill(); });
+    // snow caps
+    ctx.fillStyle='rgba(240,250,255,0.85)';
+    ctx.beginPath(); ctx.ellipse(s*0.5,s*0.12,s*0.22,s*0.08,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(s*0.32,s*0.32,s*0.14,s*0.06,0,0,Math.PI*2); ctx.fill();
+  },
+  rockTileFrost(ctx, s) {
+    ctx.fillStyle='#c8dce8'; ctx.fillRect(0,0,s,s);
+    const grd=ctx.createLinearGradient(s*0.2,s*0.15,s*0.8,s*0.85);
+    grd.addColorStop(0,'#e8f4fa'); grd.addColorStop(0.5,'#a8c4d4'); grd.addColorStop(1,'#7090a4');
+    ctx.fillStyle=grd;
+    ctx.beginPath();
+    ctx.moveTo(s*0.15,s*0.85); ctx.lineTo(s*0.1,s*0.5); ctx.lineTo(s*0.3,s*0.15); ctx.lineTo(s*0.7,s*0.12); ctx.lineTo(s*0.9,s*0.45); ctx.lineTo(s*0.85,s*0.85);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.beginPath(); ctx.moveTo(s*0.3,s*0.2); ctx.lineTo(s*0.5,s*0.15); ctx.lineTo(s*0.4,s*0.4); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='#587888'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(s*0.4,s*0.3); ctx.lineTo(s*0.5,s*0.55); ctx.lineTo(s*0.6,s*0.5); ctx.stroke();
+  },
+  pathTileFrost(ctx, s) {
+    ctx.fillStyle='#e8f2f8'; ctx.fillRect(0,0,s,s);
+    const cols=['#d8e8f0','#f0f8fc','#c8dce8','#e0eef4'];
+    for (let i=0;i<12;i++){ ctx.fillStyle=cols[i%cols.length]; const x=(i*31+7)%(s-3), y=(i*23+11)%(s-3); ctx.fillRect(x,y,2+i%2,1+i%2); }
+    ctx.fillStyle='rgba(120,150,170,0.1)'; ctx.fillRect(0,0,s,2); ctx.fillRect(0,0,2,s);
+  },
+  sandTileFrost(ctx, s) {
+    ctx.fillStyle='#f0f8fc'; ctx.fillRect(0,0,s,s);
+    for (let i=0;i<10;i++){ ctx.fillStyle = i%2 ? '#e0eef4' : '#ffffff'; const x=(i*29+5)%(s-2), y=(i*19+3)%(s-2); ctx.fillRect(x,y,2,1); }
+  },
+  flowerTileFrost(ctx, s, mx, my) {
+    this.grassTileFrost(ctx,s);
+    const colors=[['#3090d0','#60b0e8'],['#e04868','#ff7090'],['#a0e0f0','#d0f4ff'],['#8060e0','#a888ff'],['#40c0a0','#70e0c0']];
+    const fc=colors[(mx*7+my*13)%colors.length];
+    const cx=s/2, cy=s/2;
+    ctx.fillStyle=fc[0];
+    for (let a=0;a<5;a++){ const angle=a*Math.PI*2/5; const px=cx+Math.cos(angle)*s*0.15, py=cy+Math.sin(angle)*s*0.15; ctx.beginPath(); ctx.arc(px,py,s*0.1,0,Math.PI*2); ctx.fill(); }
+    ctx.fillStyle=fc[1]; ctx.beginPath(); ctx.arc(cx,cy,s*0.08,0,Math.PI*2); ctx.fill();
+  },
+  bridgeTileFrost(ctx, s) {
+    ctx.fillStyle='#3070b0'; ctx.fillRect(0,0,s,s);
+    ctx.fillStyle='#7a6248'; ctx.fillRect(s*0.1,0,s*0.8,s);
+    ctx.strokeStyle='#5a4a34'; ctx.lineWidth=1;
+    for (let y=0;y<s;y+=s/4){ ctx.beginPath(); ctx.moveTo(s*0.1,y); ctx.lineTo(s*0.9,y); ctx.stroke(); }
+    ctx.fillStyle='#4a3a28'; ctx.fillRect(s*0.08,0,s*0.06,s); ctx.fillRect(s*0.86,0,s*0.06,s);
+    ctx.fillStyle='#e8f4fa';
+    for (let y=s*0.12;y<s;y+=s/4){ ctx.fillRect(s*0.1,y,2,2); ctx.fillRect(s*0.86,y,2,2); }
+  },
+  roofTileFrost(ctx, s, part) {
+    ctx.fillStyle='#c8dce8'; ctx.fillRect(0,0,s,s);
+    const roofCol='#2868a0', roofDark='#1a4a78', roofLight='#5090c8';
+    ctx.fillStyle=roofCol;
+    if (part==='L'){ ctx.beginPath(); ctx.moveTo(s*0.2,s); ctx.lineTo(s,s*0.3); ctx.lineTo(s,s); ctx.closePath(); ctx.fill(); }
+    else if (part==='R'){ ctx.beginPath(); ctx.moveTo(s*0.8,s); ctx.lineTo(0,s*0.3); ctx.lineTo(0,s); ctx.closePath(); ctx.fill(); }
+    else { ctx.beginPath(); ctx.moveTo(0,s*0.3); ctx.lineTo(s/2,0); ctx.lineTo(s,s*0.3); ctx.lineTo(s,s); ctx.lineTo(0,s); ctx.closePath(); ctx.fill();
+      ctx.fillStyle=roofLight; ctx.beginPath(); ctx.moveTo(s/2,0); ctx.lineTo(s*0.65,s*0.25); ctx.lineTo(s*0.35,s*0.25); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle='rgba(255,255,255,0.7)'; ctx.fillRect(0,s*0.82,s,s*0.1);
+    ctx.fillStyle=roofDark; ctx.fillRect(0,s*0.9,s,s*0.1);
+  },
+  houseWallTileFrost(ctx, s, part) {
+    ctx.fillStyle='#e0ecf2'; ctx.fillRect(0,0,s,s);
+    ctx.strokeStyle='#c0d4e0'; ctx.lineWidth=1;
+    for (let y=s*0.2;y<s;y+=s*0.25){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(s,y); ctx.stroke(); }
+    const wx = part==='L'? s*0.3 : s*0.15;
+    ctx.fillStyle='#3070b0'; ctx.fillRect(wx,s*0.15,s*0.4,s*0.35);
+    ctx.strokeStyle='#1a4a78'; ctx.strokeRect(wx,s*0.15,s*0.4,s*0.35);
+    ctx.fillStyle='#80b8e0'; ctx.fillRect(wx+s*0.03,s*0.18,s*0.15,s*0.13);
+  },
+  doorTileFrost(ctx, s, exit) {
+    ctx.fillStyle='#e0ecf2'; ctx.fillRect(0,0,s,s);
+    ctx.fillStyle= exit ? '#3a5a30':'#5a4030';
+    ctx.fillRect(s*0.15,s*0.05,s*0.7,s*0.95);
+    ctx.fillStyle='#302010'; ctx.fillRect(s*0.15,s*0.05,s*0.7,s*0.1);
+    ctx.fillStyle='#ffd860'; ctx.beginPath(); ctx.arc(s*0.75,s*0.55,s*0.05,0,Math.PI*2); ctx.fill();
+  },
+  floorTileFrost(ctx, s) {
+    ctx.fillStyle='#d8e8f0'; ctx.fillRect(0,0,s,s);
+    ctx.strokeStyle='#c0d4e0'; ctx.lineWidth=1; ctx.strokeRect(0,0,s,s);
+    ctx.beginPath(); ctx.moveTo(0,s*0.5); ctx.lineTo(s,s*0.5); ctx.stroke();
+  },
+  interiorWallTileFrost(ctx, s) {
+    ctx.fillStyle='#a8c4d4'; ctx.fillRect(0,0,s,s);
+    ctx.fillStyle='#8ca8b8'; for (let y=0;y<s;y+=s*0.3) ctx.fillRect(0,y,s,2);
+  },
+  drawDecorFrost(ctx, x, y, s, type) {
+    if (type === 0) {
+      ctx.fillStyle='#e8f4fa'; ctx.beginPath(); ctx.arc(x+s*0.3,y+s*0.7,s*0.18,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#f8fcff'; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.6,s*0.2,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#e8f4fa'; ctx.beginPath(); ctx.arc(x+s*0.7,y+s*0.7,s*0.16,0,Math.PI*2); ctx.fill();
+    } else if (type === 1) {
+      ctx.fillStyle='#d8e8f0'; ctx.fillRect(x+s*0.45,y+s*0.6,s*0.1,s*0.2);
+      ctx.fillStyle='#3090d0'; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.55,s*0.15,Math.PI,0); ctx.fill();
+      ctx.fillStyle='#e0f4ff'; ctx.beginPath(); ctx.arc(x+s*0.45,y+s*0.48,s*0.03,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x+s*0.55,y+s*0.45,s*0.025,0,Math.PI*2); ctx.fill();
+    } else {
+      ctx.fillStyle='#b0ccd8'; ctx.beginPath(); ctx.arc(x+s*0.3,y+s*0.75,s*0.06,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#98b8c8'; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.8,s*0.05,0,Math.PI*2); ctx.fill();
+    }
+  },
+
+  // Fur-cloaked frost folk with a visible, rosy-cheeked face
+  drawFrostFolk(ctx, x, y, size, frame, coatColor, trim) {
+    const s = size, p = s / 16;
+    const coat = coatColor || '#3070b0';
+    const coatDark = this.shade(coat, -25);
+    const fur = trim || '#f0f4f8';
+    const skin = '#f0c8a8';
+    const walk = Math.sin(frame * 0.15) * p;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath(); ctx.ellipse(x + s/2, y + s - p, s*0.35, p*1.5, 0, 0, Math.PI*2); ctx.fill();
+
+    // legs/boots
+    ctx.fillStyle = '#503828';
+    ctx.fillRect(x + 4*p, y + 13*p + walk, 3*p, 3*p);
+    ctx.fillRect(x + 9*p, y + 13*p - walk, 3*p, 3*p);
+
+    // arms
+    ctx.fillStyle = coat;
+    ctx.fillRect(x + 1.5*p, y + 7*p + walk*0.3, 2*p, 5*p);
+    ctx.fillRect(x + 12.5*p, y + 7*p - walk*0.3, 2*p, 5*p);
+
+    // coat body
+    ctx.fillStyle = coat;
+    ctx.fillRect(x + 3*p, y + 6*p, 10*p, 8*p);
+    ctx.fillStyle = coatDark;
+    ctx.fillRect(x + 7*p, y + 7*p, 1*p, 6*p);
+
+    // fur collar
+    ctx.fillStyle = fur;
+    ctx.fillRect(x + 3*p, y + 5*p, 10*p, 2*p);
+
+    // head
+    ctx.fillStyle = skin;
+    ctx.fillRect(x + 4*p, y + 1*p, 8*p, 5*p);
+    // rosy cheeks
+    ctx.fillStyle = 'rgba(230,110,110,0.5)';
+    ctx.beginPath(); ctx.arc(x + 5.2*p, y + 4*p, 0.9*p, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 10.8*p, y + 4*p, 0.9*p, 0, Math.PI*2); ctx.fill();
+
+    // fur hood
+    ctx.fillStyle = fur;
+    ctx.fillRect(x + 3*p, y + 0*p, 10*p, 2*p);
+    ctx.fillRect(x + 3*p, y + 2*p, 2*p, 2*p);
+    ctx.fillRect(x + 11*p, y + 2*p, 2*p, 2*p);
+    ctx.fillStyle = coat;
+    ctx.fillRect(x + 4*p, y + 0*p, 8*p, 1.2*p);
+
+    // eyes
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(x + 6*p, y + 3*p, 1*p, 1*p);
+    ctx.fillRect(x + 9*p, y + 3*p, 1*p, 1*p);
+  },
+
   // Draw pixel-art character
   drawCharacter(ctx, x, y, size, dir, frame, color, shirtColor) {
     const s = size;
@@ -955,6 +1144,12 @@ const QUESTS={
     check:s=>s.battlesWon>=25,progress:s=>Math.min(s.battlesWon,25)+'/25',reward:{potions:5,cash:200}},
   q8:{id:'q8',giverName:'Krauterfrau Toni',name:'Wahre Meisterschaft',desc:'Bringe ein Pokemon auf Level 25.',
     check:s=>s.team.some(p=>p.lv>=25),progress:s=>Math.max(...s.team.map(p=>p.lv))+'/25',reward:{potions:6,cash:250}},
+  q9:{id:'q9',giverName:'Hueterin Frigga',name:'Bezwinge die Kalte',desc:'Gewinne insgesamt 35 Kampfe.',
+    check:s=>s.battlesWon>=35,progress:s=>Math.min(s.battlesWon,35)+'/35',reward:{potions:6,cash:250}},
+  q10:{id:'q10',giverName:'Kristallschurfer Finn',name:'Eisiger Meister',desc:'Bringe ein Pokemon auf Level 30.',
+    check:s=>s.team.some(p=>p.lv>=30),progress:s=>Math.max(...s.team.map(p=>p.lv))+'/30',reward:{potions:7,cash:300}},
+  q11:{id:'q11',giverName:'Schneejagerin Runa',name:'Seltene Beute',desc:'Fange ein Pokemon der Stufe 4.',
+    check:s=>s.team.some(p=>p.tier>=4),progress:s=>s.team.some(p=>p.tier>=4)?'1/1':'0/1',reward:{potions:8,cash:350}},
 };
 function questStatus(qid,s){
   const st=(s.quests||{})[qid];
@@ -1037,6 +1232,37 @@ function conductorLines(s){
   return ['Der Zug zur Schattenregion steht bereit. Einsteigen?'];
 }
 function returnConductorLines(){ return ['Der Zug zuruck ins Heimatdorf steht bereit. Einsteigen?']; }
+function yaraLines(s){
+  if(!s.flags.badgeR2) return ['Hinter mir liegt eine weitere, unerforschte Region.','Doch der Weg ist versperrt - erst wer den Meister der Schattenarena bezwingt, darf weiterreisen.'];
+  return ['Du hast dich als Meister/in bewiesen! Bereit fur die Frostregion?'];
+}
+function junoLines(){ return ['Der Zug zuruck in die Schattenregion steht bereit. Einsteigen?']; }
+function friggaLines(s){
+  const st=questStatus('q9',s);
+  if(st==='none') return ['Willkommen in der Frostregion, Reisende/r.','Hier zahlt nur, wer eisige Entschlossenheit beweist: Gewinne insgesamt 35 Kampfe.'];
+  if(st==='ready') return ['35 Siege trotz der Kalte! Beeindruckend. Hier, nimm das.'];
+  if(st==='active') return [`Fortschritt: ${QUESTS.q9.progress(s)}.`];
+  return ['Tief im ewigen Eis schlummern uralte Geheimnisse...'];
+}
+function finnLines(s){
+  const st=questStatus('q10',s);
+  if(st==='none') return ['Ich schurfe seit Jahren Kristalle in diesem Eis.','Bringe ein Pokemon auf Level 30, dann teile ich meinen besten Fund mit dir.'];
+  if(st==='ready') return ['Level 30! Ein wahrer eisiger Meister. Hier, nimm das.'];
+  if(st==='active') return [`Fortschritt: ${QUESTS.q10.progress(s)}.`];
+  return ['Die tiefsten Hohlen bergen die wertvollsten Kristalle.'];
+}
+function runaLines(s){
+  const st=questStatus('q11',s);
+  if(st==='none') return ['Ich jage die seltensten Pokemon dieser Region.','Fang eines der Stufe 4, und ich zeige dir meinen Respekt.'];
+  if(st==='ready') return ['Ein Pokemon der Stufe 4! Unglaublich. Hier, nimm das.'];
+  if(st==='active') return [`Fortschritt: ${QUESTS.q11.progress(s)}.`];
+  return ['Die machtigsten Pokemon verstecken sich weit draussen im Schnee.'];
+}
+function bjornLines(){ return ['Ich habe schon manchen Sturm auf dem zugefrorenen See uberlebt.','Auch hier gibt es einen Laden - schau doch mal vorbei.']; }
+function nieveLines(){ return ['Willkommen in meinem Laden!','Selbst hier am Ende der Welt gibt es Heiltranke und starkendes Futter.']; }
+function arena1Lines(s){ return s.flags.badgeR1?['Meister Boreas: Du hast meinen Orden bereits verdient. Gut gemacht!']:['Meister Boreas: Willkommen in der Arena! Zeig mir deine Starke im Kampf!']; }
+function arena2Lines(s){ return s.flags.badgeR2?['Meister Voss: Den Orden der Schattenarena hast du bereits verdient...']:['Meister Voss: Nur die Starksten bestehen in der Schattenarena!']; }
+function arena3Lines(s){ return s.flags.badgeR3?['Meisterin Elsa: Du bist bereits eine wurdige Meisterin des Eises.']:['Meisterin Elsa: In der Frostarena zahlt nur eisige Entschlossenheit!']; }
 
 const HOUSES={
   lab:{name:'Pokemon-Labor',npc:{name:'Professor Eichenholz',shirt:'#f0f0f0',hair:'#3a2a1a',lines:s=>professorLines(s),
@@ -1068,6 +1294,21 @@ const HOUSES={
     onEnd:()=>{ G.openShop(); }}},
   v5:{name:'Wohnhaus',npc:{name:'Geisterseherin Vala',shirt:'#5030a0',hair:'#e0e0f0',lines:()=>v5Lines()}},
   v6:{name:'Schmiede',npc:{name:'Schmied Boris',shirt:'#704020',hair:'#302010',lines:()=>v6Lines()}},
+  arena1:{name:'Arena',npc:{name:'Meister Boreas',shirt:'#c04020',hair:'#202020',lines:s=>arena1Lines(s),
+    onEnd:()=>{ if(!G.s.flags.badgeR1) setTimeout(()=>G.startGymBattle('badgeR1','Meister Boreas',3,5),200); }}},
+  arena2:{name:'Schattenarena',npc:{name:'Meister Voss',shirt:'#3a1a50',hair:'#101010',lines:s=>arena2Lines(s),
+    onEnd:()=>{ if(!G.s.flags.badgeR2) setTimeout(()=>G.startGymBattle('badgeR2','Meister Voss',4,8),200); }}},
+  arena3:{name:'Frostarena',npc:{name:'Meisterin Elsa',shirt:'#2060a0',hair:'#e0f0ff',lines:s=>arena3Lines(s),
+    onEnd:()=>{ if(!G.s.flags.badgeR3) setTimeout(()=>G.startGymBattle('badgeR3','Meisterin Elsa',4,10),200); }}},
+  f1:{name:'Haus der Huterin',npc:{name:'Hueterin Frigga',shirt:'#3070b0',hair:'#e0f0ff',lines:s=>friggaLines(s),
+    onEnd:()=>{ const s=G.s; const st=questStatus('q9',s); if(st==='none')startQuest('q9'); else if(st==='ready')completeQuest('q9'); }}},
+  f2:{name:'Frost-Basar',npc:{name:'Handlerin Nieve',shirt:'#80c0e0',hair:'#f0f4f8',lines:()=>nieveLines(),
+    onEnd:()=>{ G.openShop(); }}},
+  f3:{name:'Wohnhaus',npc:{name:'Kristallschurfer Finn',shirt:'#508090',hair:'#302010',lines:s=>finnLines(s),
+    onEnd:()=>{ const s=G.s; const st=questStatus('q10',s); if(st==='none')startQuest('q10'); else if(st==='ready')completeQuest('q10'); }}},
+  f4:{name:'Wohnhaus',npc:{name:'Schneejagerin Runa',shirt:'#204868',hair:'#d0d8e0',lines:s=>runaLines(s),
+    onEnd:()=>{ const s=G.s; const st=questStatus('q11',s); if(st==='none')startQuest('q11'); else if(st==='ready')completeQuest('q11'); }}},
+  f5:{name:'Hutte',npc:{name:'Alter Fischer Bjorn',shirt:'#405860',hair:'#c0c0c0',lines:()=>bjornLines()}},
 };
 
 // Random wandering trainers scattered across the map
@@ -1085,11 +1326,16 @@ const TE={fire:{grass:2,water:.5,fire:.5,ice:2,rock:.5,dragon:.5},water:{fire:2,
 const T={GRASS:0,TALL:1,WATER:2,TREE:3,ROCK:4,PATH:5,FLOWER:6,SAND:7,BRIDGE:8,
   ROOFL:9,ROOFM:10,ROOFR:11,WALLL:12,WALLR:13,DOOR_LAB:14,DOOR_RIVAL:15,DOOR_V1:16,DOOR_V2:17,
   FLOOR:18,IWALL:19,EXITDOOR:20,DOOR_SHOP:21,DOOR_ELDER2:22,DOOR_V3:23,DOOR_V4:24,DOOR_SHOP2:25,
-  DOOR_V5:26,DOOR_V6:27};
-const TW=new Set([T.GRASS,T.TALL,T.PATH,T.FLOWER,T.SAND,T.BRIDGE,T.DOOR_LAB,T.DOOR_RIVAL,T.DOOR_V1,T.DOOR_V2,T.DOOR_SHOP,T.DOOR_ELDER2,T.DOOR_V3,T.DOOR_V4,T.DOOR_SHOP2,T.DOOR_V5,T.DOOR_V6]);
+  DOOR_V5:26,DOOR_V6:27,DOOR_ARENA1:28,DOOR_ARENA2:29,DOOR_ARENA3:30,
+  DOOR_F1:31,DOOR_F2:32,DOOR_F3:33,DOOR_F4:34,DOOR_F5:35};
+const TW=new Set([T.GRASS,T.TALL,T.PATH,T.FLOWER,T.SAND,T.BRIDGE,T.DOOR_LAB,T.DOOR_RIVAL,T.DOOR_V1,T.DOOR_V2,T.DOOR_SHOP,T.DOOR_ELDER2,T.DOOR_V3,T.DOOR_V4,T.DOOR_SHOP2,T.DOOR_V5,T.DOOR_V6,
+  T.DOOR_ARENA1,T.DOOR_ARENA2,T.DOOR_ARENA3,T.DOOR_F1,T.DOOR_F2,T.DOOR_F3,T.DOOR_F4,T.DOOR_F5]);
 const IW=new Set([T.FLOOR,T.EXITDOOR]);
-const DOOR_HOUSE={[T.DOOR_LAB]:'lab',[T.DOOR_RIVAL]:'rival',[T.DOOR_V1]:'v1',[T.DOOR_V2]:'v2',[T.DOOR_SHOP]:'shop',[T.DOOR_ELDER2]:'elder2',[T.DOOR_V3]:'v3',[T.DOOR_V4]:'v4',[T.DOOR_SHOP2]:'shop2',[T.DOOR_V5]:'v5',[T.DOOR_V6]:'v6'};
+const DOOR_HOUSE={[T.DOOR_LAB]:'lab',[T.DOOR_RIVAL]:'rival',[T.DOOR_V1]:'v1',[T.DOOR_V2]:'v2',[T.DOOR_SHOP]:'shop',[T.DOOR_ELDER2]:'elder2',[T.DOOR_V3]:'v3',[T.DOOR_V4]:'v4',[T.DOOR_SHOP2]:'shop2',[T.DOOR_V5]:'v5',[T.DOOR_V6]:'v6',
+  [T.DOOR_ARENA1]:'arena1',[T.DOOR_ARENA2]:'arena2',[T.DOOR_ARENA3]:'arena3',
+  [T.DOOR_F1]:'f1',[T.DOOR_F2]:'f2',[T.DOOR_F3]:'f3',[T.DOOR_F4]:'f4',[T.DOOR_F5]:'f5'};
 const TILE=32;
+function villRFor(region){ return region==='r2'?18:(region==='r3'?13:9); }
 
 // ===================== GAME =====================
 const G = {
@@ -1162,6 +1408,28 @@ const G = {
     c2.exitdoor = Sprites.getTile('exitdoorS', s, (c,sz) => Sprites.doorTileShadow(c,sz,true));
     c2.floor = Sprites.getTile('floorS', s, (c,sz) => Sprites.floorTileShadow(c,sz));
     c2.iwall = Sprites.getTile('iwallS', s, (c,sz) => Sprites.interiorWallTileShadow(c,sz));
+
+    // Frost-region variants (Frostregion)
+    this.tileCacheR3 = {};
+    const c3 = this.tileCacheR3;
+    c3.grass = Sprites.getTile('grassF', s, (c,sz) => Sprites.grassTileFrost(c,sz));
+    c3.tree = Sprites.getTile('treeF', s, (c,sz) => Sprites.treeTileFrost(c,sz));
+    c3.rock = Sprites.getTile('rockF', s, (c,sz) => Sprites.rockTileFrost(c,sz));
+    c3.path = Sprites.getTile('pathF', s, (c,sz) => Sprites.pathTileFrost(c,sz));
+    c3.sand = Sprites.getTile('sandF', s, (c,sz) => Sprites.sandTileFrost(c,sz));
+    c3.bridge = Sprites.getTile('bridgeF', s, (c,sz) => Sprites.bridgeTileFrost(c,sz));
+    for (let v = 0; v < 5; v++) {
+      c3['flower'+v] = Sprites.getTile('flowerF'+v, s, (c,sz) => Sprites.flowerTileFrost(c,sz,v,v*3));
+    }
+    c3.roofL = Sprites.getTile('roofLF', s, (c,sz) => Sprites.roofTileFrost(c,sz,'L'));
+    c3.roofM = Sprites.getTile('roofMF', s, (c,sz) => Sprites.roofTileFrost(c,sz,'M'));
+    c3.roofR = Sprites.getTile('roofRF', s, (c,sz) => Sprites.roofTileFrost(c,sz,'R'));
+    c3.wallL = Sprites.getTile('wallLF', s, (c,sz) => Sprites.houseWallTileFrost(c,sz,'L'));
+    c3.wallR = Sprites.getTile('wallRF', s, (c,sz) => Sprites.houseWallTileFrost(c,sz,'R'));
+    c3.door = Sprites.getTile('doorF', s, (c,sz) => Sprites.doorTileFrost(c,sz,false));
+    c3.exitdoor = Sprites.getTile('exitdoorF', s, (c,sz) => Sprites.doorTileFrost(c,sz,true));
+    c3.floor = Sprites.getTile('floorF', s, (c,sz) => Sprites.floorTileFrost(c,sz));
+    c3.iwall = Sprites.getTile('iwallF', s, (c,sz) => Sprites.interiorWallTileFrost(c,sz));
   },
 
   startAnimLoop() {
@@ -1237,11 +1505,18 @@ const G = {
     if(region==='r2'){
       return [
         {x:12,y:sy,name:'Schaffnerin Yara',shirt:'#204040',hair:'#e0d0a0',
-          lines:()=>returnConductorLines(),
-          onEnd:()=>{ G.startTrainJourney('r1'); }},
+          lines:s=>yaraLines(s),
+          onEnd:()=>{ if(G.s.flags.badgeR2) G.startTrainJourney('r3'); }},
         {x:sx,y:sy-2,name:'Schaffner Elrik',shirt:'#402040',hair:'#d0c0a0',
           lines:()=>returnConductorLines(),
           onEnd:()=>{ G.startTrainJourney('r1'); }},
+      ];
+    }
+    if(region==='r3'){
+      return [
+        {x:sx,y:sy-2,name:'Schaffner Juno',shirt:'#5090c0',hair:'#e0f0ff',
+          lines:()=>junoLines(),
+          onEnd:()=>{ G.startTrainJourney('r2'); }},
       ];
     }
     return [
@@ -1293,7 +1568,7 @@ const G = {
       this.s.map=snap.map;this.s.mw=snap.mw;this.s.mh=snap.mh;this.s.px=snap.px;this.s.py=snap.py;
       this.s.randomTrainers=snap.randomTrainers||[];
       const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
-      this.fixConductorCorridor(this.s.map,target,sx,sy,this.s.mw,this.s.mh,target==='r2'?13:9);
+      if(target!=='r3') this.fixConductorCorridor(this.s.map,target,sx,sy,this.s.mw,this.s.mh,villRFor(target));
       this.s.worldNpcs=this.buildFixedNpcs(target,sx,sy,this.s.mw).concat(this.s.randomTrainers.map(buildRandomTrainerNpc));
       this.s.currentNpcs=this.s.worldNpcs;
     }
@@ -1305,7 +1580,7 @@ const G = {
   genWorld(region) {
     region=region||'r1';
     this.s.region=region;
-    const W=region==='r2'?100:150,H=region==='r2'?100:150;
+    const W=region==='r2'?100:(region==='r3'?110:150),H=region==='r2'?100:(region==='r3'?110:150);
     this.s.mw=W;this.s.mh=H;
     const seed = Math.floor(Math.random()*99999);
     Noise.init(seed);
@@ -1369,7 +1644,7 @@ const G = {
 
     // Clear village around spawn (guarantees houses never land on water/trees)
     const sx=Math.floor(W/2),sy=Math.floor(H/2);
-    const villR=region==='r2'?13:9;
+    const villR=villRFor(region);
     for(let dy=-villR;dy<=villR;dy++)for(let dx=-villR;dx<=villR;dx++){
       const ny=sy+dy,nx=sx+dx;
       if(ny<3||ny>=H-3||nx<3||nx>=W-3)continue;
@@ -1383,38 +1658,49 @@ const G = {
       if(doorY+1<H)m[doorY+1][doorX]=T.PATH;
     };
     if(region==='r2'){
-      // Larger village: two rows of three houses
+      // Larger village: two rows of three houses, plus the arena further south
       placeHouse(sx-8,sy-8,T.DOOR_ELDER2);
       placeHouse(sx,sy-8,T.DOOR_SHOP2);
       placeHouse(sx+8,sy-8,T.DOOR_V3);
       placeHouse(sx-8,sy+5,T.DOOR_V4);
       placeHouse(sx,sy+5,T.DOOR_V5);
       placeHouse(sx+8,sy+5,T.DOOR_V6);
+      placeHouse(sx,sy+16,T.DOOR_ARENA2);
+    } else if(region==='r3'){
+      // Frost village: two rows of three houses, including the arena
+      placeHouse(sx-8,sy-8,T.DOOR_F1);
+      placeHouse(sx,sy-8,T.DOOR_F2);
+      placeHouse(sx+8,sy-8,T.DOOR_F3);
+      placeHouse(sx-8,sy+5,T.DOOR_F4);
+      placeHouse(sx,sy+5,T.DOOR_F5);
+      placeHouse(sx+8,sy+5,T.DOOR_ARENA3);
     } else {
       placeHouse(sx-6,sy-6,T.DOOR_LAB);
+      placeHouse(sx,sy-6,T.DOOR_ARENA1);
       placeHouse(sx+6,sy-6,T.DOOR_RIVAL);
       placeHouse(sx-6,sy+4,T.DOOR_V1);
       placeHouse(sx+6,sy+4,T.DOOR_V2);
       placeHouse(sx,sy+4,T.DOOR_SHOP);
     }
 
-    this.fixConductorCorridor(m,region,sx,sy,W,H,villR);
+    if(region!=='r3') this.fixConductorCorridor(m,region,sx,sy,W,H,villR);
 
     // Scatter random trainers across the wider map (away from the village, further = stronger)
     const randomTrainers=[];
     let attempts=0;
-    const numTrainers=region==='r2'?14:20;
+    const numTrainers=region==='r2'?14:(region==='r3'?16:20);
+    const minDist=region==='r2'?16:(region==='r3'?18:11);
+    const tierBonus=region==='r2'?1:(region==='r3'?2:0);
     while(randomTrainers.length<numTrainers&&attempts<1200){
       attempts++;
       const rx=Math.floor(Math.random()*W),ry=Math.floor(Math.random()*H);
       const dist=Math.abs(rx-sx)+Math.abs(ry-sy);
-      if(dist<(region==='r2'?16:11))continue;
+      if(dist<minDist)continue;
       const t=m[ry][rx];
       if(t!==T.GRASS&&t!==T.PATH&&t!==T.SAND)continue;
       if(randomTrainers.some(o=>Math.abs(o.x-rx)+Math.abs(o.y-ry)<8))continue;
       const idx=randomTrainers.length;
-      let tier=Math.min(4,1+Math.floor(dist/40));
-      if(region==='r2')tier=Math.min(4,tier+1);
+      const tier=Math.min(4,1+Math.floor(dist/40)+tierBonus);
       randomTrainers.push({x:rx,y:ry,name:RANDOM_TRAINER_NAMES[idx%RANDOM_TRAINER_NAMES.length],shirt:RANDOM_SHIRTS[idx%RANDOM_SHIRTS.length],tier,idx});
     }
 
@@ -1437,9 +1723,9 @@ const G = {
     const f=this.frame;
 
     ctx.imageSmoothingEnabled = false;
-    const shadow=this.s.region==='r2';
-    const tc=shadow?this.tileCacheR2:this.tileCache;
-    const voidCol=this.s.inHouse?'#0a0a12':(shadow?'#0e0818':'#1a3a1a');
+    const region=this.s.region;
+    const tc=region==='r2'?this.tileCacheR2:(region==='r3'?this.tileCacheR3:this.tileCache);
+    const voidCol=this.s.inHouse?'#0a0a12':(region==='r2'?'#0e0818':(region==='r3'?'#dceaf2':'#1a3a1a'));
 
     for(let vy=0;vy<vh;vy++){for(let vx=0;vx<vw;vx++){
       const mx=cx+vx,my=cy+vy;
@@ -1455,16 +1741,22 @@ const G = {
         ctx.drawImage(tc.grass,px,py);
         // random decorations seeded by position
         const decHash=(mx*2347+my*7919)%100;
-        if(decHash<5){ if(shadow) Sprites.drawDecorShadow(ctx,px,py,TILE,decHash%3); else Sprites.drawDecor(ctx,px,py,TILE,decHash%3); }
+        if(decHash<5){
+          if(region==='r2') Sprites.drawDecorShadow(ctx,px,py,TILE,decHash%3);
+          else if(region==='r3') Sprites.drawDecorFrost(ctx,px,py,TILE,decHash%3);
+          else Sprites.drawDecor(ctx,px,py,TILE,decHash%3);
+        }
       } else if(t===T.TALL){
         // draw animated tall grass
         const tgc=document.createElement('canvas');tgc.width=tgc.height=TILE;
-        if(shadow) Sprites.tallGrassTileShadow(tgc.getContext('2d'),TILE,f+(mx*5+my*3));
+        if(region==='r2') Sprites.tallGrassTileShadow(tgc.getContext('2d'),TILE,f+(mx*5+my*3));
+        else if(region==='r3') Sprites.tallGrassTileFrost(tgc.getContext('2d'),TILE,f+(mx*5+my*3));
         else Sprites.tallGrassTile(tgc.getContext('2d'),TILE,f+(mx*5+my*3));
         ctx.drawImage(tgc,px,py);
       } else if(t===T.WATER){
         const wc=document.createElement('canvas');wc.width=wc.height=TILE;
-        if(shadow) Sprites.waterTileShadow(wc.getContext('2d'),TILE,f+(mx*3+my*7));
+        if(region==='r2') Sprites.waterTileShadow(wc.getContext('2d'),TILE,f+(mx*3+my*7));
+        else if(region==='r3') Sprites.waterTileFrost(wc.getContext('2d'),TILE,f+(mx*3+my*7));
         else Sprites.waterTile(wc.getContext('2d'),TILE,f+(mx*3+my*7));
         ctx.drawImage(wc,px,py);
       } else if(t===T.TREE){
@@ -1516,7 +1808,8 @@ const G = {
     (this.s.currentNpcs||[]).forEach(n=>{
       const nvx=n.x-cx,nvy=n.y-cy;
       if(nvx>=0&&nvx<vw&&nvy>=0&&nvy<vh){
-        if(shadow) Sprites.drawShadowFolk(ctx, nvx*TILE, nvy*TILE, TILE, 0, n.shirt, n.hair);
+        if(region==='r2') Sprites.drawShadowFolk(ctx, nvx*TILE, nvy*TILE, TILE, 0, n.shirt, n.hair);
+        else if(region==='r3') Sprites.drawFrostFolk(ctx, nvx*TILE, nvy*TILE, TILE, 0, n.shirt, n.hair);
         else Sprites.drawCharacter(ctx, nvx*TILE, nvy*TILE, TILE, 0, 0, n.hair, n.shirt);
         const mx=nvx*TILE+TILE/2,my=nvy*TILE-TILE*0.14;
         ctx.fillStyle='#ffcc00';
@@ -1542,9 +1835,14 @@ const G = {
     if(this.s.inHouse){mc.clearRect(0,0,140,140);return;}
     const sc=140/this.s.mw;
     mc.clearRect(0,0,140,140);
-    const shadow=this.s.region==='r2';
-    const mmCols={[T.GRASS]:shadow?'#463a68':'#5a9a4a',[T.TALL]:shadow?'#342a54':'#3a7a2a',[T.WATER]:shadow?'#402a60':'#2868b0',[T.TREE]:shadow?'#241a3c':'#2a5a20',[T.ROCK]:shadow?'#3e3450':'#5a5a5a',[T.PATH]:shadow?'#544a60':'#c0a860',[T.FLOWER]:shadow?'#5a4a80':'#6aaa5a',[T.SAND]:shadow?'#6a6478':'#d0b870',[T.BRIDGE]:shadow?'#3a2a54':'#8a6a3a',[T.ROOFL]:shadow?'#402060':'#a03020',[T.ROOFM]:shadow?'#402060':'#a03020',[T.ROOFR]:shadow?'#402060':'#a03020',[T.WALLL]:shadow?'#4a4258':'#e0d0a0',[T.WALLR]:shadow?'#4a4258':'#e0d0a0'};
-    Object.keys(DOOR_HOUSE).forEach(k=>{ mmCols[k]=shadow?'#3a2050':'#6a4020'; });
+    const region=this.s.region;
+    const pal=region==='r2'
+      ?{grass:'#463a68',tall:'#342a54',water:'#402a60',tree:'#241a3c',rock:'#3e3450',path:'#544a60',flower:'#5a4a80',sand:'#6a6478',bridge:'#3a2a54',roof:'#402060',wall:'#4a4258',door:'#3a2050'}
+      :region==='r3'
+      ?{grass:'#c8e0ec',tall:'#a8ccdc',water:'#3070b0',tree:'#204858',rock:'#7a94a4',path:'#d8ecf4',flower:'#e8f6ff',sand:'#e0f0f8',bridge:'#5a4030',roof:'#2868a0',wall:'#d8e8f0',door:'#5a4030'}
+      :{grass:'#5a9a4a',tall:'#3a7a2a',water:'#2868b0',tree:'#2a5a20',rock:'#5a5a5a',path:'#c0a860',flower:'#6aaa5a',sand:'#d0b870',bridge:'#8a6a3a',roof:'#a03020',wall:'#e0d0a0',door:'#6a4020'};
+    const mmCols={[T.GRASS]:pal.grass,[T.TALL]:pal.tall,[T.WATER]:pal.water,[T.TREE]:pal.tree,[T.ROCK]:pal.rock,[T.PATH]:pal.path,[T.FLOWER]:pal.flower,[T.SAND]:pal.sand,[T.BRIDGE]:pal.bridge,[T.ROOFL]:pal.roof,[T.ROOFM]:pal.roof,[T.ROOFR]:pal.roof,[T.WALLL]:pal.wall,[T.WALLR]:pal.wall};
+    Object.keys(DOOR_HOUSE).forEach(k=>{ mmCols[k]=pal.door; });
     for(let y=0;y<this.s.mh;y++)for(let x=0;x<this.s.mw;x++){
       mc.fillStyle=mmCols[this.s.map[y][x]]||'#333';
       mc.fillRect(x*sc,y*sc,Math.ceil(sc),Math.ceil(sc));
@@ -1569,7 +1867,10 @@ const G = {
     document.getElementById('h-potions').textContent=`\u{1F9EA} ${this.s.potions}`;
     document.getElementById('h-cash').textContent=`\u{1F4B0} ${this.s.cash||0}`;
     document.getElementById('h-battles').textContent=`⚔️ ${this.s.battlesWon}`;
-    document.getElementById('h-house').textContent=this.s.inHouse?('\u{1F3E0} '+(HOUSES[this.s.inHouse].name||'Haus')):(this.s.region==='r2'?'\u{1F30C} Schattenregion':'');
+    const regionLabel=this.s.region==='r2'?'\u{1F30C} Schattenregion':(this.s.region==='r3'?'❄️ Frostregion':'');
+    document.getElementById('h-house').textContent=this.s.inHouse?('\u{1F3E0} '+(HOUSES[this.s.inHouse].name||'Haus')):regionLabel;
+    const badgeCount=(this.s.flags.badgeR1?1:0)+(this.s.flags.badgeR2?1:0)+(this.s.flags.badgeR3?1:0);
+    document.getElementById('h-badges').textContent=`\u{1F396}️ ${badgeCount}/3`;
   },
   refreshPot(){const t=new Date().toDateString();if(this.s.lastPD!==t){this.s.potions=5;this.s.lastPD=t;}},
 
@@ -1694,7 +1995,9 @@ const G = {
   },
 
   wildLv(){const a=this.s.team[this.s.active];return Math.max(1,Math.max(1,a.lv-3)+Math.floor(Math.random()*(6+Math.floor(this.s.battlesWon/4))));},
-  wildTier(){const w=this.s.battlesWon,r=Math.random();let t;if(w<5)t=1;else if(w<12)t=r<.65?1:2;else if(w<25)t=r<.2?1:r<.75?2:3;else if(w<45)t=r<.05?1:r<.35?2:r<.8?3:4;else t=r<.3?3:4;if(this.s.region==='r2')t=Math.min(4,t+1);return t;},
+  wildTier(){const w=this.s.battlesWon,r=Math.random();let t;if(w<5)t=1;else if(w<12)t=r<.65?1:2;else if(w<25)t=r<.2?1:r<.75?2:3;else if(w<45)t=r<.05?1:r<.35?2:r<.8?3:4;else t=r<.3?3:4;
+    if(this.s.region==='r2')t=Math.min(4,t+1); else if(this.s.region==='r3')t=Math.min(4,t+2);
+    return t;},
   spawnW(){const t=this.wildTier();const pool=DB.filter(d=>d.tier===t);return this.mkP(pool[Math.floor(Math.random()*pool.length)],this.wildLv());},
   markSeen(mon){this.s.dex=this.s.dex||{};if(this.s.dex[mon.id]!=='caught')this.s.dex[mon.id]='seen';},
 
@@ -1717,6 +2020,13 @@ const G = {
     this.s.enemy=this.mkP(pool[Math.floor(Math.random()*pool.length)],lvl);this.markSeen(this.s.enemy);
     const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
     setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();this.bl(`${trainerName} fordert dich zum Kampf heraus!`);this.rBA();},350);},400);},
+
+  startGymBattle(badgeFlag,meisterName,tier,lvBonus){Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=true;this.s.trainerFlag=null;this.s.gymFlag=badgeFlag;
+    const lvl=Math.max(10,this.s.team[this.s.active].lv+lvBonus);
+    const pool=DB.filter(d=>d.tier===tier);
+    this.s.enemy=this.mkP(pool[Math.floor(Math.random()*pool.length)],lvl);this.markSeen(this.s.enemy);
+    const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
+    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();this.bl(`${meisterName} fordert dich zum Arena-Kampf heraus!`);this.rBA();},350);},400);},
 
   renderB(){const p=this.s.team[this.s.active],e=this.s.enemy;
     document.getElementById('b-p-spr').textContent=p.spr;document.getElementById('b-e-spr').textContent=e.spr;
@@ -1764,9 +2074,13 @@ const G = {
   bVic(){this.s.battleOver=true;this.s.battlesWon++;
     let vicMsg=`${this.s.enemy.nm} besiegt!`,cashMsg='';
     if(this.s.trainerBattle){
-      if(this.s.trainerFlag){this.s.flags[this.s.trainerFlag]=true;this.s.trainerFlag=null;vicMsg='Trainer besiegt!';}
+      let cash=Math.floor(this.s.enemy.lv*5+this.s.enemy.tier*20);
+      if(this.s.gymFlag){
+        this.s.flags[this.s.gymFlag]=true;this.s.gymFlag=null;
+        vicMsg='Meister besiegt! Orden erhalten!';cash*=3;
+        this.popup('Orden erhalten!<div class="lvl-sub">Du hast den Arena-Meister besiegt!</div>','caught-popup',2600);
+      } else if(this.s.trainerFlag){this.s.flags[this.s.trainerFlag]=true;this.s.trainerFlag=null;vicMsg='Trainer besiegt!';}
       else{this.s.flags.rivalWins=(this.s.flags.rivalWins||0)+1;vicMsg='Rivale besiegt!';}
-      const cash=Math.floor(this.s.enemy.lv*5+this.s.enemy.tier*20);
       this.s.cash=(this.s.cash||0)+cash;
       cashMsg=` +${cash} PokeCash`;
       this.updateHud();
@@ -1832,7 +2146,7 @@ const G = {
     if(Math.random()<ch){Au.fl();this.bl('Geflohen!');this.s.battleOver=true;this.battleBusy=false;this.rBA();}
     else{this.bl('Flucht fehlgeschlagen!');await this.w(300);const e=this.s.enemy;const em=e.moves[Math.floor(Math.random()*e.moves.length)];const r=this.cD(e.atk,p.def,em,e.t,p.t,e.lv);p.hp=Math.max(0,p.hp-r.dmg);this.aS('player','hit');Au.hit();this.sDmg('player',r.dmg,r.crit);this.bl(`${e.nm}: ${em.name}! ${r.dmg}`);this.renderB();if(p.hp<=0){this.hFaint();return;}this.battleBusy=false;this.rBA();}},
 
-  endB(){Au.cl();this.s.inBattle=false;this.s.battleOver=false;this.s.trainerBattle=false;this.s.trainerFlag=null;document.getElementById('b-log').innerHTML='';this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();this.saveGame();},350);},
+  endB(){Au.cl();this.s.inBattle=false;this.s.battleOver=false;this.s.trainerBattle=false;this.s.trainerFlag=null;this.s.gymFlag=null;document.getElementById('b-log').innerHTML='';this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();this.saveGame();},350);},
   w(ms){return new Promise(r=>setTimeout(r,ms));},
 
   // Team/Potions
@@ -1933,16 +2247,16 @@ const G = {
     if(!snap)return false;
     this.s={char:d.char,team:d.team,active:d.active||0,potions:d.potions!==undefined?d.potions:5,cash:d.cash||0,lastPD:d.lastPD||null,battlesWon:d.battlesWon||0,caughtCount:d.caughtCount||0,
       region,regions,px:snap.px,py:snap.py,map:snap.map,mw:snap.mw,mh:snap.mh,randomTrainers:snap.randomTrainers||[],
-      inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,enemy:null,flags:d.flags||{},quests:d.quests||{},dex:d.dex||{},
+      inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:d.flags||{},quests:d.quests||{},dex:d.dex||{},
       inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
     this.s.team.forEach(p=>this.rcP(p));
     const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
-    this.fixConductorCorridor(this.s.map,region,sx,sy,this.s.mw,this.s.mh,region==='r2'?13:9);
+    if(region!=='r3') this.fixConductorCorridor(this.s.map,region,sx,sy,this.s.mw,this.s.mh,villRFor(region));
     this.s.worldNpcs=this.buildFixedNpcs(region,sx,sy,this.s.mw).concat(this.s.randomTrainers.map(buildRandomTrainerNpc));
     this.s.currentNpcs=this.s.worldNpcs;
     return true;}catch(e){return false;}},
 
-  startNewGame(){Au.cl();this.s={char:this._cc,team:[this.mkP(this._sc,5)],active:0,potions:5,cash:50,lastPD:new Date().toDateString(),battlesWon:0,caughtCount:0,region:'r1',regions:{},px:0,py:0,map:[],mw:0,mh:0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,enemy:null,flags:{},quests:{},dex:{},randomTrainers:[],inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
+  startNewGame(){Au.cl();this.s={char:this._cc,team:[this.mkP(this._sc,5)],active:0,potions:5,cash:50,lastPD:new Date().toDateString(),battlesWon:0,caughtCount:0,region:'r1',regions:{},px:0,py:0,map:[],mw:0,mh:0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:{},quests:{},dex:{},randomTrainers:[],inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
     this.s.dex[this._sc.id]='caught';
     this.genWorld('r1');this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();this.saveGame();},350);},
   resumeGame(){Au.cl();this.refreshPot();if(this.s.team[this.s.active].hp<=0){const i=this.s.team.findIndex(p=>p.hp>0);if(i>=0)this.s.active=i;}this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();},350);},
