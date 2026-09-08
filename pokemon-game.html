@@ -1220,6 +1220,18 @@ const G = {
   popup(h,c,d){const el=document.createElement('div');el.className=c||'lvl-popup';el.innerHTML=h;document.body.appendChild(el);setTimeout(()=>el.remove(),d||2000);},
 
   // World gen
+  // Guarantee a walkable corridor from the village to the conductor NPC, so it can
+  // never end up stranded on water or an isolated patch of land (bridges over water
+  // where the corridor crosses it). Re-run on every load/region-switch so existing
+  // save files get repaired retroactively, not just freshly generated maps.
+  fixConductorCorridor(m,region,sx,sy,W,H,villR) {
+    if(region==='r2'){
+      for(let x=12;x<=sx-villR;x++){ if(x>=0&&x<W) m[sy][x]=(m[sy][x]===T.WATER)?T.BRIDGE:T.PATH; }
+    } else {
+      for(let x=sx+villR;x<=W-12;x++){ if(x>=0&&x<W) m[sy][x]=(m[sy][x]===T.WATER)?T.BRIDGE:T.PATH; }
+    }
+  },
+
   buildFixedNpcs(region,sx,sy,mw) {
     if(region==='r2'){
       return [
@@ -1277,6 +1289,7 @@ const G = {
       this.s.map=snap.map;this.s.mw=snap.mw;this.s.mh=snap.mh;this.s.px=snap.px;this.s.py=snap.py;
       this.s.randomTrainers=snap.randomTrainers||[];
       const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
+      this.fixConductorCorridor(this.s.map,target,sx,sy,this.s.mw,this.s.mh,target==='r2'?13:9);
       this.s.worldNpcs=this.buildFixedNpcs(target,sx,sy,this.s.mw).concat(this.s.randomTrainers.map(buildRandomTrainerNpc));
       this.s.currentNpcs=this.s.worldNpcs;
     }
@@ -1380,6 +1393,8 @@ const G = {
       placeHouse(sx+6,sy+4,T.DOOR_V2);
       placeHouse(sx,sy+4,T.DOOR_SHOP);
     }
+
+    this.fixConductorCorridor(m,region,sx,sy,W,H,villR);
 
     // Scatter random trainers across the wider map (away from the village, further = stronger)
     const randomTrainers=[];
@@ -1883,6 +1898,7 @@ const G = {
       inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
     this.s.team.forEach(p=>this.rcP(p));
     const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
+    this.fixConductorCorridor(this.s.map,region,sx,sy,this.s.mw,this.s.mh,region==='r2'?13:9);
     this.s.worldNpcs=this.buildFixedNpcs(region,sx,sy,this.s.mw).concat(this.s.randomTrainers.map(buildRandomTrainerNpc));
     this.s.currentNpcs=this.s.worldNpcs;
     return true;}catch(e){return false;}},
