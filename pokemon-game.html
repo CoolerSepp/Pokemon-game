@@ -174,6 +174,12 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
 .wagon { width: 60px; height: 40px; background: linear-gradient(180deg,#d0a040,#a07020); border-radius: 4px; margin-right: 4px; position: relative; }
 .wagon::before { content: ''; position: absolute; bottom: -8px; left: 6px; width: 10px; height: 10px; background: #222; border-radius: 50%; box-shadow: 34px 0 0 #222; }
 .train-caption { color: #ddd; margin-top: 26px; font-size: 1.1em; letter-spacing: 0.5px; }
+
+#ending-screen { display: none; position: fixed; inset: 0; background: radial-gradient(ellipse at center, #3a2c10 0%, #0a0806 100%); z-index: 500; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+#ending-screen.on { display: flex; }
+.ending-title { color: #ffd860; font-size: clamp(1.6em, 6vw, 2.6em); text-shadow: 0 0 30px rgba(255,216,96,0.5); margin-bottom: 16px; animation: endGlow 2s ease-in-out infinite; }
+@keyframes endGlow { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.3)} }
+.ending-text { color: #e0d0a0; font-size: 1em; line-height: 1.8; margin-bottom: 26px; max-width: 480px; }
 </style>
 </head>
 <body>
@@ -182,6 +188,11 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
   <div id="train-transition">
     <div class="train-scene"><div class="rail"></div><div class="train"><div class="loco"></div><div class="wagon"></div><div class="wagon"></div></div></div>
     <div class="train-caption" id="train-caption">Zug fahrt...</div>
+  </div>
+  <div id="ending-screen">
+    <div class="ending-title">🏆 Pokemon-Meister! 🏆</div>
+    <div class="ending-text" id="ending-text"></div>
+    <button class="btn btn-gold" onclick="G.closeEnding()">Weiterspielen</button>
   </div>
   <div id="scr-title" class="scr on">
     <div class="title-particles" id="particles"></div>
@@ -948,6 +959,196 @@ const Sprites = {
     ctx.fillRect(x + 9*p, y + 3*p, 1*p, 1*p);
   },
 
+  // ===== Champion-region theme: a warm gold/majestic palette for the Pokemon-Liga =====
+  grassTileChamp(ctx, s) {
+    const g1=[210,180,110], g2=[190,158,90], g3=[228,200,140];
+    ctx.fillStyle=`rgb(${g1[0]},${g1[1]},${g1[2]})`; ctx.fillRect(0,0,s,s);
+    for (let i=0;i<8;i++){ const x=(i*37+5)%s, y=(i*23+7)%s; ctx.fillStyle=`rgb(${g2[0]},${g2[1]},${g2[2]})`; ctx.fillRect(x,y,2,2); }
+    for (let i=0;i<4;i++){ const x=(i*29+13)%s, y=(i*41+3)%s; ctx.fillStyle=`rgb(${g3[0]},${g3[1]},${g3[2]})`; ctx.fillRect(x,y,1,2); }
+  },
+  tallGrassTileChamp(ctx, s, frame) {
+    this.grassTileChamp(ctx,s);
+    const cols=['#a08028','#c0a040','#906818','#b09030'];
+    const sway=Math.sin(frame*0.05)*2;
+    for (let i=0;i<6;i++){
+      const bx=(i*11+3)%(s-4), by=s-4-(i*7%12);
+      ctx.fillStyle=cols[i%cols.length];
+      ctx.fillRect(bx+sway*(i%2?1:-1),by,2,-(6+i%4));
+      ctx.fillRect(bx+2+sway*(i%2?-1:1),by-2,2,-(5+i%3));
+    }
+  },
+  waterTileChamp(ctx, s, frame) {
+    const t=frame*0.03;
+    for (let y=0;y<s;y++){ for (let x=0;x<s;x++){
+      const wave=Math.sin(x*0.3+t*3)*8+Math.sin(y*0.2+t*2)*6;
+      const r=180+wave, g=140+wave*0.7, b=40+wave*0.3;
+      ctx.fillStyle=`rgb(${Math.max(0,Math.min(255,r|0))},${Math.max(0,Math.min(255,g|0))},${Math.max(0,Math.min(255,b|0))})`;
+      ctx.fillRect(x,y,1,1);
+    }}
+    const hx=((frame*0.5)%s);
+    ctx.fillStyle='rgba(255,240,200,0.35)';
+    ctx.fillRect(hx,s*0.3,6,2);
+    ctx.fillRect((hx+s/2)%s,s*0.7,4,1);
+  },
+  treeTileChamp(ctx, s) {
+    ctx.fillStyle='#6a4a20'; ctx.fillRect(s*0.35,s*0.55,s*0.3,s*0.45);
+    ctx.fillStyle='#503816'; ctx.fillRect(s*0.38,s*0.6,s*0.08,s*0.35);
+    const golds=['#8a6a20','#a88028','#c09838','#987222'];
+    const shapes=[[s*0.1,s*0.3,s*0.8,s*0.35],[s*0.15,s*0.15,s*0.7,s*0.3],[s*0.25,s*0.02,s*0.5,s*0.25]];
+    shapes.forEach((sh,i)=>{ ctx.fillStyle=golds[i]; ctx.beginPath(); ctx.ellipse(sh[0]+sh[2]/2, sh[1]+sh[3]/2, sh[2]/2, sh[3]/2, 0,0,Math.PI*2); ctx.fill(); });
+    ctx.fillStyle='rgba(255,230,150,0.35)';
+    ctx.beginPath(); ctx.ellipse(s*0.4,s*0.2,s*0.12,s*0.1,0,0,Math.PI*2); ctx.fill();
+  },
+  rockTileChamp(ctx, s) {
+    ctx.fillStyle='#c0a860'; ctx.fillRect(0,0,s,s);
+    const grd=ctx.createLinearGradient(s*0.2,s*0.15,s*0.8,s*0.85);
+    grd.addColorStop(0,'#e8d090'); grd.addColorStop(0.5,'#b89850'); grd.addColorStop(1,'#846824');
+    ctx.fillStyle=grd;
+    ctx.beginPath();
+    ctx.moveTo(s*0.15,s*0.85); ctx.lineTo(s*0.1,s*0.5); ctx.lineTo(s*0.3,s*0.15); ctx.lineTo(s*0.7,s*0.12); ctx.lineTo(s*0.9,s*0.45); ctx.lineTo(s*0.85,s*0.85);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle='rgba(255,240,190,0.4)';
+    ctx.beginPath(); ctx.moveTo(s*0.3,s*0.2); ctx.lineTo(s*0.5,s*0.15); ctx.lineTo(s*0.4,s*0.4); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='#684e18'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(s*0.4,s*0.3); ctx.lineTo(s*0.5,s*0.55); ctx.lineTo(s*0.6,s*0.5); ctx.stroke();
+  },
+  pathTileChamp(ctx, s) {
+    ctx.fillStyle='#e8d8a8'; ctx.fillRect(0,0,s,s);
+    const cols=['#d8c090','#f0e0b0','#c8b080','#e0c898'];
+    for (let i=0;i<12;i++){ ctx.fillStyle=cols[i%cols.length]; const x=(i*31+7)%(s-3), y=(i*23+11)%(s-3); ctx.fillRect(x,y,2+i%2,1+i%2); }
+    ctx.fillStyle='rgba(120,90,30,0.08)'; ctx.fillRect(0,0,s,2); ctx.fillRect(0,0,2,s);
+  },
+  sandTileChamp(ctx, s) {
+    ctx.fillStyle='#f0e0b0'; ctx.fillRect(0,0,s,s);
+    for (let i=0;i<10;i++){ ctx.fillStyle = i%2 ? '#e0d0a0' : '#fff0c8'; const x=(i*29+5)%(s-2), y=(i*19+3)%(s-2); ctx.fillRect(x,y,2,1); }
+  },
+  flowerTileChamp(ctx, s, mx, my) {
+    this.grassTileChamp(ctx,s);
+    const colors=[['#e0a020','#ffc850'],['#d04040','#ff7060'],['#e0e0e0','#ffffff'],['#c040c0','#e070e0'],['#4090e0','#70b0ff']];
+    const fc=colors[(mx*7+my*13)%colors.length];
+    const cx=s/2, cy=s/2;
+    ctx.fillStyle=fc[0];
+    for (let a=0;a<5;a++){ const angle=a*Math.PI*2/5; const px=cx+Math.cos(angle)*s*0.15, py=cy+Math.sin(angle)*s*0.15; ctx.beginPath(); ctx.arc(px,py,s*0.1,0,Math.PI*2); ctx.fill(); }
+    ctx.fillStyle=fc[1]; ctx.beginPath(); ctx.arc(cx,cy,s*0.08,0,Math.PI*2); ctx.fill();
+  },
+  bridgeTileChamp(ctx, s) {
+    ctx.fillStyle='#a88030'; ctx.fillRect(0,0,s,s);
+    ctx.fillStyle='#8a6828'; ctx.fillRect(s*0.1,0,s*0.8,s);
+    ctx.strokeStyle='#6a4e1c'; ctx.lineWidth=1;
+    for (let y=0;y<s;y+=s/4){ ctx.beginPath(); ctx.moveTo(s*0.1,y); ctx.lineTo(s*0.9,y); ctx.stroke(); }
+    ctx.fillStyle='#5a4018'; ctx.fillRect(s*0.08,0,s*0.06,s); ctx.fillRect(s*0.86,0,s*0.06,s);
+    ctx.fillStyle='#ffe8a0';
+    for (let y=s*0.12;y<s;y+=s/4){ ctx.fillRect(s*0.1,y,2,2); ctx.fillRect(s*0.86,y,2,2); }
+  },
+  roofTileChamp(ctx, s, part) {
+    ctx.fillStyle='#c0a860'; ctx.fillRect(0,0,s,s);
+    const roofCol='#c09020', roofDark='#906810', roofLight='#e8b840';
+    ctx.fillStyle=roofCol;
+    if (part==='L'){ ctx.beginPath(); ctx.moveTo(s*0.2,s); ctx.lineTo(s,s*0.3); ctx.lineTo(s,s); ctx.closePath(); ctx.fill(); }
+    else if (part==='R'){ ctx.beginPath(); ctx.moveTo(s*0.8,s); ctx.lineTo(0,s*0.3); ctx.lineTo(0,s); ctx.closePath(); ctx.fill(); }
+    else { ctx.beginPath(); ctx.moveTo(0,s*0.3); ctx.lineTo(s/2,0); ctx.lineTo(s,s*0.3); ctx.lineTo(s,s); ctx.lineTo(0,s); ctx.closePath(); ctx.fill();
+      ctx.fillStyle=roofLight; ctx.beginPath(); ctx.moveTo(s/2,0); ctx.lineTo(s*0.65,s*0.25); ctx.lineTo(s*0.35,s*0.25); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle=roofDark; ctx.fillRect(0,s*0.85,s,s*0.15);
+  },
+  houseWallTileChamp(ctx, s, part) {
+    ctx.fillStyle='#f0e0b0'; ctx.fillRect(0,0,s,s);
+    ctx.strokeStyle='#d8c090'; ctx.lineWidth=1;
+    for (let y=s*0.2;y<s;y+=s*0.25){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(s,y); ctx.stroke(); }
+    const wx = part==='L'? s*0.3 : s*0.15;
+    ctx.fillStyle='#c09020'; ctx.fillRect(wx,s*0.15,s*0.4,s*0.35);
+    ctx.strokeStyle='#906810'; ctx.strokeRect(wx,s*0.15,s*0.4,s*0.35);
+    ctx.fillStyle='#ffd868'; ctx.fillRect(wx+s*0.03,s*0.18,s*0.15,s*0.13);
+  },
+  doorTileChamp(ctx, s, exit) {
+    ctx.fillStyle='#f0e0b0'; ctx.fillRect(0,0,s,s);
+    ctx.fillStyle= exit ? '#8a6020':'#a87828';
+    ctx.fillRect(s*0.15,s*0.05,s*0.7,s*0.95);
+    ctx.fillStyle='#5a3e14'; ctx.fillRect(s*0.15,s*0.05,s*0.7,s*0.1);
+    ctx.fillStyle='#ffe870'; ctx.beginPath(); ctx.arc(s*0.75,s*0.55,s*0.05,0,Math.PI*2); ctx.fill();
+  },
+  floorTileChamp(ctx, s) {
+    ctx.fillStyle='#e8d8a8'; ctx.fillRect(0,0,s,s);
+    ctx.strokeStyle='#d0c090'; ctx.lineWidth=1; ctx.strokeRect(0,0,s,s);
+    ctx.beginPath(); ctx.moveTo(0,s*0.5); ctx.lineTo(s,s*0.5); ctx.stroke();
+  },
+  interiorWallTileChamp(ctx, s) {
+    ctx.fillStyle='#a88848'; ctx.fillRect(0,0,s,s);
+    ctx.fillStyle='#906c30'; for (let y=0;y<s;y+=s*0.3) ctx.fillRect(0,y,s,2);
+  },
+  drawDecorChamp(ctx, x, y, s, type) {
+    if (type === 0) {
+      ctx.fillStyle='#8a6a20'; ctx.beginPath(); ctx.arc(x+s*0.3,y+s*0.7,s*0.18,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#a88028'; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.6,s*0.2,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#8a6a20'; ctx.beginPath(); ctx.arc(x+s*0.7,y+s*0.7,s*0.16,0,Math.PI*2); ctx.fill();
+    } else if (type === 1) {
+      ctx.fillStyle='#e8d8a8'; ctx.fillRect(x+s*0.45,y+s*0.6,s*0.1,s*0.2);
+      ctx.fillStyle='#d04040'; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.55,s*0.15,Math.PI,0); ctx.fill();
+      ctx.fillStyle='#fff8e0'; ctx.beginPath(); ctx.arc(x+s*0.45,y+s*0.48,s*0.03,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x+s*0.55,y+s*0.45,s*0.025,0,Math.PI*2); ctx.fill();
+    } else {
+      ctx.fillStyle='#c8a860'; ctx.beginPath(); ctx.arc(x+s*0.3,y+s*0.75,s*0.06,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#b09048'; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.8,s*0.05,0,Math.PI*2); ctx.fill();
+    }
+  },
+
+  // Elegant, cape-wearing League folk with a golden trim
+  drawChampionFolk(ctx, x, y, size, frame, capeColor, trim) {
+    const s = size, p = s / 16;
+    const cape = capeColor || '#902030';
+    const capeDark = this.shade(cape, -25);
+    const gold = trim || '#f0c840';
+    const skin = '#f0c8a0';
+    const walk = Math.sin(frame * 0.15) * p;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath(); ctx.ellipse(x + s/2, y + s - p, s*0.35, p*1.5, 0, 0, Math.PI*2); ctx.fill();
+
+    // cape flowing behind
+    ctx.fillStyle = cape;
+    ctx.beginPath();
+    ctx.moveTo(x + 5*p, y + 5*p);
+    ctx.lineTo(x + 11*p, y + 5*p);
+    ctx.lineTo(x + 13*p, y + 15*p + walk*0.3);
+    ctx.lineTo(x + 3*p, y + 15*p + walk*0.3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = capeDark;
+    ctx.fillRect(x + 7.5*p, y + 6*p, 1*p, 8*p);
+
+    // legs
+    ctx.fillStyle = '#302028';
+    ctx.fillRect(x + 5*p, y + 13*p + walk, 2.5*p, 3*p);
+    ctx.fillRect(x + 8.5*p, y + 13*p - walk, 2.5*p, 3*p);
+
+    // arms
+    ctx.fillStyle = skin;
+    ctx.fillRect(x + 2*p, y + 7*p + walk*0.3, 2*p, 5*p);
+    ctx.fillRect(x + 12*p, y + 7*p - walk*0.3, 2*p, 5*p);
+
+    // tunic
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(x + 5*p, y + 6*p, 6*p, 6*p);
+    ctx.fillStyle = gold;
+    ctx.fillRect(x + 7*p, y + 6*p, 2*p, 6*p);
+
+    // head
+    ctx.fillStyle = skin;
+    ctx.fillRect(x + 4*p, y + 1*p, 8*p, 5*p);
+
+    // hair + golden circlet
+    ctx.fillStyle = '#3a2a1a';
+    ctx.fillRect(x + 3*p, y + 0*p, 10*p, 2*p);
+    ctx.fillRect(x + 3*p, y + 2*p, 2*p, 2*p);
+    ctx.fillRect(x + 11*p, y + 2*p, 2*p, 2*p);
+    ctx.fillStyle = gold;
+    ctx.fillRect(x + 4*p, y + 0.6*p, 8*p, 0.8*p);
+
+    // eyes
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(x + 6*p, y + 3*p, 1*p, 1*p);
+    ctx.fillRect(x + 9*p, y + 3*p, 1*p, 1*p);
+  },
+
   // Draw pixel-art character
   drawCharacter(ctx, x, y, size, dir, frame, color, shirtColor) {
     const s = size;
@@ -1263,6 +1464,15 @@ function nieveLines(){ return ['Willkommen in meinem Laden!','Selbst hier am End
 function arena1Lines(s){ return s.flags.badgeR1?['Meister Boreas: Du hast meinen Orden bereits verdient. Gut gemacht!']:['Meister Boreas: Willkommen in der Arena! Zeig mir deine Starke im Kampf!']; }
 function arena2Lines(s){ return s.flags.badgeR2?['Meister Voss: Den Orden der Schattenarena hast du bereits verdient...']:['Meister Voss: Nur die Starksten bestehen in der Schattenarena!']; }
 function arena3Lines(s){ return s.flags.badgeR3?['Meisterin Elsa: Du bist bereits eine wurdige Meisterin des Eises.']:['Meisterin Elsa: In der Frostarena zahlt nur eisige Entschlossenheit!']; }
+function noraLines(s){
+  const ready=!!(s.flags.badgeR1&&s.flags.badgeR2&&s.flags.badgeR3);
+  if(!ready) return ['Die Pokemon-Liga ist der Hohepunkt jeder Reise.','Doch nur wer alle drei Orden besitzt, darf den Zug dorthin nehmen.'];
+  return ['Alle drei Orden! Du bist bereit fur die Pokemon-Liga.','Der Zug steht bereit. Einsteigen?'];
+}
+function returnLigaLines(){ return ['Der Zug zuruck in die Frostregion steht bereit. Einsteigen?']; }
+function ligaLines(s){ return s.flags.champion?['Champion Seraphina: Du bist und bleibst Pokemon-Meister/in. Eine Ehre, dich zu kennen.']:['Champion Seraphina: Du hast es bis hierher geschafft. Zeig mir, ob du wurdig bist!']; }
+function lshopLines(){ return ['Willkommen im Liga-Shop!','Hier bekommst du das Beste, was PokeCash kaufen kann.']; }
+function lloreLines(){ return ['Nur die Besten der Besten erreichen je die Pokemon-Liga.','Die Halle der Champions hat schon viele Legenden kommen und gehen sehen.']; }
 
 const HOUSES={
   lab:{name:'Pokemon-Labor',npc:{name:'Professor Eichenholz',shirt:'#f0f0f0',hair:'#3a2a1a',lines:s=>professorLines(s),
@@ -1309,6 +1519,11 @@ const HOUSES={
   f4:{name:'Wohnhaus',npc:{name:'Schneejagerin Runa',shirt:'#204868',hair:'#d0d8e0',lines:s=>runaLines(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q11',s); if(st==='none')startQuest('q11'); else if(st==='ready')completeQuest('q11'); }}},
   f5:{name:'Hutte',npc:{name:'Alter Fischer Bjorn',shirt:'#405860',hair:'#c0c0c0',lines:()=>bjornLines()}},
+  liga:{name:'Halle der Champions',npc:{name:'Champion Seraphina',shirt:'#902030',hair:'#3a2a1a',lines:s=>ligaLines(s),
+    onEnd:()=>{ if(!G.s.flags.champion) setTimeout(()=>G.startChampionBattle(),200); }}},
+  lshop:{name:'Liga-Shop',npc:{name:'Handlerin Perle',shirt:'#c09020',hair:'#e0d0a0',lines:()=>lshopLines(),
+    onEnd:()=>{ G.openShop(); }}},
+  llore:{name:'Ruhmeshalle',npc:{name:'Chronist Aldo',shirt:'#706040',hair:'#302010',lines:()=>lloreLines()}},
 };
 
 // Random wandering trainers scattered across the map
@@ -1327,15 +1542,17 @@ const T={GRASS:0,TALL:1,WATER:2,TREE:3,ROCK:4,PATH:5,FLOWER:6,SAND:7,BRIDGE:8,
   ROOFL:9,ROOFM:10,ROOFR:11,WALLL:12,WALLR:13,DOOR_LAB:14,DOOR_RIVAL:15,DOOR_V1:16,DOOR_V2:17,
   FLOOR:18,IWALL:19,EXITDOOR:20,DOOR_SHOP:21,DOOR_ELDER2:22,DOOR_V3:23,DOOR_V4:24,DOOR_SHOP2:25,
   DOOR_V5:26,DOOR_V6:27,DOOR_ARENA1:28,DOOR_ARENA2:29,DOOR_ARENA3:30,
-  DOOR_F1:31,DOOR_F2:32,DOOR_F3:33,DOOR_F4:34,DOOR_F5:35};
+  DOOR_F1:31,DOOR_F2:32,DOOR_F3:33,DOOR_F4:34,DOOR_F5:35,
+  DOOR_LIGA:36,DOOR_LSHOP:37,DOOR_LLORE:38};
 const TW=new Set([T.GRASS,T.TALL,T.PATH,T.FLOWER,T.SAND,T.BRIDGE,T.DOOR_LAB,T.DOOR_RIVAL,T.DOOR_V1,T.DOOR_V2,T.DOOR_SHOP,T.DOOR_ELDER2,T.DOOR_V3,T.DOOR_V4,T.DOOR_SHOP2,T.DOOR_V5,T.DOOR_V6,
-  T.DOOR_ARENA1,T.DOOR_ARENA2,T.DOOR_ARENA3,T.DOOR_F1,T.DOOR_F2,T.DOOR_F3,T.DOOR_F4,T.DOOR_F5]);
+  T.DOOR_ARENA1,T.DOOR_ARENA2,T.DOOR_ARENA3,T.DOOR_F1,T.DOOR_F2,T.DOOR_F3,T.DOOR_F4,T.DOOR_F5,T.DOOR_LIGA,T.DOOR_LSHOP,T.DOOR_LLORE]);
 const IW=new Set([T.FLOOR,T.EXITDOOR]);
 const DOOR_HOUSE={[T.DOOR_LAB]:'lab',[T.DOOR_RIVAL]:'rival',[T.DOOR_V1]:'v1',[T.DOOR_V2]:'v2',[T.DOOR_SHOP]:'shop',[T.DOOR_ELDER2]:'elder2',[T.DOOR_V3]:'v3',[T.DOOR_V4]:'v4',[T.DOOR_SHOP2]:'shop2',[T.DOOR_V5]:'v5',[T.DOOR_V6]:'v6',
   [T.DOOR_ARENA1]:'arena1',[T.DOOR_ARENA2]:'arena2',[T.DOOR_ARENA3]:'arena3',
-  [T.DOOR_F1]:'f1',[T.DOOR_F2]:'f2',[T.DOOR_F3]:'f3',[T.DOOR_F4]:'f4',[T.DOOR_F5]:'f5'};
+  [T.DOOR_F1]:'f1',[T.DOOR_F2]:'f2',[T.DOOR_F3]:'f3',[T.DOOR_F4]:'f4',[T.DOOR_F5]:'f5',
+  [T.DOOR_LIGA]:'liga',[T.DOOR_LSHOP]:'lshop',[T.DOOR_LLORE]:'llore'};
 const TILE=32;
-function villRFor(region){ return region==='r2'?18:(region==='r3'?13:9); }
+function villRFor(region){ return region==='r2'?18:(region==='r3'?13:(region==='r4'?8:9)); }
 
 // ===================== GAME =====================
 const G = {
@@ -1430,6 +1647,28 @@ const G = {
     c3.exitdoor = Sprites.getTile('exitdoorF', s, (c,sz) => Sprites.doorTileFrost(c,sz,true));
     c3.floor = Sprites.getTile('floorF', s, (c,sz) => Sprites.floorTileFrost(c,sz));
     c3.iwall = Sprites.getTile('iwallF', s, (c,sz) => Sprites.interiorWallTileFrost(c,sz));
+
+    // Champion-region variants (Pokemon-Liga)
+    this.tileCacheR4 = {};
+    const c4 = this.tileCacheR4;
+    c4.grass = Sprites.getTile('grassC', s, (c,sz) => Sprites.grassTileChamp(c,sz));
+    c4.tree = Sprites.getTile('treeC', s, (c,sz) => Sprites.treeTileChamp(c,sz));
+    c4.rock = Sprites.getTile('rockC', s, (c,sz) => Sprites.rockTileChamp(c,sz));
+    c4.path = Sprites.getTile('pathC', s, (c,sz) => Sprites.pathTileChamp(c,sz));
+    c4.sand = Sprites.getTile('sandC', s, (c,sz) => Sprites.sandTileChamp(c,sz));
+    c4.bridge = Sprites.getTile('bridgeC', s, (c,sz) => Sprites.bridgeTileChamp(c,sz));
+    for (let v = 0; v < 5; v++) {
+      c4['flower'+v] = Sprites.getTile('flowerC'+v, s, (c,sz) => Sprites.flowerTileChamp(c,sz,v,v*3));
+    }
+    c4.roofL = Sprites.getTile('roofLC', s, (c,sz) => Sprites.roofTileChamp(c,sz,'L'));
+    c4.roofM = Sprites.getTile('roofMC', s, (c,sz) => Sprites.roofTileChamp(c,sz,'M'));
+    c4.roofR = Sprites.getTile('roofRC', s, (c,sz) => Sprites.roofTileChamp(c,sz,'R'));
+    c4.wallL = Sprites.getTile('wallLC', s, (c,sz) => Sprites.houseWallTileChamp(c,sz,'L'));
+    c4.wallR = Sprites.getTile('wallRC', s, (c,sz) => Sprites.houseWallTileChamp(c,sz,'R'));
+    c4.door = Sprites.getTile('doorC', s, (c,sz) => Sprites.doorTileChamp(c,sz,false));
+    c4.exitdoor = Sprites.getTile('exitdoorC', s, (c,sz) => Sprites.doorTileChamp(c,sz,true));
+    c4.floor = Sprites.getTile('floorC', s, (c,sz) => Sprites.floorTileChamp(c,sz));
+    c4.iwall = Sprites.getTile('iwallC', s, (c,sz) => Sprites.interiorWallTileChamp(c,sz));
   },
 
   startAnimLoop() {
@@ -1501,6 +1740,29 @@ const G = {
     }
   },
 
+  // Retroactively add the arena house to maps saved before it existed (r1/r2).
+  // Also clears a safe patch + connecting corridor, since older r2 saves used a
+  // smaller village radius that never covered the arena's current position.
+  ensureArenaHouse(m,region,sx,sy,W,H) {
+    const doorTile = region==='r2' ? T.DOOR_ARENA2 : (region==='r1'||region===undefined ? T.DOOR_ARENA1 : null);
+    if(!doorTile) return;
+    for(let y=0;y<m.length;y++){ if(m[y].indexOf(doorTile)!==-1) return; }
+    const doorX=sx, doorY=region==='r2'?sy+16:sy-6;
+    if(doorY-1<0||doorY+1>=H) return;
+    for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){
+      const ny=doorY+dy,nx=doorX+dx;
+      if(ny<0||ny>=H||nx<0||nx>=W)continue;
+      m[ny][nx]=T.GRASS;
+    }
+    if(region==='r2'){
+      const villR=villRFor('r2');
+      for(let y=Math.min(sy+villR,doorY);y<=Math.max(sy+villR,doorY);y++){ m[y][sx]=(m[y][sx]===T.WATER)?T.BRIDGE:T.PATH; }
+    }
+    m[doorY-1][doorX-1]=T.ROOFL;m[doorY-1][doorX]=T.ROOFM;m[doorY-1][doorX+1]=T.ROOFR;
+    m[doorY][doorX-1]=T.WALLL;m[doorY][doorX]=doorTile;m[doorY][doorX+1]=T.WALLR;
+    if(doorY+1<H)m[doorY+1][doorX]=T.PATH;
+  },
+
   buildFixedNpcs(region,sx,sy,mw) {
     if(region==='r2'){
       return [
@@ -1517,6 +1779,16 @@ const G = {
         {x:sx,y:sy-2,name:'Schaffner Juno',shirt:'#5090c0',hair:'#e0f0ff',
           lines:()=>junoLines(),
           onEnd:()=>{ G.startTrainJourney('r2'); }},
+        {x:mw-12,y:sy,name:'Schaffnerin Nora',shirt:'#5090c0',hair:'#e0f0ff',
+          lines:s=>noraLines(s),
+          onEnd:()=>{ if(G.s.flags.badgeR1&&G.s.flags.badgeR2&&G.s.flags.badgeR3) G.startTrainJourney('r4'); }},
+      ];
+    }
+    if(region==='r4'){
+      return [
+        {x:sx,y:sy-2,name:'Schaffner Otto',shirt:'#902030',hair:'#f0c840',
+          lines:()=>returnLigaLines(),
+          onEnd:()=>{ G.startTrainJourney('r3'); }},
       ];
     }
     return [
@@ -1568,7 +1840,10 @@ const G = {
       this.s.map=snap.map;this.s.mw=snap.mw;this.s.mh=snap.mh;this.s.px=snap.px;this.s.py=snap.py;
       this.s.randomTrainers=snap.randomTrainers||[];
       const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
-      if(target!=='r3') this.fixConductorCorridor(this.s.map,target,sx,sy,this.s.mw,this.s.mh,villRFor(target));
+      if(target!=='r3'&&target!=='r4'){
+        this.fixConductorCorridor(this.s.map,target,sx,sy,this.s.mw,this.s.mh,villRFor(target));
+        this.ensureArenaHouse(this.s.map,target,sx,sy,this.s.mw,this.s.mh);
+      }
       this.s.worldNpcs=this.buildFixedNpcs(target,sx,sy,this.s.mw).concat(this.s.randomTrainers.map(buildRandomTrainerNpc));
       this.s.currentNpcs=this.s.worldNpcs;
     }
@@ -1580,7 +1855,8 @@ const G = {
   genWorld(region) {
     region=region||'r1';
     this.s.region=region;
-    const W=region==='r2'?100:(region==='r3'?110:150),H=region==='r2'?100:(region==='r3'?110:150);
+    const sizes={r2:100,r3:110,r4:80};
+    const W=sizes[region]||150,H=sizes[region]||150;
     this.s.mw=W;this.s.mh=H;
     const seed = Math.floor(Math.random()*99999);
     Noise.init(seed);
@@ -1674,6 +1950,11 @@ const G = {
       placeHouse(sx-8,sy+5,T.DOOR_F4);
       placeHouse(sx,sy+5,T.DOOR_F5);
       placeHouse(sx+8,sy+5,T.DOOR_ARENA3);
+    } else if(region==='r4'){
+      // Small, focused League grounds: one row of three buildings
+      placeHouse(sx-8,sy-6,T.DOOR_LLORE);
+      placeHouse(sx,sy-6,T.DOOR_LIGA);
+      placeHouse(sx+8,sy-6,T.DOOR_LSHOP);
     } else {
       placeHouse(sx-6,sy-6,T.DOOR_LAB);
       placeHouse(sx,sy-6,T.DOOR_ARENA1);
@@ -1683,14 +1964,14 @@ const G = {
       placeHouse(sx,sy+4,T.DOOR_SHOP);
     }
 
-    if(region!=='r3') this.fixConductorCorridor(m,region,sx,sy,W,H,villR);
+    if(region!=='r3'&&region!=='r4') this.fixConductorCorridor(m,region,sx,sy,W,H,villR);
 
     // Scatter random trainers across the wider map (away from the village, further = stronger)
     const randomTrainers=[];
     let attempts=0;
-    const numTrainers=region==='r2'?14:(region==='r3'?16:20);
-    const minDist=region==='r2'?16:(region==='r3'?18:11);
-    const tierBonus=region==='r2'?1:(region==='r3'?2:0);
+    const numTrainers=region==='r2'?14:(region==='r3'?16:(region==='r4'?10:20));
+    const minDist=region==='r2'?16:(region==='r3'?18:(region==='r4'?9:11));
+    const tierBonus=region==='r2'?1:(region==='r3'?2:(region==='r4'?3:0));
     while(randomTrainers.length<numTrainers&&attempts<1200){
       attempts++;
       const rx=Math.floor(Math.random()*W),ry=Math.floor(Math.random()*H);
@@ -1724,8 +2005,10 @@ const G = {
 
     ctx.imageSmoothingEnabled = false;
     const region=this.s.region;
-    const tc=region==='r2'?this.tileCacheR2:(region==='r3'?this.tileCacheR3:this.tileCache);
-    const voidCol=this.s.inHouse?'#0a0a12':(region==='r2'?'#0e0818':(region==='r3'?'#dceaf2':'#1a3a1a'));
+    const tcMap={r2:this.tileCacheR2,r3:this.tileCacheR3,r4:this.tileCacheR4};
+    const tc=tcMap[region]||this.tileCache;
+    const voidColMap={r2:'#0e0818',r3:'#dceaf2',r4:'#3a2c10'};
+    const voidCol=this.s.inHouse?'#0a0a12':(voidColMap[region]||'#1a3a1a');
 
     for(let vy=0;vy<vh;vy++){for(let vx=0;vx<vw;vx++){
       const mx=cx+vx,my=cy+vy;
@@ -1744,6 +2027,7 @@ const G = {
         if(decHash<5){
           if(region==='r2') Sprites.drawDecorShadow(ctx,px,py,TILE,decHash%3);
           else if(region==='r3') Sprites.drawDecorFrost(ctx,px,py,TILE,decHash%3);
+          else if(region==='r4') Sprites.drawDecorChamp(ctx,px,py,TILE,decHash%3);
           else Sprites.drawDecor(ctx,px,py,TILE,decHash%3);
         }
       } else if(t===T.TALL){
@@ -1751,12 +2035,14 @@ const G = {
         const tgc=document.createElement('canvas');tgc.width=tgc.height=TILE;
         if(region==='r2') Sprites.tallGrassTileShadow(tgc.getContext('2d'),TILE,f+(mx*5+my*3));
         else if(region==='r3') Sprites.tallGrassTileFrost(tgc.getContext('2d'),TILE,f+(mx*5+my*3));
+        else if(region==='r4') Sprites.tallGrassTileChamp(tgc.getContext('2d'),TILE,f+(mx*5+my*3));
         else Sprites.tallGrassTile(tgc.getContext('2d'),TILE,f+(mx*5+my*3));
         ctx.drawImage(tgc,px,py);
       } else if(t===T.WATER){
         const wc=document.createElement('canvas');wc.width=wc.height=TILE;
         if(region==='r2') Sprites.waterTileShadow(wc.getContext('2d'),TILE,f+(mx*3+my*7));
         else if(region==='r3') Sprites.waterTileFrost(wc.getContext('2d'),TILE,f+(mx*3+my*7));
+        else if(region==='r4') Sprites.waterTileChamp(wc.getContext('2d'),TILE,f+(mx*3+my*7));
         else Sprites.waterTile(wc.getContext('2d'),TILE,f+(mx*3+my*7));
         ctx.drawImage(wc,px,py);
       } else if(t===T.TREE){
@@ -1810,6 +2096,7 @@ const G = {
       if(nvx>=0&&nvx<vw&&nvy>=0&&nvy<vh){
         if(region==='r2') Sprites.drawShadowFolk(ctx, nvx*TILE, nvy*TILE, TILE, 0, n.shirt, n.hair);
         else if(region==='r3') Sprites.drawFrostFolk(ctx, nvx*TILE, nvy*TILE, TILE, 0, n.shirt, n.hair);
+        else if(region==='r4') Sprites.drawChampionFolk(ctx, nvx*TILE, nvy*TILE, TILE, 0, n.shirt, n.hair);
         else Sprites.drawCharacter(ctx, nvx*TILE, nvy*TILE, TILE, 0, 0, n.hair, n.shirt);
         const mx=nvx*TILE+TILE/2,my=nvy*TILE-TILE*0.14;
         ctx.fillStyle='#ffcc00';
@@ -1836,11 +2123,13 @@ const G = {
     const sc=140/this.s.mw;
     mc.clearRect(0,0,140,140);
     const region=this.s.region;
-    const pal=region==='r2'
-      ?{grass:'#463a68',tall:'#342a54',water:'#402a60',tree:'#241a3c',rock:'#3e3450',path:'#544a60',flower:'#5a4a80',sand:'#6a6478',bridge:'#3a2a54',roof:'#402060',wall:'#4a4258',door:'#3a2050'}
-      :region==='r3'
-      ?{grass:'#c8e0ec',tall:'#a8ccdc',water:'#3070b0',tree:'#204858',rock:'#7a94a4',path:'#d8ecf4',flower:'#e8f6ff',sand:'#e0f0f8',bridge:'#5a4030',roof:'#2868a0',wall:'#d8e8f0',door:'#5a4030'}
-      :{grass:'#5a9a4a',tall:'#3a7a2a',water:'#2868b0',tree:'#2a5a20',rock:'#5a5a5a',path:'#c0a860',flower:'#6aaa5a',sand:'#d0b870',bridge:'#8a6a3a',roof:'#a03020',wall:'#e0d0a0',door:'#6a4020'};
+    const palettes={
+      r2:{grass:'#463a68',tall:'#342a54',water:'#402a60',tree:'#241a3c',rock:'#3e3450',path:'#544a60',flower:'#5a4a80',sand:'#6a6478',bridge:'#3a2a54',roof:'#402060',wall:'#4a4258',door:'#3a2050'},
+      r3:{grass:'#c8e0ec',tall:'#a8ccdc',water:'#3070b0',tree:'#204858',rock:'#7a94a4',path:'#d8ecf4',flower:'#e8f6ff',sand:'#e0f0f8',bridge:'#5a4030',roof:'#2868a0',wall:'#d8e8f0',door:'#5a4030'},
+      r4:{grass:'#d2b46e',tall:'#a08028',water:'#b48c28',tree:'#8a6a20',rock:'#c0a860',path:'#e8d8a8',flower:'#f0e0b0',sand:'#f0e0b0',bridge:'#a88030',roof:'#c09020',wall:'#f0e0b0',door:'#a87828'},
+      r1:{grass:'#5a9a4a',tall:'#3a7a2a',water:'#2868b0',tree:'#2a5a20',rock:'#5a5a5a',path:'#c0a860',flower:'#6aaa5a',sand:'#d0b870',bridge:'#8a6a3a',roof:'#a03020',wall:'#e0d0a0',door:'#6a4020'},
+    };
+    const pal=palettes[region]||palettes.r1;
     const mmCols={[T.GRASS]:pal.grass,[T.TALL]:pal.tall,[T.WATER]:pal.water,[T.TREE]:pal.tree,[T.ROCK]:pal.rock,[T.PATH]:pal.path,[T.FLOWER]:pal.flower,[T.SAND]:pal.sand,[T.BRIDGE]:pal.bridge,[T.ROOFL]:pal.roof,[T.ROOFM]:pal.roof,[T.ROOFR]:pal.roof,[T.WALLL]:pal.wall,[T.WALLR]:pal.wall};
     Object.keys(DOOR_HOUSE).forEach(k=>{ mmCols[k]=pal.door; });
     for(let y=0;y<this.s.mh;y++)for(let x=0;x<this.s.mw;x++){
@@ -1867,7 +2156,8 @@ const G = {
     document.getElementById('h-potions').textContent=`\u{1F9EA} ${this.s.potions}`;
     document.getElementById('h-cash').textContent=`\u{1F4B0} ${this.s.cash||0}`;
     document.getElementById('h-battles').textContent=`⚔️ ${this.s.battlesWon}`;
-    const regionLabel=this.s.region==='r2'?'\u{1F30C} Schattenregion':(this.s.region==='r3'?'❄️ Frostregion':'');
+    const regionLabels={r2:'\u{1F30C} Schattenregion',r3:'❄️ Frostregion',r4:'🏆 Pokemon-Liga'};
+    const regionLabel=regionLabels[this.s.region]||'';
     document.getElementById('h-house').textContent=this.s.inHouse?('\u{1F3E0} '+(HOUSES[this.s.inHouse].name||'Haus')):regionLabel;
     const badgeCount=(this.s.flags.badgeR1?1:0)+(this.s.flags.badgeR2?1:0)+(this.s.flags.badgeR3?1:0);
     document.getElementById('h-badges').textContent=`\u{1F396}️ ${badgeCount}/3`;
@@ -1890,7 +2180,7 @@ const G = {
       if(e.key==='q'||e.key==='Q')this.openQuests();
       if(e.key==='x'||e.key==='X')this.openDex();
       if(e.key==='e'||e.key==='E'||e.key==='Enter'){e.preventDefault();this.interact();}
-      if(e.key==='Escape'){this.closeTeam();this.closePotions();this.closeSwitch();this.closeQuests();this.closeDex();this.closeShop();this.closeBattleItem();}
+      if(e.key==='Escape'){this.closeTeam();this.closePotions();this.closeSwitch();this.closeQuests();this.closeDex();this.closeShop();this.closeBattleItem();this.closeEnding();}
     });
     document.addEventListener('keyup',e=>{held[e.key]=false;});
     let ml=null;
@@ -1996,7 +2286,7 @@ const G = {
 
   wildLv(){const a=this.s.team[this.s.active];return Math.max(1,Math.max(1,a.lv-3)+Math.floor(Math.random()*(6+Math.floor(this.s.battlesWon/4))));},
   wildTier(){const w=this.s.battlesWon,r=Math.random();let t;if(w<5)t=1;else if(w<12)t=r<.65?1:2;else if(w<25)t=r<.2?1:r<.75?2:3;else if(w<45)t=r<.05?1:r<.35?2:r<.8?3:4;else t=r<.3?3:4;
-    if(this.s.region==='r2')t=Math.min(4,t+1); else if(this.s.region==='r3')t=Math.min(4,t+2);
+    if(this.s.region==='r2')t=Math.min(4,t+1); else if(this.s.region==='r3')t=Math.min(4,t+2); else if(this.s.region==='r4')t=4;
     return t;},
   spawnW(){const t=this.wildTier();const pool=DB.filter(d=>d.tier===t);return this.mkP(pool[Math.floor(Math.random()*pool.length)],this.wildLv());},
   markSeen(mon){this.s.dex=this.s.dex||{};if(this.s.dex[mon.id]!=='caught')this.s.dex[mon.id]='seen';},
@@ -2027,6 +2317,13 @@ const G = {
     this.s.enemy=this.mkP(pool[Math.floor(Math.random()*pool.length)],lvl);this.markSeen(this.s.enemy);
     const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
     setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();this.bl(`${meisterName} fordert dich zum Arena-Kampf heraus!`);this.rBA();},350);},400);},
+
+  startChampionBattle(){Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=true;this.s.trainerFlag=null;this.s.gymFlag='champion';
+    const lvl=Math.max(15,this.s.team[this.s.active].lv+15);
+    const pool=DB.filter(d=>d.tier===4);
+    this.s.enemy=this.mkP(pool[Math.floor(Math.random()*pool.length)],lvl);this.markSeen(this.s.enemy);
+    const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
+    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();this.bl('Champion Seraphina fordert dich zum finalen Kampf heraus!');this.rBA();},350);},400);},
 
   renderB(){const p=this.s.team[this.s.active],e=this.s.enemy;
     document.getElementById('b-p-spr').textContent=p.spr;document.getElementById('b-e-spr').textContent=e.spr;
@@ -2076,9 +2373,11 @@ const G = {
     if(this.s.trainerBattle){
       let cash=Math.floor(this.s.enemy.lv*5+this.s.enemy.tier*20);
       if(this.s.gymFlag){
+        const wasChampion=this.s.gymFlag==='champion';
         this.s.flags[this.s.gymFlag]=true;this.s.gymFlag=null;
-        vicMsg='Meister besiegt! Orden erhalten!';cash*=3;
-        this.popup('Orden erhalten!<div class="lvl-sub">Du hast den Arena-Meister besiegt!</div>','caught-popup',2600);
+        cash*=wasChampion?5:3;
+        if(wasChampion){ vicMsg='Champion besiegt! Du bist Pokemon-Meister/in!'; setTimeout(()=>this.showEnding(),1200); }
+        else{ vicMsg='Meister besiegt! Orden erhalten!'; this.popup('Orden erhalten!<div class="lvl-sub">Du hast den Arena-Meister besiegt!</div>','caught-popup',2600); }
       } else if(this.s.trainerFlag){this.s.flags[this.s.trainerFlag]=true;this.s.trainerFlag=null;vicMsg='Trainer besiegt!';}
       else{this.s.flags.rivalWins=(this.s.flags.rivalWins||0)+1;vicMsg='Rivale besiegt!';}
       this.s.cash=(this.s.cash||0)+cash;
@@ -2204,6 +2503,16 @@ const G = {
   // Shop
   openShop(){if(this.s.inBattle)return;Au.cl();document.getElementById('ov-shop').classList.add('on');this.rShop();},
   closeShop(){document.getElementById('ov-shop').classList.remove('on');const el=document.getElementById('shop-food-select');el.style.display='none';el.innerHTML='';},
+
+  // Ending / credits sequence, shown once after defeating the League Champion.
+  // The game state is untouched - closing it simply returns to normal play.
+  showEnding(){
+    const stats=`Orden gesammelt: 3/3<br>Pokemon gefangen: ${this.s.caughtCount||0}<br>Kaempfe gewonnen: ${this.s.battlesWon}<br>PokeCash: ${this.s.cash||0}`;
+    document.getElementById('ending-text').innerHTML=`Du hast Champion Seraphina bezwungen und bist offiziell Pokemon-Meister/in!<br><br>${stats}`;
+    document.getElementById('ending-screen').classList.add('on');
+    Au.lv();
+  },
+  closeEnding(){ Au.cl(); document.getElementById('ending-screen').classList.remove('on'); },
   rShop(){document.getElementById('shop-cash').textContent=this.s.cash||0;},
   buyPotion(){
     if((this.s.cash||0)<30){this.popup('Nicht genug PokeCash!','caught-popup',1500);return;}
@@ -2251,7 +2560,10 @@ const G = {
       inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
     this.s.team.forEach(p=>this.rcP(p));
     const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
-    if(region!=='r3') this.fixConductorCorridor(this.s.map,region,sx,sy,this.s.mw,this.s.mh,villRFor(region));
+    if(region!=='r3'&&region!=='r4'){
+      this.fixConductorCorridor(this.s.map,region,sx,sy,this.s.mw,this.s.mh,villRFor(region));
+      this.ensureArenaHouse(this.s.map,region,sx,sy,this.s.mw,this.s.mh);
+    }
     this.s.worldNpcs=this.buildFixedNpcs(region,sx,sy,this.s.mw).concat(this.s.randomTrainers.map(buildRandomTrainerNpc));
     this.s.currentNpcs=this.s.worldNpcs;
     return true;}catch(e){return false;}},
