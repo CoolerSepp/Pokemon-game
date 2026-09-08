@@ -2,8 +2,16 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Pokemon Wiedergeburt</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CjxkZWZzPgo8cmFkaWFsR3JhZGllbnQgaWQ9ImciIGN4PSI1MCUiIGN5PSI0MCUiIHI9IjY1JSI+CjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmZmZlZjAiLz4KPHN0b3Agb2Zmc2V0PSIzMiUiIHN0b3AtY29sb3I9IiNmZmQyM2YiLz4KPHN0b3Agb2Zmc2V0PSI2MiUiIHN0b3AtY29sb3I9IiNmZjhhMWMiLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjN2ExYzBhIi8+CjwvcmFkaWFsR3JhZGllbnQ+CjwvZGVmcz4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMwYTBhMWEiLz4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzFhMmE0YSIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxjaXJjbGUgY3g9IjMyIiBjeT0iMzAiIHI9IjE3IiBmaWxsPSJ1cmwoI2cpIi8+CjxjaXJjbGUgY3g9IjMyIiBjeT0iMzIiIHI9IjIzIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmNjMDAiIHN0cm9rZS13aWR0aD0iMS40IiBvcGFjaXR5PSIwLjU1Ii8+Cjwvc3ZnPg==">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CjxkZWZzPgo8cmFkaWFsR3JhZGllbnQgaWQ9ImciIGN4PSI1MCUiIGN5PSI0MCUiIHI9IjY1JSI+CjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmZmZlZjAiLz4KPHN0b3Agb2Zmc2V0PSIzMiUiIHN0b3AtY29sb3I9IiNmZmQyM2YiLz4KPHN0b3Agb2Zmc2V0PSI2MiUiIHN0b3AtY29sb3I9IiNmZjhhMWMiLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjN2ExYzBhIi8+CjwvcmFkaWFsR3JhZGllbnQ+CjwvZGVmcz4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMwYTBhMWEiLz4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzFhMmE0YSIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxjaXJjbGUgY3g9IjMyIiBjeT0iMzAiIHI9IjE3IiBmaWxsPSJ1cmwoI2cpIi8+CjxjaXJjbGUgY3g9IjMyIiBjeT0iMzIiIHI9IjIzIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmNjMDAiIHN0cm9rZS13aWR0aD0iMS40IiBvcGFjaXR5PSIwLjU1Ii8+Cjwvc3ZnPg==">
+<link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjogIlBva2Vtb24gV2llZGVyZ2VidXJ0IiwgInNob3J0X25hbWUiOiAiUG9rZVdpZWRlciIsICJzdGFydF91cmwiOiAiLiIsICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLCAiYmFja2dyb3VuZF9jb2xvciI6ICIjMGEwYTFhIiwgInRoZW1lX2NvbG9yIjogIiMwYTBhMWEiLCAiaWNvbnMiOiBbeyJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCNGJXeHVjejBpYUhSMGNEb3ZMM2QzZHk1M015NXZjbWN2TWpBd01DOXpkbWNpSUhacFpYZENiM2c5SWpBZ01DQTJOQ0EyTkNJK0NqeGtaV1p6UGdvOGNtRmthV0ZzUjNKaFpHbGxiblFnYVdROUltY2lJR040UFNJMU1DVWlJR041UFNJME1DVWlJSEk5SWpZMUpTSStDanh6ZEc5d0lHOW1abk5sZEQwaU1DVWlJSE4wYjNBdFkyOXNiM0k5SWlObVptWmxaakFpTHo0S1BITjBiM0FnYjJabWMyVjBQU0l6TWlVaUlITjBiM0F0WTI5c2IzSTlJaU5tWm1ReU0yWWlMejRLUEhOMGIzQWdiMlptYzJWMFBTSTJNaVVpSUhOMGIzQXRZMjlzYjNJOUlpTm1aamhoTVdNaUx6NEtQSE4wYjNBZ2IyWm1jMlYwUFNJeE1EQWxJaUJ6ZEc5d0xXTnZiRzl5UFNJak4yRXhZekJoSWk4K0Nqd3ZjbUZrYVdGc1IzSmhaR2xsYm5RK0Nqd3ZaR1ZtY3o0S1BISmxZM1FnZDJsa2RHZzlJalkwSWlCb1pXbG5hSFE5SWpZMElpQnllRDBpTVRRaUlHWnBiR3c5SWlNd1lUQmhNV0VpTHo0S1BHTnBjbU5zWlNCamVEMGlNeklpSUdONVBTSXpNaUlnY2owaU1qVWlJR1pwYkd3OUltNXZibVVpSUhOMGNtOXJaVDBpSXpGaE1tRTBZU0lnYzNSeWIydGxMWGRwWkhSb1BTSXlJaTgrQ2p4amFYSmpiR1VnWTNnOUlqTXlJaUJqZVQwaU16QWlJSEk5SWpFM0lpQm1hV3hzUFNKMWNtd29JMmNwSWk4K0NqeGphWEpqYkdVZ1kzZzlJak15SWlCamVUMGlNeklpSUhJOUlqSXpJaUJtYVd4c1BTSnViMjVsSWlCemRISnZhMlU5SWlObVptTmpNREFpSUhOMGNtOXJaUzEzYVdSMGFEMGlNUzQwSWlCdmNHRmphWFI1UFNJd0xqVTFJaTgrQ2p3dmMzWm5QZz09IiwgInNpemVzIjogImFueSIsICJ0eXBlIjogImltYWdlL3N2Zyt4bWwiLCAicHVycG9zZSI6ICJhbnkgbWFza2FibGUifV19">
+<meta name="theme-color" content="#0a0a1a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pokemon Wiedergeburt">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; -webkit-user-select: none; user-select: none; }
@@ -52,8 +60,8 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
 
 #scr-world { flex-direction: column; }
 #scr-world.on { display: flex; }
-#hud { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.6)); z-index: 10; width: 100%; min-height: 40px; flex-shrink: 0; border-bottom: 1px solid #1a2a3a; }
-.hud-l, .hud-r { display: flex; align-items: center; gap: 10px; font-size: 0.85em; }
+#hud { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); background: linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.6)); z-index: 10; width: 100%; min-height: 40px; flex-shrink: 0; border-bottom: 1px solid #1a2a3a; flex-wrap: wrap; row-gap: 4px; }
+.hud-l, .hud-r { display: flex; align-items: center; gap: 10px; font-size: 0.85em; flex-wrap: wrap; row-gap: 4px; }
 .hud-pokemon { display: flex; align-items: center; gap: 4px; }
 .hud-hp-bar { width: 60px; height: 6px; background: #222; border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; }
 .hud-hp-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
@@ -62,8 +70,9 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
 .potion-ct { color: #4a4; font-weight: 600; }
 #world-canvas { flex: 1; display: block; }
 
-#minimap { position: fixed; bottom: 60px; right: 10px; width: 140px; height: 140px; border: 2px solid #2a3a5a; border-radius: 8px; z-index: 20; background: #0a0a1a; opacity: 0.85; display: none; }
+#minimap { position: fixed; bottom: 60px; right: max(10px, env(safe-area-inset-right)); width: 140px; height: 140px; border: 2px solid #2a3a5a; border-radius: 8px; z-index: 20; background: #0a0a1a; opacity: 0.85; display: none; }
 #scr-world.on ~ #minimap { display: block; }
+@media (pointer: coarse) { #minimap { bottom: max(96px, calc(96px + env(safe-area-inset-bottom))); width: 104px; height: 104px; opacity: 0.75; } }
 
 #scr-battle { background: linear-gradient(180deg, #5a9ad0 0%, #3a7a40 55%, #2a5a20 100%); position: relative; overflow: hidden; }
 .battle-bg-clouds { position: absolute; top: 0; left: 0; width: 200%; height: 40%; background: repeating-linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 10%, transparent 20%); animation: cl 30s linear infinite; }
@@ -130,8 +139,8 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
 .pk-detail .d-stat .val { font-weight: 700; font-size: 1.1em; }
 .pk-detail .d-move { display: inline-block; padding: 4px 12px; margin: 3px; border-radius: 6px; font-size: 0.8em; border: 1px solid #2a3a5a; background: #0a1018; }
 
-#mob-ctrl { display: none; position: fixed; bottom: 8px; z-index: 50; width: 100%; pointer-events: none; }
-#mob-ctrl.vis { display: flex; justify-content: space-between; padding: 0 15px; align-items: flex-end; }
+#mob-ctrl { display: none; position: fixed; bottom: max(8px, env(safe-area-inset-bottom)); z-index: 50; width: 100%; pointer-events: none; }
+#mob-ctrl.vis { display: flex; justify-content: space-between; padding: 0 15px; padding-left: max(15px, env(safe-area-inset-left)); padding-right: max(15px, env(safe-area-inset-right)); align-items: flex-end; }
 .dpad { display: grid; grid-template-columns: 48px 48px 48px; grid-template-rows: 48px 48px 48px; gap: 3px; pointer-events: auto; }
 .dpad-b { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; color: rgba(255,255,255,0.5); font-size: 1.1em; cursor: pointer; display: flex; align-items: center; justify-content: center; touch-action: manipulation; }
 .dpad-b:active { background: rgba(255,255,255,0.2); }
@@ -139,6 +148,12 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
 .mob-btns { display: flex; gap: 8px; pointer-events: auto; margin-bottom: 20px; }
 .mob-ab { width: 48px; height: 48px; border-radius: 50%; font-size: 0.7em; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.15); touch-action: manipulation; }
 .mob-ab.a-btn { background: rgba(100,200,100,0.15); color: #6c6; }
+@media (max-width: 380px) {
+  #mob-ctrl.vis { padding: 0 8px; padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
+  .dpad { grid-template-columns: 38px 38px 38px; grid-template-rows: 38px 38px 38px; gap: 2px; }
+  .mob-btns { gap: 5px; margin-bottom: 12px; }
+  .mob-ab { width: 38px; height: 38px; font-size: 0.58em; }
+}
 .mob-ab.b-btn { background: rgba(200,100,100,0.15); color: #c66; }
 @media (pointer: coarse) { #mob-ctrl { display: flex; } #mob-ctrl.vis { display: flex; } }
 @media (pointer: fine) { #mob-ctrl { display: none !important; } }
@@ -188,6 +203,27 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
 .world-cinematic-caption.show { opacity: 1; }
 @keyframes worldShake { 0%,100%{transform:translate(0,0)} 10%{transform:translate(-8px,-4px)} 20%{transform:translate(8px,5px)} 30%{transform:translate(-6px,4px)} 40%{transform:translate(7px,-6px)} 50%{transform:translate(-5px,3px)} 60%{transform:translate(6px,-3px)} 70%{transform:translate(-4px,4px)} 80%{transform:translate(4px,-2px)} 90%{transform:translate(-2px,2px)} }
 #game.shake { animation: worldShake 0.5s ease-out; }
+
+/* ===== Mobile-Anpassungen ===== */
+@media (max-width: 480px) {
+  #hud { font-size: 0.92em; padding: 5px 8px; padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
+  .hud-l, .hud-r { font-size: 0.72em; gap: 6px; }
+  .hud-btn { padding: 4px 8px; font-size: 0.78em; }
+  .hud-hp-bar { width: 40px; }
+  #h-house, #h-battles { display: none; }
+  .b-info { min-width: 120px; padding: 6px 10px; }
+  .b-name { font-size: 0.88em; }
+  .b-lvl { font-size: 0.7em; }
+  .b-actions .btn { min-width: 90px; font-size: 0.85em; padding: 9px 10px; }
+  .sel-card { width: 108px; height: 150px; }
+  .sel-card .spr { font-size: 2.6em; }
+  .ov-title { font-size: 1.25em; }
+}
+@media (max-width: 360px) {
+  .hud-l, .hud-r { font-size: 0.64em; gap: 4px; }
+  .hud-hp-bar { width: 32px; }
+  .hud-btn { padding: 3px 6px; font-size: 0.7em; }
+}
 </style>
 </head>
 <body>
