@@ -17,7 +17,7 @@
 body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; -webkit-user-select: none; user-select: none; }
 #game { width: 100vw; height: 100vh; position: relative; }
 .scr { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
-.scr.on { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.scr.on { display: flex; flex-direction: column; align-items: center; justify-content: center; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
 #scr-title { background: radial-gradient(ellipse at center, #1a2a4a 0%, #0a0a1a 100%); }
 .title-logo { position: relative; margin-bottom: 30px; text-align: center; }
@@ -41,10 +41,11 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
 .btn-red:hover { background: linear-gradient(135deg, #9a3a3a, #7a2a2a); }
 .btn-green { background: linear-gradient(135deg, #2a6a2a, #1a5a1a); color: #ddd; border: 1px solid #3a8a3a; }
 
+#scr-char.on, #scr-starter.on { justify-content: flex-start; padding: max(20px, 4vh) 10px 20px; }
 .sel-title { font-size: clamp(1.2em, 4vw, 1.8em); margin-bottom: 4px; color: #ddd; }
 .sel-sub { color: #667; font-size: 0.95em; margin-bottom: 20px; }
 .sel-grid { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin: 10px 0; max-width: 700px; }
-.sel-card { width: 130px; height: 170px; background: linear-gradient(160deg, #141e30, #0f1520); border: 2px solid #1e2e4e; border-radius: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; position: relative; overflow: hidden; }
+.sel-card { width: 130px; height: 170px; background: linear-gradient(160deg, #141e30, #0f1520); border: 2px solid #1e2e4e; border-radius: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; position: relative; overflow: hidden; touch-action: manipulation; -webkit-tap-highlight-color: rgba(255,204,0,0.15); }
 .sel-card:hover { border-color: #4a6a9a; transform: translateY(-3px); }
 .sel-card.picked { border-color: #ffcc00; background: linear-gradient(160deg, #1a2840, #152030); box-shadow: 0 0 20px rgba(255,204,0,0.15); }
 .sel-card .spr { font-size: 3.2em; margin-bottom: 6px; }
@@ -155,7 +156,7 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
   .mob-ab { width: 38px; height: 38px; font-size: 0.58em; }
 }
 .mob-ab.b-btn { background: rgba(200,100,100,0.15); color: #c66; }
-@media (pointer: coarse) { #mob-ctrl { display: flex; } #mob-ctrl.vis { display: flex; } }
+@media (pointer: coarse) { #mob-ctrl.vis { display: flex; } }
 @media (pointer: fine) { #mob-ctrl { display: none !important; } }
 
 .lvl-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #ffcc00, #f09000); color: #1a1a2e; padding: 16px 40px; border-radius: 14px; font-size: 1.3em; font-weight: 700; z-index: 200; animation: lp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; text-align: center; box-shadow: 0 0 40px rgba(255,204,0,0.4); }
@@ -215,8 +216,16 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
   .b-name { font-size: 0.88em; }
   .b-lvl { font-size: 0.7em; }
   .b-actions .btn { min-width: 90px; font-size: 0.85em; padding: 9px 10px; }
-  .sel-card { width: 108px; height: 150px; }
-  .sel-card .spr { font-size: 2.6em; }
+  .sel-card { width: 108px; height: 140px; }
+  .sel-card .spr { font-size: 2.4em; }
+  .sel-grid { gap: 10px; margin: 6px 0; }
+  .pk-detail { padding: 12px; margin-top: 6px; }
+  .pk-detail .d-spr { font-size: 2.8em; }
+  .pk-detail .d-nm { font-size: 1.1em; margin: 3px 0; }
+  .pk-detail .d-stats { gap: 4px; margin: 6px 0; }
+  .pk-detail .d-stat { padding: 4px; }
+  .sel-title { font-size: 1.2em; margin-bottom: 2px; }
+  .sel-sub { font-size: 0.85em; margin-bottom: 10px; }
   .ov-title { font-size: 1.25em; }
 }
 @media (max-width: 360px) {
@@ -1882,7 +1891,7 @@ const G = {
     DB.filter(p=>p.tier===1&&['glumanda','schiggy','bisasam','pikachu'].includes(p.id)).forEach(d=>{
       const c=document.createElement('div');c.className='sel-card';
       c.innerHTML=`<div class="spr">${d.spr}</div><div class="nm">${d.nm}</div><div class="tp t-${d.t}">${d.t}</div><div class="starter-stats">HP:${d.hp} ATK:${d.atk} DEF:${d.def} SPD:${d.spd}</div>`;
-      c.onclick=()=>{Au.cl();g.querySelectorAll('.sel-card').forEach(e=>e.classList.remove('picked'));c.classList.add('picked');this._sc=d;document.getElementById('start-btn').disabled=false;this.showSD(d);};g.appendChild(c);});
+      c.onclick=()=>{Au.cl();g.querySelectorAll('.sel-card').forEach(e=>e.classList.remove('picked'));c.classList.add('picked');this._sc=d;document.getElementById('start-btn').disabled=false;this.showSD(d);setTimeout(()=>document.getElementById('start-btn').scrollIntoView({behavior:'smooth',block:'nearest'}),100);};g.appendChild(c);});
   },
   showSD(d) {
     const el=document.getElementById('starter-detail');el.style.display='block';
