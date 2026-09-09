@@ -598,6 +598,33 @@ const Sprites = {
     return `rgb(${r},${g},${b})`;
   },
 
+  // Rotate a colour's hue a little; two species sharing an element still read as
+  // that element but never as the same creature repainted.
+  hueShift(hex, deg, satMul, litAdd) {
+    const c = hex.replace('#','');
+    const full = c.length === 3 ? c.split('').map(ch=>ch+ch).join('') : c;
+    const n = parseInt(full, 16);
+    let r = ((n>>16)&255)/255, g = ((n>>8)&255)/255, b = (n&255)/255;
+    const mx = Math.max(r,g,b), mn = Math.min(r,g,b), d = mx-mn;
+    let h = 0;
+    if (d) {
+      if (mx === r) h = ((g-b)/d) % 6;
+      else if (mx === g) h = (b-r)/d + 2;
+      else h = (r-g)/d + 4;
+    }
+    h = (h*60 + deg + 360) % 360;
+    let l = (mx+mn)/2;
+    let sat = d === 0 ? 0 : d/(1-Math.abs(2*l-1));
+    sat = Math.max(0, Math.min(1, sat*(satMul===undefined?1:satMul)));
+    l = Math.max(0.12, Math.min(0.88, l + (litAdd||0)));
+    const cc = (1-Math.abs(2*l-1))*sat, x = cc*(1-Math.abs((h/60)%2-1)), m = l-cc/2;
+    let rr,gg,bb;
+    if (h<60){rr=cc;gg=x;bb=0;} else if (h<120){rr=x;gg=cc;bb=0;} else if (h<180){rr=0;gg=cc;bb=x;}
+    else if (h<240){rr=0;gg=x;bb=cc;} else if (h<300){rr=x;gg=0;bb=cc;} else {rr=cc;gg=0;bb=x;}
+    const to = v => Math.round((v+m)*255);
+    return `rgb(${to(rr)},${to(gg)},${to(bb)})`;
+  },
+
   // ===================== ORIGINAL CREATURE ART (kein Pokemon-Design, eigene Kreaturen) =====================
   TYPE_COLORS: {
     fire:'#e05a2a', water:'#3a8fe0', grass:'#4caf4c', electric:'#e0c020', normal:'#a8a878',
@@ -611,96 +638,332 @@ const Sprites = {
     return Math.abs(h);
   },
 
-  drawCreatureAccessory(ctx, s, type, seed, col, dark) {
-    const cx = s/2;
+  // Body plan per element, so a fire creature and a water creature are not the same
+  // blob in two colours. Each form places its own head, which every other feature
+  // is then positioned against.
+  CREATURE_FORM: {
+    fire:'biped', fighting:'biped', normal:'biped', psychic:'biped', electric:'biped',
+    water:'quad', ground:'quad', rock:'quad', ice:'quad',
+    grass:'bulb', poison:'bulb',
+    flying:'wing', dragon:'wing',
+    ghost:'wisp',
+  },
+
+  creatureFace(ctx, s, hx, hy, hr, dark, tier, mood) {
+    const ex = hr*0.44, ey = -hr*0.08, er = hr*0.30;
+    for (const dir of [-1, 1]) {
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.ellipse(hx+dir*ex, hy+ey, er*0.85, er, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#1a1a22';
+      ctx.beginPath(); ctx.arc(hx+dir*ex+dir*er*0.14, hy+ey+er*0.14, er*0.46, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(hx+dir*ex-dir*er*0.22, hy+ey-er*0.28, er*0.2, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.strokeStyle = dark; ctx.lineWidth = Math.max(1, s*0.016); ctx.lineCap = 'round';
+    ctx.beginPath();
+    if (mood === 'fang') {
+      ctx.moveTo(hx-hr*0.26, hy+hr*0.42); ctx.lineTo(hx+hr*0.26, hy+hr*0.42); ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.moveTo(hx-hr*0.2, hy+hr*0.42); ctx.lineTo(hx-hr*0.08, hy+hr*0.42);
+      ctx.lineTo(hx-hr*0.14, hy+hr*0.62); ctx.closePath(); ctx.fill();
+    } else if (mood === 'beak') {
+      ctx.fillStyle = this.shade(dark, 70);
+      ctx.beginPath(); ctx.moveTo(hx-hr*0.2, hy+hr*0.3); ctx.lineTo(hx+hr*0.2, hy+hr*0.3);
+      ctx.lineTo(hx, hy+hr*0.66); ctx.closePath(); ctx.fill();
+    } else {
+      ctx.arc(hx, hy+hr*0.18, hr*0.3, 0.2*Math.PI, 0.8*Math.PI); ctx.stroke();
+    }
+  },
+
+  // Type ornament, placed relative to whatever head the form produced.
+  drawCreatureAccessory(ctx, s, type, seed, col, dark, h) {
+    const hx = h.x, hy = h.y, hr = h.r;
     ctx.fillStyle = dark;
     if (type === 'fire') {
-      ctx.beginPath(); ctx.moveTo(cx-s*0.08, s*0.18); ctx.lineTo(cx, s*0.02); ctx.lineTo(cx+s*0.08, s*0.18); ctx.fill();
-      ctx.fillStyle = this.shade(col, 40);
-      ctx.beginPath(); ctx.moveTo(cx-s*0.04, s*0.16); ctx.lineTo(cx, s*0.06); ctx.lineTo(cx+s*0.04, s*0.16); ctx.fill();
+      const fy = hy - hr;
+      ctx.fillStyle = '#ff8a1c';
+      ctx.beginPath(); ctx.moveTo(hx-hr*0.42, fy+hr*0.2); ctx.quadraticCurveTo(hx-hr*0.2, fy-hr*0.7, hx, fy-hr*1.0);
+      ctx.quadraticCurveTo(hx+hr*0.25, fy-hr*0.6, hx+hr*0.42, fy+hr*0.2);
+      ctx.quadraticCurveTo(hx, fy-hr*0.1, hx-hr*0.42, fy+hr*0.2); ctx.fill();
+      ctx.fillStyle = '#ffd83a';
+      ctx.beginPath(); ctx.moveTo(hx-hr*0.18, fy+hr*0.12); ctx.quadraticCurveTo(hx, fy-hr*0.55, hx+hr*0.18, fy+hr*0.12);
+      ctx.quadraticCurveTo(hx, fy-hr*0.1, hx-hr*0.18, fy+hr*0.12); ctx.fill();
     } else if (type === 'water') {
-      ctx.beginPath(); ctx.ellipse(cx, s*0.18, s*0.06, s*0.1, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = this.shade(col, 55);
+      ctx.beginPath(); ctx.moveTo(hx-hr*0.5, hy-hr*0.75); ctx.quadraticCurveTo(hx, hy-hr*1.9, hx+hr*0.5, hy-hr*0.75);
+      ctx.quadraticCurveTo(hx, hy-hr*0.95, hx-hr*0.5, hy-hr*0.75); ctx.fill();
+      ctx.fillStyle = dark;
+      ctx.beginPath(); ctx.arc(hx-hr*0.9, hy+hr*0.2, hr*0.16, 0, Math.PI*2); ctx.fill();
     } else if (type === 'grass') {
-      ctx.beginPath(); ctx.ellipse(cx-s*0.06, s*0.16, s*0.05, s*0.11, -0.4, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(cx+s*0.06, s*0.16, s*0.05, s*0.11, 0.4, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = this.shade(col, -35);
+      for (const [ang, len] of [[-0.9, 1.15], [0, 1.45], [0.9, 1.15]]) {
+        ctx.save(); ctx.translate(hx, hy-hr*0.62); ctx.rotate(ang);
+        ctx.beginPath(); ctx.ellipse(0, -hr*len*0.5, hr*0.3, hr*len*0.55, 0, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+      ctx.fillStyle = this.shade(col, 30);
+      ctx.beginPath(); ctx.arc(hx, hy-hr*0.7, hr*0.22, 0, Math.PI*2); ctx.fill();
     } else if (type === 'electric') {
-      ctx.beginPath(); ctx.moveTo(cx-s*0.22,s*0.22); ctx.lineTo(cx-s*0.32,s*0.1); ctx.lineTo(cx-s*0.24,s*0.12); ctx.lineTo(cx-s*0.3,s*0.02); ctx.lineTo(cx-s*0.18,s*0.16); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(cx+s*0.22,s*0.22); ctx.lineTo(cx+s*0.32,s*0.1); ctx.lineTo(cx+s*0.24,s*0.12); ctx.lineTo(cx+s*0.3,s*0.02); ctx.lineTo(cx+s*0.18,s*0.16); ctx.fill();
+      ctx.fillStyle = '#ffd83a';
+      for (const dir of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(hx+dir*hr*0.55, hy-hr*0.6);
+        ctx.lineTo(hx+dir*hr*1.25, hy-hr*1.55);
+        ctx.lineTo(hx+dir*hr*0.95, hy-hr*1.4);
+        ctx.lineTo(hx+dir*hr*1.5, hy-hr*2.15);
+        ctx.lineTo(hx+dir*hr*0.5, hy-hr*1.2);
+        ctx.lineTo(hx+dir*hr*0.8, hy-hr*1.15);
+        ctx.closePath(); ctx.fill();
+      }
     } else if (type === 'poison') {
-      for (let i=0;i<3;i++){ ctx.beginPath(); ctx.arc(cx-s*0.18+i*s*0.18, s*0.16, s*0.05, 0, Math.PI*2); ctx.fill(); }
+      ctx.fillStyle = this.shade(col, -40); ctx.globalAlpha = 0.85;
+      for (let i = 0; i < 3; i++) {
+        const r = hr*(0.3 - i*0.06);
+        ctx.beginPath(); ctx.arc(hx-hr*0.7+i*hr*0.7, hy-hr*(1.0+i*0.35), r, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
     } else if (type === 'ground') {
-      ctx.beginPath(); ctx.moveTo(cx-s*0.06,s*0.2); ctx.lineTo(cx,s*0.06); ctx.lineTo(cx+s*0.06,s*0.2); ctx.fill();
+      ctx.fillStyle = this.shade(col, -45);
+      ctx.beginPath(); ctx.moveTo(hx-hr*0.5, hy-hr*0.7); ctx.lineTo(hx-hr*0.15, hy-hr*1.5);
+      ctx.lineTo(hx+hr*0.2, hy-hr*0.7); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(hx+hr*0.15, hy-hr*0.7); ctx.lineTo(hx+hr*0.5, hy-hr*1.25);
+      ctx.lineTo(hx+hr*0.75, hy-hr*0.7); ctx.fill();
     } else if (type === 'flying') {
-      ctx.beginPath(); ctx.ellipse(cx-s*0.3, s*0.32, s*0.14, s*0.09, -0.3, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(cx+s*0.3, s*0.32, s*0.14, s*0.09, 0.3, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = this.shade(col, 40);
+      ctx.beginPath(); ctx.moveTo(hx-hr*0.4, hy-hr*0.8); ctx.lineTo(hx-hr*0.15, hy-hr*1.5);
+      ctx.lineTo(hx+hr*0.1, hy-hr*0.85); ctx.fill();
     } else if (type === 'psychic') {
-      ctx.beginPath(); ctx.arc(cx, s*0.16, s*0.06, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill();
-      ctx.strokeStyle = dark; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, s*0.16, s*0.09, 0, Math.PI*2); ctx.stroke();
+      ctx.fillStyle = '#fff6b0';
+      ctx.beginPath(); ctx.arc(hx, hy-hr*1.15, hr*0.26, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = this.shade(col, 50); ctx.lineWidth = Math.max(1, s*0.018); ctx.globalAlpha = 0.8;
+      ctx.beginPath(); ctx.ellipse(hx, hy-hr*1.15, hr*0.62, hr*0.26, 0.5, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(hx, hy-hr*1.15, hr*0.62, hr*0.26, -0.5, 0, Math.PI*2); ctx.stroke();
+      ctx.globalAlpha = 1;
     } else if (type === 'rock') {
-      for (let i=0;i<4;i++){ const ang=(i/4)*Math.PI-Math.PI/2; ctx.beginPath(); ctx.moveTo(cx+Math.cos(ang)*s*0.28, s*0.3+Math.sin(ang)*s*0.1); ctx.lineTo(cx+Math.cos(ang)*s*0.34, s*0.3+Math.sin(ang)*s*0.1-s*0.12); ctx.lineTo(cx+Math.cos(ang)*s*0.4, s*0.3+Math.sin(ang)*s*0.1); ctx.fill(); }
+      ctx.fillStyle = this.shade(col, -35);
+      for (const [dx, dy, r] of [[-0.85, -0.7, 0.34], [0, -1.0, 0.42], [0.85, -0.65, 0.3]]) {
+        ctx.beginPath();
+        ctx.moveTo(hx+hr*dx-hr*r, hy+hr*dy+hr*r*0.7);
+        ctx.lineTo(hx+hr*dx, hy+hr*dy-hr*r);
+        ctx.lineTo(hx+hr*dx+hr*r, hy+hr*dy+hr*r*0.7);
+        ctx.closePath(); ctx.fill();
+      }
     } else if (type === 'ice') {
-      for (let i=0;i<5;i++){ const a=(i/5)*Math.PI*2; ctx.beginPath(); ctx.moveTo(cx,s*0.18); ctx.lineTo(cx+Math.cos(a)*s*0.14, s*0.18+Math.sin(a)*s*0.14); ctx.stroke(); }
-      ctx.strokeStyle = dark; ctx.lineWidth = 2;
-      for (let i=0;i<5;i++){ const a=(i/5)*Math.PI*2; ctx.beginPath(); ctx.moveTo(cx,s*0.18); ctx.lineTo(cx+Math.cos(a)*s*0.14, s*0.18+Math.sin(a)*s*0.14); ctx.stroke(); }
+      ctx.strokeStyle = '#dff4ff'; ctx.lineWidth = Math.max(1.5, s*0.022); ctx.lineCap = 'round';
+      const iy = hy-hr*1.2;
+      for (let i = 0; i < 3; i++) {
+        const a = (i/3)*Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(hx-Math.cos(a)*hr*0.62, iy-Math.sin(a)*hr*0.62);
+        ctx.lineTo(hx+Math.cos(a)*hr*0.62, iy+Math.sin(a)*hr*0.62);
+        ctx.stroke();
+      }
     } else if (type === 'dragon') {
-      ctx.beginPath(); ctx.moveTo(cx-s*0.12,s*0.18); ctx.lineTo(cx-s*0.18,s*0.02); ctx.lineTo(cx-s*0.06,s*0.16); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(cx+s*0.12,s*0.18); ctx.lineTo(cx+s*0.18,s*0.02); ctx.lineTo(cx+s*0.06,s*0.16); ctx.fill();
-      if (seed % 2 === 0) { ctx.fillStyle = this.shade(col,-30); ctx.globalAlpha=0.7; ctx.beginPath(); ctx.ellipse(cx-s*0.34,s*0.4,s*0.14,s*0.08,-0.3,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.ellipse(cx+s*0.34,s*0.4,s*0.14,s*0.08,0.3,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; }
+      ctx.fillStyle = this.shade(col, -40);
+      for (const dir of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(hx+dir*hr*0.45, hy-hr*0.55);
+        ctx.lineTo(hx+dir*hr*1.05, hy-hr*1.5);
+        ctx.lineTo(hx+dir*hr*0.35, hy-hr*0.95);
+        ctx.closePath(); ctx.fill();
+      }
     } else if (type === 'ghost') {
-      ctx.globalAlpha = 0.55; ctx.fillStyle = col;
-      ctx.beginPath(); ctx.moveTo(cx-s*0.24,s*0.5); ctx.lineTo(cx-s*0.24,s*0.62); ctx.lineTo(cx-s*0.1,s*0.54); ctx.lineTo(cx,s*0.64); ctx.lineTo(cx+s*0.1,s*0.54); ctx.lineTo(cx+s*0.24,s*0.62); ctx.lineTo(cx+s*0.24,s*0.5); ctx.fill();
+      ctx.fillStyle = this.shade(col, 55); ctx.globalAlpha = 0.7;
+      ctx.beginPath(); ctx.arc(hx-hr*0.85, hy-hr*0.95, hr*0.18, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(hx+hr*0.95, hy-hr*1.25, hr*0.12, 0, Math.PI*2); ctx.fill();
       ctx.globalAlpha = 1;
     } else if (type === 'fighting') {
-      ctx.beginPath(); ctx.arc(cx-s*0.26, s*0.42, s*0.08, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(cx+s*0.26, s*0.42, s*0.08, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = this.shade(col, -45);
+      ctx.fillRect(hx-hr*0.85, hy-hr*0.72, hr*1.7, hr*0.26);
+      ctx.fillStyle = this.shade(col, 40);
+      ctx.fillRect(hx-hr*0.2, hy-hr*0.72, hr*0.4, hr*0.26);
     } else {
-      ctx.beginPath(); ctx.ellipse(cx-s*0.2, s*0.14, s*0.06, s*0.09, 0, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(cx+s*0.2, s*0.14, s*0.06, s*0.09, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = this.shade(col, -35);
+      for (const dir of [-1, 1]) {
+        ctx.beginPath();
+        ctx.ellipse(hx+dir*hr*0.62, hy-hr*0.85, hr*0.24, hr*0.46, dir*0.42, 0, Math.PI*2); ctx.fill();
+      }
     }
+  },
+
+  // Markings break up the silhouette; which one a species wears comes from its seed.
+  creatureMarks(ctx, s, kind, mark, cx, cy, w, h) {
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(cx, cy, w, h, 0, 0, Math.PI*2); ctx.clip();
+    ctx.fillStyle = kind; ctx.globalAlpha = 0.5;
+    if (mark === 0) {
+      for (let i = -2; i <= 2; i++) ctx.fillRect(cx+i*w*0.42-w*0.07, cy-h, w*0.14, h*2);
+    } else if (mark === 1) {
+      for (let i = 0; i < 5; i++) {
+        const a = i*2.4;
+        ctx.beginPath(); ctx.arc(cx+Math.cos(a)*w*0.55, cy+Math.sin(a)*h*0.55, w*0.17, 0, Math.PI*2); ctx.fill();
+      }
+    } else if (mark === 2) {
+      ctx.beginPath(); ctx.ellipse(cx, cy-h*0.55, w*1.2, h*0.6, 0, 0, Math.PI*2); ctx.fill();
+    } else if (mark === 3) {
+      for (let i = -2; i <= 2; i++) ctx.fillRect(cx-w, cy+i*h*0.42-h*0.08, w*2, h*0.16);
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  },
+
+  creatureBody(ctx, s, form, col, dark, light, tier, seed, v) {
+    const cx = s/2;
+    const g = (0.86 + Math.min(tier, 4) * 0.05) * (v ? v.size : 1);
+    const outline = this.shade(col, -68);
+    ctx.strokeStyle = outline; ctx.lineWidth = Math.max(1, s*0.018); ctx.lineJoin = 'round';
+    const fillStroke = () => { ctx.fill(); ctx.stroke(); };
+
+    if (form === 'quad') {
+      const bw = s*0.30*g*(v?v.wf:1), bh = s*0.20*g*(v?v.hf:1), cy = s*0.60;
+      ctx.fillStyle = dark;
+      for (const dx of [-0.72, -0.3, 0.3, 0.72]) {
+        ctx.beginPath(); ctx.roundRect(cx+bw*dx-s*0.035, cy+bh*0.55, s*0.07, s*0.15, s*0.02); fillStroke();
+      }
+      ctx.fillStyle = dark;
+      ctx.beginPath(); ctx.ellipse(cx-bw*1.02, cy-bh*0.1, bw*0.3, bh*0.3, 0.6, 0, Math.PI*2); fillStroke();
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.ellipse(cx, cy, bw, bh, 0, 0, Math.PI*2); fillStroke();
+      ctx.fillStyle = light; ctx.globalAlpha = 0.75;
+      ctx.beginPath(); ctx.ellipse(cx, cy+bh*0.34, bw*0.66, bh*0.5, 0, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+      if (v && v.mark >= 0) this.creatureMarks(ctx, s, dark, v.mark, cx, cy, bw, bh);
+      const hr = s*0.135*g*(v?v.hd:1);
+      const hx = cx+bw*0.82, hy = cy-bh*0.72;
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(hx, hy, hr, 0, Math.PI*2); fillStroke();
+      return {x:hx, y:hy, r:hr, mood:'fang'};
+    }
+
+    if (form === 'bulb') {
+      const br = s*0.27*g*(v?(v.wf+v.hf)/2:1), cy = s*0.58;
+      ctx.fillStyle = dark;
+      for (const dx of [-0.5, 0.5]) {
+        ctx.beginPath(); ctx.roundRect(cx+br*dx-s*0.045, cy+br*0.72, s*0.09, s*0.13, s*0.03); fillStroke();
+      }
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.ellipse(cx, cy, br*1.05, br, 0, 0, Math.PI*2); fillStroke();
+      ctx.fillStyle = light; ctx.globalAlpha = 0.7;
+      ctx.beginPath(); ctx.ellipse(cx, cy+br*0.3, br*0.68, br*0.6, 0, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+      if (v && v.mark >= 0) this.creatureMarks(ctx, s, dark, v.mark, cx, cy, br*1.05, br);
+      ctx.fillStyle = dark; ctx.globalAlpha = 0.45;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath(); ctx.arc(cx-br*0.55+i*br*0.55, cy+br*0.1+((i%2)?br*0.2:0), br*0.14, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      return {x:cx, y:cy-br*0.26, r:s*0.145*g*(v?v.hd:1), mood:'smile'};
+    }
+
+    if (form === 'wing') {
+      const bw = s*0.21*g*(v?v.wf:1), bh = s*0.25*g*(v?v.hf:1), cy = s*0.60;
+      ctx.fillStyle = this.shade(col, -22);
+      for (const dir of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(cx+dir*bw*0.7, cy-bh*0.5);
+        ctx.quadraticCurveTo(cx+dir*bw*2.9, cy-bh*1.35, cx+dir*bw*2.5, cy+bh*0.25);
+        ctx.quadraticCurveTo(cx+dir*bw*1.8, cy-bh*0.15, cx+dir*bw*0.7, cy+bh*0.3);
+        ctx.closePath(); fillStroke();
+      }
+      ctx.fillStyle = dark;
+      for (const dx of [-0.55, 0.55]) {
+        ctx.beginPath(); ctx.roundRect(cx+bw*dx-s*0.035, cy+bh*0.7, s*0.07, s*0.13, s*0.02); fillStroke();
+      }
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.ellipse(cx, cy, bw, bh, 0, 0, Math.PI*2); fillStroke();
+      ctx.fillStyle = light; ctx.globalAlpha = 0.7;
+      ctx.beginPath(); ctx.ellipse(cx, cy+bh*0.28, bw*0.6, bh*0.55, 0, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+      if (v && v.mark >= 0) this.creatureMarks(ctx, s, dark, v.mark, cx, cy, bw, bh);
+      const hr = s*0.135*g*(v?v.hd:1), hy = cy-bh-hr*0.55;
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(cx, hy, hr, 0, Math.PI*2); fillStroke();
+      return {x:cx, y:hy, r:hr, mood:'beak'};
+    }
+
+    if (form === 'wisp') {
+      const bw = s*0.24*g*(v?v.wf:1), bh = s*0.27*g*(v?v.hf:1), cy = s*0.50;
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(cx-bw, cy+bh*0.25);
+      ctx.quadraticCurveTo(cx-bw, cy-bh*1.25, cx, cy-bh*1.25);
+      ctx.quadraticCurveTo(cx+bw, cy-bh*1.25, cx+bw, cy+bh*0.25);
+      for (let i = 0; i < 4; i++) {
+        const x0 = cx+bw-(i*2+1)*(bw/4), x1 = cx+bw-(i*2+2)*(bw/4);
+        ctx.quadraticCurveTo(x0, cy+bh*0.95, x1, cy+bh*0.45);
+      }
+      ctx.closePath(); fillStroke();
+      ctx.fillStyle = light; ctx.globalAlpha = 0.4;
+      ctx.beginPath(); ctx.ellipse(cx, cy+bh*0.1, bw*0.5, bh*0.45, 0, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+      return {x:cx, y:cy-bh*0.45, r:s*0.15*g*(v?v.hd:1), mood:'fang'};
+    }
+
+    // 'biped'
+    const bw = s*0.20*g*(v?v.wf:1), bh = s*0.23*g*(v?v.hf:1), cy = s*0.62;
+    ctx.fillStyle = dark;
+    for (const dx of [-0.62, 0.62]) {
+      ctx.beginPath(); ctx.roundRect(cx+bw*dx-s*0.045, cy+bh*0.68, s*0.09, s*0.15, s*0.03); fillStroke();
+    }
+    for (const dir of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(cx+dir*bw*1.15, cy+bh*0.05, bw*0.34, bh*0.24, dir*0.5, 0, Math.PI*2); fillStroke();
+    }
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.ellipse(cx, cy, bw, bh, 0, 0, Math.PI*2); fillStroke();
+    ctx.fillStyle = light; ctx.globalAlpha = 0.75;
+    ctx.beginPath(); ctx.ellipse(cx, cy+bh*0.3, bw*0.6, bh*0.55, 0, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+    if (v && v.mark >= 0) this.creatureMarks(ctx, s, dark, v.mark, cx, cy, bw, bh);
+    const hr = s*0.155*g*(v?v.hd:1), hy = cy-bh-hr*0.5;
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(cx, hy, hr, 0, Math.PI*2); fillStroke();
+    return {x:cx, y:hy, r:hr, mood:'smile'};
   },
 
   drawCreature(ctx, s, type, tier, seed) {
     ctx.clearRect(0, 0, s, s);
-    const col = this.TYPE_COLORS[type] || '#a8a878';
+    const base = this.TYPE_COLORS[type] || '#a8a878';
+    const form = this.CREATURE_FORM[type] || 'biped';
+    const t = Math.max(1, Math.min(4, tier || 1));
+
+    // One deterministic stream per species drives colour, proportions and markings,
+    // so every entry in the dex is its own creature rather than a resized twin.
+    let h = (seed || 1) >>> 0;
+    const rnd = () => { h = (h*1103515245+12345) & 0x7fffffff; return h/0x7fffffff; };
+    const col = this.hueShift(base, (rnd()*2-1)*26, 0.82+rnd()*0.5, (rnd()*2-1)*0.09);
     const dark = this.shade(col, -50);
     const light = this.shade(col, 45);
-    const scale = 0.62 + Math.min(tier, 4) * 0.083;
-    const bw = s * scale * 0.42, bh = s * scale * 0.36;
-    const cx = s/2, cy = s*0.56;
+    const v = {
+      size: 0.94+rnd()*0.14,
+      wf: 0.86+rnd()*0.3,
+      hf: 0.86+rnd()*0.3,
+      hd: 0.85+rnd()*0.35,
+      mark: rnd() < 0.7 ? Math.floor(rnd()*4) : -1,
+    };
 
-    // Schatten
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.beginPath(); ctx.ellipse(cx, s*0.88, bw*0.7, s*0.06, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath(); ctx.ellipse(s/2, s*0.885, s*0.24, s*0.05, 0, 0, Math.PI*2); ctx.fill();
 
-    // Beinstummel
-    ctx.fillStyle = dark;
-    ctx.fillRect(cx-bw*0.55, cy+bh*0.55, bw*0.28, s*0.14);
-    ctx.fillRect(cx+bw*0.27, cy+bh*0.55, bw*0.28, s*0.14);
+    const head = this.creatureBody(ctx, s, form, col, dark, light, t, seed, v);
+    this.drawCreatureAccessory(ctx, s, type, seed, col, dark, head);
+    this.creatureFace(ctx, s, head.x, head.y, head.r, dark, t, head.mood);
 
-    // Koerper
-    ctx.fillStyle = col;
-    ctx.beginPath(); ctx.ellipse(cx, cy, bw, bh, 0, 0, Math.PI*2); ctx.fill();
-
-    // Bauch
-    ctx.fillStyle = light;
-    ctx.beginPath(); ctx.ellipse(cx, cy+bh*0.25, bw*0.6, bh*0.55, 0, 0, Math.PI*2); ctx.fill();
-
-    this.drawCreatureAccessory(ctx, s, type, seed, col, dark);
-
-    // Augen
-    const eyeY = cy - bh*0.15, eyeDx = bw*0.38;
-    for (const dir of [-1, 1]) {
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.ellipse(cx+dir*eyeDx, eyeY, s*0.05, s*0.06, 0, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#222';
-      ctx.beginPath(); ctx.arc(cx+dir*eyeDx+dir*s*0.01, eyeY+s*0.01, s*0.026, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(cx+dir*eyeDx-dir*s*0.008, eyeY-s*0.012, s*0.01, 0, Math.PI*2); ctx.fill();
+    // Higher evolutions wear their rank: a crest, then a full aura.
+    if (t >= 3) {
+      ctx.fillStyle = this.shade(col, 60);
+      ctx.beginPath();
+      ctx.moveTo(head.x-head.r*0.3, head.y-head.r*0.92);
+      ctx.lineTo(head.x, head.y-head.r*1.45);
+      ctx.lineTo(head.x+head.r*0.3, head.y-head.r*0.92);
+      ctx.closePath(); ctx.fill();
     }
-
-    if (tier >= 4) {
-      ctx.strokeStyle = light; ctx.globalAlpha = 0.5; ctx.lineWidth = s*0.02;
-      ctx.beginPath(); ctx.ellipse(cx, cy, bw*1.25, bh*1.3, 0, 0, Math.PI*2); ctx.stroke();
+    if (t >= 4) {
+      ctx.strokeStyle = light; ctx.globalAlpha = 0.55; ctx.lineWidth = s*0.022;
+      ctx.beginPath(); ctx.ellipse(s/2, s*0.6, s*0.42, s*0.4, 0, 0, Math.PI*2); ctx.stroke();
+      ctx.globalAlpha = 0.28;
+      ctx.beginPath(); ctx.ellipse(s/2, s*0.6, s*0.47, s*0.45, 0, 0, Math.PI*2); ctx.stroke();
       ctx.globalAlpha = 1;
     }
   },
@@ -1697,6 +1960,110 @@ const Au = {
   enc(){[400,500,600,500,700].forEach((f,i)=>setTimeout(()=>this.p(f,0.1,'square',0.06),i*60));},
   fl(){this.p(500,0.1,'sine',0.05);setTimeout(()=>this.p(350,0.2,'sine',0.04),100);},
   boom(){this.p(55,0.5,'sawtooth',0.14);setTimeout(()=>this.p(40,0.6,'triangle',0.1),50);this.p(1400,0.05,'square',0.03);setTimeout(()=>this.p(900,0.08,'square',0.025),40);},
+
+  // ===== Species cries =====
+  // Every species gets its own call, synthesised rather than sampled. The element
+  // type picks the timbre, the evolution tier sets the register (bigger = deeper),
+  // and the species id seeds the melodic contour - so a cry is always the same for
+  // a given species and always different between two of them.
+  CRY:{
+    fire:    {w:'sawtooth',vib:20,vd:0.05,noise:0.34,mul:1.05,rasp:0.5},
+    water:   {w:'sine',    vib:13,vd:0.09,noise:0.05,mul:0.96,rasp:0.15},
+    grass:   {w:'triangle',vib:8, vd:0.06,noise:0.12,mul:1.00,rasp:0.2},
+    electric:{w:'square',  vib:34,vd:0.10,noise:0.24,mul:1.28,rasp:0.45},
+    normal:  {w:'square',  vib:11,vd:0.05,noise:0.10,mul:1.02,rasp:0.25},
+    poison:  {w:'sawtooth',vib:17,vd:0.08,noise:0.28,mul:0.90,rasp:0.4},
+    ground:  {w:'triangle',vib:6, vd:0.04,noise:0.32,mul:0.74,rasp:0.5},
+    flying:  {w:'sine',    vib:27,vd:0.12,noise:0.07,mul:1.32,rasp:0.1},
+    psychic: {w:'sine',    vib:31,vd:0.14,noise:0.03,mul:1.16,rasp:0.1},
+    rock:    {w:'square',  vib:4, vd:0.03,noise:0.42,mul:0.70,rasp:0.6},
+    ice:     {w:'sine',    vib:10,vd:0.04,noise:0.04,mul:1.38,rasp:0.05},
+    dragon:  {w:'sawtooth',vib:15,vd:0.07,noise:0.30,mul:0.64,rasp:0.55},
+    ghost:   {w:'sine',    vib:42,vd:0.20,noise:0.16,mul:0.86,rasp:0.2},
+    fighting:{w:'square',  vib:8, vd:0.05,noise:0.26,mul:0.88,rasp:0.4},
+  },
+  noiseBuf:null,
+  getNoise(){
+    if(this.noiseBuf)return this.noiseBuf;
+    const n=Math.floor(this.ctx.sampleRate*0.5);
+    const b=this.ctx.createBuffer(1,n,this.ctx.sampleRate);
+    const d=b.getChannelData(0);
+    for(let i=0;i<n;i++)d[i]=Math.random()*2-1;
+    this.noiseBuf=b;return b;
+  },
+  // Shape of one species' call: contour points, length and register.
+  cryShape(mon){
+    const pr=this.CRY[mon.t]||this.CRY.normal;
+    let h=0;const id=String(mon.id||'x');
+    for(let i=0;i<id.length;i++)h=(h*31+id.charCodeAt(i))|0;
+    h=Math.abs(h)||7;
+    const rnd=()=>{h=(h*1103515245+12345)&0x7fffffff;return h/0x7fffffff;};
+    const tier=Math.max(1,Math.min(4,mon.tier||1));
+    const base=(170+rnd()*170)*pr.mul*Math.pow(0.8,tier-1);
+    const dur=0.3+tier*0.05+rnd()*0.14;
+    const steps=3+Math.floor(rnd()*3);
+    const pts=[0.72+rnd()*0.4];
+    for(let i=1;i<steps;i++)pts.push(0.55+rnd()*1.05);
+    return {pr,base,dur,pts,tier};
+  },
+  cry(mon,opts){
+    if(!this.on||!this.ctx||!mon)return;
+    this.res();
+    const o=opts||{};
+    const sh=this.cryShape(mon);
+    const pr=sh.pr, t0=this.ctx.currentTime+0.01;
+    const dur=sh.dur*(o.slow?1.7:1);
+    const vol=(o.vol!==undefined?o.vol:0.075);
+    const out=this.ctx.createGain();
+    out.gain.value=1; out.connect(this.ctx.destination);
+
+    // Frequency contour, bent downwards when the creature is going down.
+    const freqs=sh.pts.map((p,i)=>{
+      let f=sh.base*p;
+      if(o.faint)f*=Math.pow(0.55,i/Math.max(1,sh.pts.length-1));
+      return Math.max(40,Math.min(3500,f));
+    });
+    const seg=dur/freqs.length;
+
+    const voice=(mult,gainV,wave)=>{
+      const osc=this.ctx.createOscillator(),g=this.ctx.createGain();
+      osc.type=wave;
+      osc.frequency.setValueAtTime(freqs[0]*mult,t0);
+      freqs.forEach((f,i)=>{
+        const tt=t0+seg*(i+1);
+        if(i%2===0)osc.frequency.exponentialRampToValueAtTime(f*mult,tt);
+        else osc.frequency.setTargetAtTime(f*mult,t0+seg*i,seg*0.4);
+      });
+      g.gain.setValueAtTime(0.0001,t0);
+      g.gain.exponentialRampToValueAtTime(gainV,t0+0.02);
+      g.gain.setValueAtTime(gainV,t0+dur*0.7);
+      g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+      osc.connect(g);g.connect(out);
+      osc.start(t0);osc.stop(t0+dur+0.05);
+      return osc;
+    };
+    const main=voice(1,vol,pr.w);
+    voice(2.007,vol*pr.rasp*0.45,'triangle');
+
+    // Vibrato gives the call a living, animal wobble instead of a flat beep.
+    const lfo=this.ctx.createOscillator(),lg=this.ctx.createGain();
+    lfo.frequency.value=pr.vib*(o.faint?0.5:1);
+    lg.gain.value=freqs[0]*pr.vd;
+    lfo.connect(lg);lg.connect(main.frequency);
+    lfo.start(t0);lfo.stop(t0+dur+0.05);
+
+    if(pr.noise>0.02){
+      const src=this.ctx.createBufferSource();src.buffer=this.getNoise();
+      const bp=this.ctx.createBiquadFilter();bp.type='bandpass';
+      bp.frequency.value=freqs[0]*2.2;bp.Q.value=1.4;
+      const ng=this.ctx.createGain();
+      ng.gain.setValueAtTime(0.0001,t0);
+      ng.gain.exponentialRampToValueAtTime(vol*pr.noise,t0+0.03);
+      ng.gain.exponentialRampToValueAtTime(0.0001,t0+dur*0.8);
+      src.connect(bp);bp.connect(ng);ng.connect(out);
+      src.start(t0);src.stop(t0+dur+0.05);
+    }
+  },
 };
 
 // ===================== DATA =====================
@@ -1947,6 +2314,46 @@ function bjornLines(){ return ['Alter Fischer Bjorn: Ich sitze seit vierzig Jahr
   'Im Basar gibt es Vorrate. Und im Center heilen sie umsonst - nutz das.']; }
 function nieveLines(){ return ['Handlerin Nieve: Willkommen! Ja, es ist kalt. Nein, daran gewohnt man sich nicht.',
   'Selbst hier am Ende der Welt gibt es Heiltranke und starkendes Futter. Das Geschaft halt die Leute bei Verstand.']; }
+// The arena gate: a keeper bars the only way in and only yields to someone who has
+// already proved themselves in the field, and then only after a fight.
+const GATES={
+  r1:{flag:'gateR1',name:'Torwache Brunn',shirt:'#8a5a2a',hair:'#3a2a1a',tier:2,lvBonus:3,need:5,
+      place:'Arena von Auenhain',
+      intro:['Torwache Brunn: Halt. Weiter kommt hier niemand.',
+        'Hinter mir liegt das Arenagelaende - und das ist keine Wiese, das ist ein Labyrinth aus Stein.',
+        'Meister Boreas laesst nur herein, wer den Weg allein findet. Und ich lasse nur herein, wer ihn uberlebt.'],
+      demand:n=>[`Torwache Brunn: Erst die Pflicht: ${n} gewonnene Kampfe. Du hast sie nicht.`,
+        'Geh ins hohe Gras. Komm wieder, wenn du zahlen kannst.'],
+      ready:['Torwache Brunn: Die Zahlen stimmen. Jetzt der Rest.',
+        'Ich bin die Prufung, nicht die Formalitat. Waffen hoch.'],
+      done:['Torwache Brunn: Der Weg ist offen. Im Labyrinth hilft dir niemand mehr.',
+        'Halte dich rechts, wenn du dich verirrst. Oder auch nicht - ich habe es selbst nie gemerkt.']},
+  r2:{flag:'gateR2',name:'Torwache Skarn',shirt:'#4a2060',hair:'#101010',tier:3,lvBonus:7,need:18,
+      place:'Schattenarena',
+      intro:['Torwache Skarn: Bleib stehen. Im Dunkeln sieht man den Abgrund nicht.',
+        'Das Gelaende hinter mir hat schon Trainer verschluckt, die besser waren als du.',
+        'Meister Voss will keine Leichen im Labyrinth. Also siebe ich vorher.'],
+      demand:n=>[`Torwache Skarn: ${n} Siege. So lautet die Schwelle.`,
+        'Nicht mein Massstab - der der Region. Sie ist unbarmherziger als ich.'],
+      ready:['Torwache Skarn: Genug Siege. Mal sehen, ob einer davon echt war.'],
+      done:['Torwache Skarn: Geh durch. Und zaehle deine Schritte - das Labyrinth zaehlt seine auch.']},
+  r3:{flag:'gateR3',name:'Torwache Eisla',shirt:'#1a4a70',hair:'#e8f2ff',tier:4,lvBonus:10,need:30,
+      place:'Frostarena',
+      intro:['Torwache Eisla: Nicht weitergehen. Der Wind hier schneidet.',
+        'Das Gelaende ist seit dem Riss vereist. Die Mauern haben sich verschoben, der Weg stimmt nicht mehr mit den Plaenen.',
+        'Wer da drin falsch abbiegt, findet nicht zurueck. Ich lasse nur Leute rein, die etwas aushalten.'],
+      demand:n=>[`Torwache Eisla: ${n} Siege, sonst nichts.`,
+        'Meisterin Elsa gibt ihren Anker nicht an Leute, die schon am Tor scheitern.'],
+      ready:['Torwache Eisla: Du hast genug hinter dir. Jetzt zeig es mir.'],
+      done:['Torwache Eisla: Durch. Und wenn du drin bist: nicht stehenbleiben. Kaelte holt Stehende zuerst.']},
+};
+function gateLines(region,s){
+  const g=GATES[region]; if(!g)return ['...'];
+  if(s.flags[g.flag])return g.done;
+  if(!s.flags['met'+g.flag])return g.intro;
+  if(s.battlesWon<g.need)return g.demand(g.need);
+  return g.ready;
+}
 function arena1Lines(s){
   if(s.flags.badgeR1) return ['Meister Boreas: Der Anker folgt dir, und das Dorf schlaft wieder ruhiger.','Geh nach Osten. Voss wird es dir schwerer machen als ich.'];
   return ['Meister Boreas: Willkommen. Du kommst wegen des Ankersteins, nicht wegen mir.',
@@ -2246,6 +2653,70 @@ function villRFor(region){ return region==='r2'?18:(region==='r3'?13:(region==='
 
 // ===================== TOWN & MAP BUILDING =====================
 const ARENA_DOOR={r1:T.DOOR_ARENA1,r2:T.DOOR_ARENA2,r3:T.DOOR_ARENA3};
+// Arena grounds are a walled compound: the door sits at the top, a maze fills the
+// space below it, and the single gap in the outer wall is the guarded gate.
+const AM_W=15, AM_H=11;                 // maze grid, both odd
+function arenaBounds(doorX,doorY){
+  const left=doorX-((AM_W-1)/2);
+  return {left,right:left+AM_W-1,top:doorY-2,bot:doorY+2+AM_H-1,mx0:left,my0:doorY+2};
+}
+function findTileAny(m,tiles){
+  for(let y=0;y<m.length;y++)for(const t of tiles){const x=m[y].indexOf(t);if(x!==-1)return {x,y};}
+  return null;
+}
+function arenaFits(doorX,doorY,W,H){
+  const b=arenaBounds(doorX,doorY);
+  return b.left-3>=2&&b.right+3<W-2&&b.top-2>=2&&b.bot+3<H-2;
+}
+// Perfect maze by iterative backtracking: exactly one route from the gate to the door,
+// so the grounds are a real navigation problem rather than an open field.
+function buildArenaCompound(m,doorX,doorY,doorTile,W,H){
+  const b=arenaBounds(doorX,doorY);
+  for(let y=b.top;y<=b.bot;y++)for(let x=b.left;x<=b.right;x++){
+    if(y<1||y>=H-1||x<1||x>=W-1)continue;
+    m[y][x]=T.ROCK;
+  }
+  const at=(gx,gy)=>({x:b.mx0+gx,y:b.my0+gy});
+  const vis={},k=(gx,gy)=>gx+':'+gy;
+  const startX=(AM_W-1)/2;
+  const stack=[[startX,1]]; vis[k(startX,1)]=1;
+  const c0=at(startX,1); m[c0.y][c0.x]=T.PATH;
+  while(stack.length){
+    const [gx,gy]=stack[stack.length-1];
+    const open=[[2,0],[-2,0],[0,2],[0,-2]].filter(([dx,dy])=>{
+      const nx=gx+dx,ny=gy+dy;
+      return nx>0&&nx<AM_W-1&&ny>0&&ny<AM_H-1&&!vis[k(nx,ny)];
+    });
+    if(!open.length){stack.pop();continue;}
+    const [dx,dy]=open[Math.floor(Math.random()*open.length)];
+    const nx=gx+dx,ny=gy+dy;
+    vis[k(nx,ny)]=1;
+    const w=at(gx+dx/2,gy+dy/2),c=at(nx,ny);
+    m[w.y][w.x]=T.PATH; m[c.y][c.x]=T.PATH;
+    stack.push([nx,ny]);
+  }
+  placeBuilding(m,doorX,doorY,doorTile,W,H);
+  const exitGap=at(startX,0);            // maze opening under the arena door
+  m[exitGap.y][exitGap.x]=T.PATH;
+  const gate=at(startX,AM_H-1);          // the single way in, where the guard stands
+  m[gate.y][gate.x]=T.PATH;
+  return {gate:{x:gate.x,y:gate.y},bounds:b};
+}
+// Road from the village to the gate that goes around the compound, never through it.
+function carveArenaRoad(m,sx,sy,doorX,doorY,W,H){
+  const b=arenaBounds(doorX,doorY);
+  const gateY=b.bot+1;
+  const side=sx<=doorX?b.left-2:b.right+2;
+  const lay=(x,y)=>{
+    if(x<1||x>=W-1||y<1||y>=H-1)return;
+    if(x>=b.left&&x<=b.right&&y>=b.top&&y<=b.bot)return;
+    if(isBuildTile(m[y][x]))return;
+    m[y][x]=(m[y][x]===T.WATER)?T.BRIDGE:T.PATH;
+  };
+  const s1=sx<side?1:-1; for(let x=sx;x!==side+s1;x+=s1)lay(x,sy);
+  const s2=sy<gateY?1:-1; for(let y=sy;y!==gateY+s2;y+=s2)lay(side,y);
+  const s3=side<doorX?1:-1; for(let x=side;x!==doorX+s3;x+=s3)lay(x,gateY);
+}
 function isBuildTile(t){ return (t>=T.ROOFL&&t<=T.WALLR)||DOOR_HOUSE[t]!==undefined; }
 
 // A building is a 3x2 block: roof row on top, walls flanking the door, path in front.
@@ -2257,12 +2728,20 @@ function placeBuilding(m,doorX,doorY,doorTile,W,H){
   return true;
 }
 
+// Walled areas later passes must not dig through - the arena grounds above all,
+// whose maze would otherwise be short-circuited by a homestead road.
+let noCarveRects=[];
+function inNoCarve(x,y){
+  for(const r of noCarveRects){ if(x>=r.x0&&x<=r.x1&&y>=r.y0&&y<=r.y1)return true; }
+  return false;
+}
+
 // Flatten a plot: paved directly in front of the door, grass around the rim.
 function carvePlaza(m,x,y,r,W,H){
   for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
     const ny=y+dy,nx=x+dx;
     if(ny<2||ny>=H-2||nx<2||nx>=W-2)continue;
-    if(isBuildTile(m[ny][nx]))continue;
+    if(isBuildTile(m[ny][nx])||inNoCarve(nx,ny))continue;
     m[ny][nx]=(Math.abs(dx)<=1||Math.abs(dy)<=1)?T.PATH:T.GRASS;
   }
 }
@@ -2271,7 +2750,7 @@ function carvePlaza(m,x,y,r,W,H){
 function carveRoad(m,x1,y1,x2,y2,W,H){
   const lay=(x,y)=>{
     if(y<0||y>=H||x<0||x>=W)return;
-    if(isBuildTile(m[y][x]))return;
+    if(isBuildTile(m[y][x])||inNoCarve(x,y))return;
     m[y][x]=(m[y][x]===T.WATER)?T.BRIDGE:T.PATH;
   };
   const sx=x1<x2?1:-1;
@@ -2303,7 +2782,7 @@ function landScore(m,x,y,r,W,H){
   for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
     const t=m[y+dy][x+dx];
     if(isBuildTile(t))return -1;
-    if(isReserved(x+dx,y+dy))return -1;
+    if(isReserved(x+dx,y+dy)||inNoCarve(x+dx,y+dy))return -1;
     tot++; if(t!==T.WATER)land++;
   }
   return land/tot;
@@ -2332,10 +2811,11 @@ function reachableMask(m,sx,sy,W,H){
 // Always yields a site as long as one candidate fits on the map and clashes with
 // no existing building: the plot is levelled afterwards, so a damp candidate is
 // still usable and a missing arena would be far worse than an imperfect one.
-function pickBuildSpot(m,sx,sy,W,H,offsets,r){
+function pickBuildSpot(m,sx,sy,W,H,offsets,r,fits){
   let best=null,bestScore=-1;
   for(const [ox,oy] of offsets){
     const x=sx+ox,y=sy+oy;
+    if(fits&&!fits(x,y))continue;
     const sc=landScore(m,x,y,r,W,H);
     if(sc<0)continue;
     if(sc>=0.999)return {x,y};
@@ -2344,7 +2824,7 @@ function pickBuildSpot(m,sx,sy,W,H,offsets,r){
   return best;
 }
 function arenaOffsets(R){
-  const d=R+8,q=Math.round(d*0.72),e=d+7;
+  const d=R+24,q=Math.round(d*0.72),e=d+9;
   return [[0,d],[q,q],[-q,q],[d,0],[-d,0],[0,-d],[q,-q],[-q,-q],
           [0,e],[e,0],[-e,0],[0,-e],[Math.round(e*0.72),Math.round(e*0.72)],[-Math.round(e*0.72),Math.round(e*0.72)]];
 }
@@ -2409,7 +2889,7 @@ function placeOutposts(m,region,sx,sy,W,H,villR){
 
 // ===================== GAME =====================
 const G = {
-  s:null, canvas:null, ctx:null, mmC:null, mmX:null,
+  s:null, canvas:null, ctx:null, mmC:null, mmX:null, mmBase:null, mmSrc:null, mmRegion:null,
   lastMove:0, moveDelay:120, battleBusy:false, frame:0,
   tileCache:{}, waterCache:[], tallCache:[],
 
@@ -2575,7 +3055,7 @@ const G = {
   getMoves(t,l){const p=MOVES[t]||MOVES.normal;const m=[p[0]];if(l>=10&&p[1])m.push(p[1]);if(l>=30&&p[2])m.push(p[2]);if(l>=5&&t!=='normal')m.push(MOVES.normal[0]);return m;},
   mkP(d,l){const m=this.mhp(d.hp,l);return{id:d.id,nm:d.nm,spr:d.spr,t:d.t,lv:l,xp:0,xpN:l*30+60,mhp:m,hp:m,atk:this.st(d.atk,l),def:this.st(d.def,l),spd:this.st(d.spd,l),bHp:d.hp,bAtk:d.atk,bDef:d.def,bSpd:d.spd,tier:d.tier,moves:this.getMoves(d.t,l),evoId:d.evo?d.evo.to:null,evoLv:d.evo?d.evo.lv:null};},
   rcP(p){const d=DB.find(x=>x.id===p.id);if(!d)return;p.mhp=this.mhp(d.hp,p.lv);p.atk=this.st(d.atk,p.lv);p.def=this.st(d.def,p.lv);p.spd=this.st(d.spd,p.lv);p.bHp=d.hp;p.bAtk=d.atk;p.bDef=d.def;p.bSpd=d.spd;p.moves=this.getMoves(p.t,p.lv);p.evoId=d.evo?d.evo.to:null;p.evoLv=d.evo?d.evo.lv:null;},
-  tryEvo(p){if(!p.evoId||!p.evoLv||p.lv<p.evoLv)return false;const nd=DB.find(x=>x.id===p.evoId);if(!nd)return false;const o=p.nm;p.id=nd.id;p.nm=nd.nm;p.spr=nd.spr;p.t=nd.t;p.tier=nd.tier;this.rcP(p);p.hp=p.mhp;this.popup(`${o} entwickelt sich zu ${p.nm}!`,'caught-popup',2500);Au.lv();return true;},
+  tryEvo(p){if(!p.evoId||!p.evoLv||p.lv<p.evoLv)return false;const nd=DB.find(x=>x.id===p.evoId);if(!nd)return false;const o=p.nm;p.id=nd.id;p.nm=nd.nm;p.spr=nd.spr;p.t=nd.t;p.tier=nd.tier;this.rcP(p);p.hp=p.mhp;this.popup(`${o} entwickelt sich zu ${p.nm}!`,'caught-popup',2500);Au.lv();setTimeout(()=>Au.cry(p),700);return true;},
   lvUp(p){p.lv++;const om=p.mhp;this.rcP(p);const hg=p.mhp-om;p.hp=Math.min(p.mhp,p.hp+hg);p.xp=0;p.xpN=p.lv*30+60;this.popup(`${p.nm} ist jetzt Level ${p.lv}!<div class="lvl-sub">HP+${hg} ATK:${p.atk} DEF:${p.def} SPD:${p.spd}</div>`,'lvl-popup');Au.lv();setTimeout(()=>this.tryEvo(p),2200);},
   popup(h,c,d){const el=document.createElement('div');el.className=c||'lvl-popup';el.innerHTML=h;document.body.appendChild(el);setTimeout(()=>el.remove(),d||2000);},
 
@@ -2587,7 +3067,7 @@ const G = {
   fixConductorCorridor(m,region,sx,sy,W,H,villR) {
     // Never pave over a building: a structure standing on this row always has a
     // cleared plaza around it, so the corridor is walked around rather than through.
-    const lay=x=>{ if(x<0||x>=W)return; if(isBuildTile(m[sy][x]))return;
+    const lay=x=>{ if(x<0||x>=W)return; if(isBuildTile(m[sy][x])||inNoCarve(x,sy))return;
       m[sy][x]=(m[sy][x]===T.WATER)?T.BRIDGE:T.PATH; };
     if(region==='r2'){ for(let x=12;x<=sx-villR;x++) lay(x); }
     else { for(let x=sx+villR;x<=W-12;x++) lay(x); }
@@ -2601,26 +3081,34 @@ const G = {
     const findTile=tile=>{for(let y=0;y<m.length;y++){const x=m[y].indexOf(tile);if(x!==-1)return {x,y};}return null;};
     const villR=villRFor(region);
     reservedPts=fixedNpcSpots(region,sx,sy,W);
+    noCarveRects=[];
+    const keep=findTileAny(m,[T.DOOR_ARENA1,T.DOOR_ARENA2,T.DOOR_ARENA3]);
+    if(keep&&this.s.arenaGate){
+      const kb=arenaBounds(keep.x,keep.y);
+      noCarveRects=[{x0:kb.left,x1:kb.right,y0:kb.top,y1:kb.bot}];
+    }
 
     const ad=ARENA_DOOR[region];
-    if(ad){
+    if(ad&&!this.s.arenaGate){
+      // No recorded gate means the arena predates the walled grounds: clear the old
+      // building and lay out proper grounds for it.
       const cur=findTile(ad);
-      const inVillage=cur&&(Math.abs(cur.x-sx)+Math.abs(cur.y-sy))<villR+4;
-      if(!cur||inVillage){
-        if(cur){
-          for(let dy=-1;dy<=0;dy++)for(let dx=-1;dx<=1;dx++){
-            const ny=cur.y+dy,nx=cur.x+dx;
-            if(ny>=0&&ny<H&&nx>=0&&nx<W)m[ny][nx]=T.PATH;
-          }
+      if(cur){
+        for(let dy=-1;dy<=0;dy++)for(let dx=-1;dx<=1;dx++){
+          const ny=cur.y+dy,nx=cur.x+dx;
+          if(ny>=0&&ny<H&&nx>=0&&nx<W)m[ny][nx]=T.PATH;
         }
-        const spot=pickBuildSpot(m,sx,sy,W,H,arenaOffsets(villR),4);
-        if(spot){
-          carvePlaza(m,spot.x,spot.y,4,W,H);
-          carveRoad(m,sx,sy,spot.x,spot.y+2,W,H);
-          placeBuilding(m,spot.x,spot.y,ad,W,H);
-        } else if(cur){
-          placeBuilding(m,cur.x,cur.y,ad,W,H);
-        }
+      }
+      const spot=pickBuildSpot(m,sx,sy,W,H,arenaOffsets(villR),5,(x,y)=>arenaFits(x,y,W,H));
+      if(spot){
+        const built=buildArenaCompound(m,spot.x,spot.y,ad,W,H);
+        noCarveRects=[{x0:built.bounds.left,x1:built.bounds.right,y0:built.bounds.top,y1:built.bounds.bot}];
+        carveArenaRoad(m,sx,sy,spot.x,spot.y,W,H);
+        this.s.arenaGate=built.gate;
+        if(!reachableMask(m,sx,sy,W,H)[(built.gate.y+1)*W+built.gate.x])
+          carveArenaRoad(m,sx,sy,spot.x,spot.y,W,H);
+      } else if(cur){
+        placeBuilding(m,cur.x,cur.y,ad,W,H);
       }
     }
 
@@ -2640,7 +3128,36 @@ const G = {
     }
   },
 
+  // The gate keeper occupies the single opening in the arena wall, so an unbeaten
+  // gate is a physical block, not just a refusal in a dialogue box.
+  arenaGateNpc(region) {
+    const g=GATES[region], gate=this.s&&this.s.arenaGate;
+    if(!g||!gate||this.s.flags[g.flag])return null;
+    return {x:gate.x,y:gate.y,name:g.name,shirt:g.shirt,hair:g.hair,
+      lines:s=>gateLines(region,s),
+      onEnd:()=>{
+        const s=G.s;
+        if(!s.flags['met'+g.flag]){s.flags['met'+g.flag]=true;G.saveGame();return;}
+        if(s.battlesWon<g.need)return;
+        setTimeout(()=>G.startTrainerBattle(g.flag,g.name,g.tier,g.lvBonus),200);
+      }};
+  },
+
+  // Rebuild world NPCs so a beaten gate keeper actually steps aside.
+  rebuildNpcs() {
+    if(!this.s||this.s.inHouse)return;
+    const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
+    this.s.worldNpcs=this.buildFixedNpcs(this.s.region,sx,sy,this.s.mw)
+      .concat((this.s.randomTrainers||[]).map(buildRandomTrainerNpc));
+    this.s.currentNpcs=this.s.worldNpcs;
+  },
+
   buildFixedNpcs(region,sx,sy,mw) {
+    const gate=this.arenaGateNpc(region);
+    return this.regionNpcs(region,sx,sy,mw).concat(gate?[gate]:[]);
+  },
+
+  regionNpcs(region,sx,sy,mw) {
     if(region==='r2'){
       return [
         {x:12,y:sy,name:'Schaffnerin Yara',shirt:'#204040',hair:'#e0d0a0',
@@ -2708,7 +3225,7 @@ const G = {
   travelToRegion(target) {
     const cur=this.s.region;
     this.s.regions=this.s.regions||{};
-    this.s.regions[cur]={map:this.s.map,mw:this.s.mw,mh:this.s.mh,px:this.s.px,py:this.s.py,randomTrainers:this.s.randomTrainers,outposts:this.s.outposts};
+    this.s.regions[cur]={map:this.s.map,mw:this.s.mw,mh:this.s.mh,px:this.s.px,py:this.s.py,randomTrainers:this.s.randomTrainers,outposts:this.s.outposts,arenaGate:this.s.arenaGate};
     this.s.region=target;
     const snap=this.s.regions[target];
     if(!snap){
@@ -2717,6 +3234,7 @@ const G = {
       this.s.map=snap.map;this.s.mw=snap.mw;this.s.mh=snap.mh;this.s.px=snap.px;this.s.py=snap.py;
       this.s.randomTrainers=snap.randomTrainers||[];
       this.s.outposts=snap.outposts||[];
+      this.s.arenaGate=snap.arenaGate||null;
       const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
       this.upgradeMap(this.s.map,target,sx,sy,this.s.mw,this.s.mh);
       registerOutpostQuests(target,this.s.outposts);
@@ -2734,8 +3252,8 @@ const G = {
   genWorld(region) {
     region=region||'r1';
     this.s.region=region;
-    const sizes={r2:100,r3:110,r4:80};
-    const W=sizes[region]||150,H=sizes[region]||150;
+    const sizes={r2:150,r3:165,r4:120};
+    const W=sizes[region]||200,H=sizes[region]||200;
     this.s.mw=W;this.s.mh=H;
     const seed = Math.floor(Math.random()*99999);
     Noise.init(seed);
@@ -2762,14 +3280,14 @@ const G = {
     }}
 
     // Paths using random walks
-    for(let p=0;p<14;p++){
+    for(let p=0;p<20;p++){
       let cx,cy;
       if(p<2){cx=0;cy=Math.floor(Math.random()*H);}
       else if(p<4){cx=Math.floor(Math.random()*W);cy=0;}
       else{cx=Math.floor(Math.random()*W);cy=Math.floor(Math.random()*H);}
       const tx=Math.floor(W/2)+Math.floor(Math.random()*20-10);
       const ty=Math.floor(H/2)+Math.floor(Math.random()*20-10);
-      for(let i=0;i<200;i++){
+      for(let i=0;i<300;i++){
         if(cx>=0&&cx<W&&cy>=0&&cy<H){
           m[cy][cx]=T.PATH;
           if(cy>0&&Math.random()<0.3)m[cy-1][cx]=T.PATH;
@@ -2844,18 +3362,21 @@ const G = {
     // terrain and its plaza keeps the route walkable instead of severing it.
     if(region!=='r4') this.fixConductorCorridor(m,region,sx,sy,W,H,villR);
     reservedPts=fixedNpcSpots(region,sx,sy,W);
+    noCarveRects=[];
 
     // The arena sits on its own grounds outside the village: a fixed ring of candidate
     // sites is probed in a set order and the first solid-ground one wins, so it is
     // never dumped in the village centre and never lands in water.
     const arenaDoor=ARENA_DOOR[region];
     let arenaSpot=null;
+    this.s.arenaGate=null;
     if(arenaDoor){
-      arenaSpot=pickBuildSpot(m,sx,sy,W,H,arenaOffsets(villR),4);
+      arenaSpot=pickBuildSpot(m,sx,sy,W,H,arenaOffsets(villR),5,(x,y)=>arenaFits(x,y,W,H));
       if(arenaSpot){
-        carvePlaza(m,arenaSpot.x,arenaSpot.y,4,W,H);
-        carveRoad(m,sx,sy,arenaSpot.x,arenaSpot.y+2,W,H);
-        placeBuilding(m,arenaSpot.x,arenaSpot.y,arenaDoor,W,H);
+        const built=buildArenaCompound(m,arenaSpot.x,arenaSpot.y,arenaDoor,W,H);
+        noCarveRects=[{x0:built.bounds.left,x1:built.bounds.right,y0:built.bounds.top,y1:built.bounds.bot}];
+        carveArenaRoad(m,sx,sy,arenaSpot.x,arenaSpot.y,W,H);
+        this.s.arenaGate=built.gate;
       }
     }
 
@@ -2868,18 +3389,19 @@ const G = {
     // disconnected patch, so verify every door and drive a direct road to the
     // village for any that the player could not actually walk to.
     let reach=reachableMask(m,sx,sy,W,H);
-    const strays=outposts.concat(arenaSpot?[arenaSpot]:[]).filter(o=>!reach[o.y*W+o.x]);
-    if(strays.length){
-      strays.forEach(o=>carveRoad(m,o.x,o.y+2,sx,sy,W,H));
-      reach=reachableMask(m,sx,sy,W,H);
-    }
+    const strays=outposts.filter(o=>!reach[o.y*W+o.x]);
+    if(strays.length)strays.forEach(o=>carveRoad(m,o.x,o.y+2,sx,sy,W,H));
+    // The arena is reached through its gate; the maze behind it is meant to be closed.
+    const gate=this.s.arenaGate;
+    if(gate&&!reach[(gate.y+1)*W+gate.x])carveArenaRoad(m,sx,sy,arenaSpot.x,arenaSpot.y,W,H);
+    if(strays.length||gate)reach=reachableMask(m,sx,sy,W,H);
 
     // Scatter random trainers across the wider map (away from the village, further = stronger).
     // Restricted to tiles actually connected to the village, so no challenger ends up
     // marooned on an island the player can never walk to.
     const randomTrainers=[];
     let attempts=0;
-    const numTrainers=region==='r2'?14:(region==='r3'?16:(region==='r4'?10:20));
+    const numTrainers=region==='r2'?20:(region==='r3'?22:(region==='r4'?13:28));
     const minDist=region==='r2'?16:(region==='r3'?18:(region==='r4'?9:11));
     const tierBonus=region==='r2'?1:(region==='r3'?2:(region==='r4'?3:0));
     while(randomTrainers.length<numTrainers&&attempts<1200){
@@ -3032,12 +3554,23 @@ const G = {
       r1:{grass:'#5a9a4a',tall:'#3a7a2a',water:'#2868b0',tree:'#2a5a20',rock:'#5a5a5a',path:'#c0a860',flower:'#6aaa5a',sand:'#d0b870',bridge:'#8a6a3a',roof:'#a03020',wall:'#e0d0a0',door:'#6a4020'},
     };
     const pal=palettes[region]||palettes.r1;
-    const mmCols={[T.GRASS]:pal.grass,[T.TALL]:pal.tall,[T.WATER]:pal.water,[T.TREE]:pal.tree,[T.ROCK]:pal.rock,[T.PATH]:pal.path,[T.FLOWER]:pal.flower,[T.SAND]:pal.sand,[T.BRIDGE]:pal.bridge,[T.ROOFL]:pal.roof,[T.ROOFM]:pal.roof,[T.ROOFR]:pal.roof,[T.WALLL]:pal.wall,[T.WALLR]:pal.wall};
-    Object.keys(DOOR_HOUSE).forEach(k=>{ mmCols[k]=pal.door; });
-    for(let y=0;y<this.s.mh;y++)for(let x=0;x<this.s.mw;x++){
-      mc.fillStyle=mmCols[this.s.map[y][x]]||'#333';
-      mc.fillRect(x*sc,y*sc,Math.ceil(sc),Math.ceil(sc));
+    // The terrain layer never changes once a map is generated, so it is drawn once
+    // into an offscreen canvas and blitted afterwards; only the markers are live.
+    // Keying the cache on the map object itself means a new or swapped map
+    // invalidates it automatically.
+    if(this.mmSrc!==this.s.map||this.mmRegion!==region||!this.mmBase){
+      const bc=document.createElement('canvas'); bc.width=bc.height=140;
+      const bx=bc.getContext('2d');
+      const mmCols={[T.GRASS]:pal.grass,[T.TALL]:pal.tall,[T.WATER]:pal.water,[T.TREE]:pal.tree,[T.ROCK]:pal.rock,[T.PATH]:pal.path,[T.FLOWER]:pal.flower,[T.SAND]:pal.sand,[T.BRIDGE]:pal.bridge,[T.ROOFL]:pal.roof,[T.ROOFM]:pal.roof,[T.ROOFR]:pal.roof,[T.WALLL]:pal.wall,[T.WALLR]:pal.wall};
+      Object.keys(DOOR_HOUSE).forEach(k=>{ mmCols[k]=pal.door; });
+      const px=Math.ceil(sc);
+      for(let y=0;y<this.s.mh;y++)for(let x=0;x<this.s.mw;x++){
+        bx.fillStyle=mmCols[this.s.map[y][x]]||'#333';
+        bx.fillRect(x*sc,y*sc,px,px);
+      }
+      this.mmBase=bc; this.mmSrc=this.s.map; this.mmRegion=region;
     }
+    mc.drawImage(this.mmBase,0,0);
     // NPC markers, so trainers scattered across the map can actually be found
     mc.fillStyle='#ff5030';
     (this.s.currentNpcs||[]).forEach(n=>{ mc.fillRect(n.x*sc-1.5,n.y*sc-1.5,3,3); });
@@ -3210,7 +3743,7 @@ const G = {
   // Battle
   startBattle(){Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=false;this.s.enemy=this.spawnW();this.markSeen(this.s.enemy);
     const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
-    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();this.bl(`Ein wildes ${this.s.enemy.nm} (Lv.${this.s.enemy.lv}) erscheint!`);this.rBA();},350);},400);},
+    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();Au.cry(this.s.enemy);this.bl(`Ein wildes ${this.s.enemy.nm} (Lv.${this.s.enemy.lv}) erscheint!`);this.rBA();},350);},400);},
 
   startRivalBattle(){Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=true;this.s.trainerFlag=null;
     const w=this.s.flags.rivalWins||0;
@@ -3218,28 +3751,28 @@ const G = {
     const pool=DB.filter(d=>d.tier===1||d.tier===2);
     this.s.enemy=this.mkP(pool[w%pool.length],lvl);this.markSeen(this.s.enemy);
     const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
-    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();this.bl('Rivale Gary fordert dich zum Kampf heraus!');this.rBA();},350);},400);},
+    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();Au.cry(this.s.enemy);this.bl('Rivale Gary fordert dich zum Kampf heraus!');this.rBA();},350);},400);},
 
   startTrainerBattle(flagId,trainerName,tier,lvBonus){Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=true;this.s.trainerFlag=flagId;
     const lvl=Math.max(5,this.s.team[this.s.active].lv+lvBonus);
     const pool=DB.filter(d=>d.tier===tier);
     this.s.enemy=this.mkP(pool[Math.floor(Math.random()*pool.length)],lvl);this.markSeen(this.s.enemy);
     const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
-    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();this.bl(`${trainerName} fordert dich zum Kampf heraus!`);this.rBA();},350);},400);},
+    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();Au.cry(this.s.enemy);this.bl(`${trainerName} fordert dich zum Kampf heraus!`);this.rBA();},350);},400);},
 
   startGymBattle(badgeFlag,meisterName,tier,lvBonus){Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=true;this.s.trainerFlag=null;this.s.gymFlag=badgeFlag;
     const lvl=Math.max(10,this.s.team[this.s.active].lv+lvBonus);
     const pool=DB.filter(d=>d.tier===tier);
     this.s.enemy=this.mkP(pool[Math.floor(Math.random()*pool.length)],lvl);this.markSeen(this.s.enemy);
     const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
-    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();this.bl(`${meisterName} fordert dich zum Arena-Kampf heraus!`);this.rBA();},350);},400);},
+    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();Au.cry(this.s.enemy);this.bl(`${meisterName} fordert dich zum Arena-Kampf heraus!`);this.rBA();},350);},400);},
 
   startChampionBattle(){Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=true;this.s.trainerFlag=null;this.s.gymFlag='champion';
     const lvl=Math.max(15,this.s.team[this.s.active].lv+15);
     const pool=DB.filter(d=>d.tier===4);
     this.s.enemy=this.mkP(pool[Math.floor(Math.random()*pool.length)],lvl);this.markSeen(this.s.enemy);
     const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
-    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();this.bl('Champion Seraphina fordert dich zum finalen Kampf heraus!');this.rBA();},350);},400);},
+    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();Au.cry(this.s.enemy);this.bl('Champion Seraphina fordert dich zum finalen Kampf heraus!');this.rBA();},350);},400);},
 
   setBattleSprite(elId,mon){const el=document.getElementById(elId);el.innerHTML=`<img src="${Sprites.getCreatureUrl(mon)}" style="width:1em;height:1em;image-rendering:pixelated;">`;},
 
@@ -3282,11 +3815,11 @@ const G = {
     else{const pl=await doT(e,p,em,'enemy','player');if(!pl){this.hFaint();return;}const el=await doT(p,e,pm,'player','enemy');if(!el){this.bVic();return;}}
     this.battleBusy=false;this.rBA();},
 
-  hFaint(){const p=this.s.team[this.s.active];this.bl(`${p.nm} ist besiegt!`);Au.fail();
+  hFaint(){const p=this.s.team[this.s.active];this.bl(`${p.nm} ist besiegt!`);Au.cry(p,{faint:true,slow:true});Au.fail();
     const n=this.s.team.findIndex(pk=>pk.hp>0);if(n>=0){this.s.active=n;this.bl(`${this.s.team[this.s.active].nm} ubernimmt!`);this.renderB();this.battleBusy=false;this.rBA();}
     else{this.bl('Alle Pokemon besiegt!');this.s.battleOver=true;this.battleBusy=false;this.rBA();}},
 
-  bVic(){this.s.battleOver=true;this.s.battlesWon++;
+  bVic(){if(this.s.enemy)Au.cry(this.s.enemy,{faint:true,slow:true});this.s.battleOver=true;this.s.battlesWon++;
     let vicMsg=`${this.s.enemy.nm} besiegt!`,cashMsg='';
     if(this.s.trainerBattle){
       let cash=Math.floor(this.s.enemy.lv*5+this.s.enemy.tier*20);
@@ -3311,7 +3844,7 @@ const G = {
   async bCat(){if(this.s.battleOver||this.battleBusy||this.s.trainerBattle)return;this.battleBusy=true;
     const e=this.s.enemy;let rate=(1-e.hp/e.mhp)*0.55+0.08;if(e.tier>=3)rate*=0.45;if(e.tier>=4)rate*=0.25;
     this.bl('Pokeball!');const an=document.createElement('div');an.className='catch-anim';an.innerHTML='<div class="catch-ball">⚪</div>';document.body.appendChild(an);await this.w(800);
-    if(Math.random()<rate){Au.cat();an.innerHTML+='<div class="catch-result" style="color:#44dd44;">Gefangen!</div>';this.s.team.push({...e});this.s.battleOver=true;this.s.battlesWon++;this.s.caughtCount=(this.s.caughtCount||0)+1;this.s.dex=this.s.dex||{};this.s.dex[e.id]='caught';const xp=Math.floor(e.lv*12);const p=this.s.team[this.s.active];p.xp+=xp;while(p.xp>=p.xpN){p.xp-=p.xpN;this.lvUp(p);}this.bl(`${e.nm} gefangen! +${xp} XP`);}
+    if(Math.random()<rate){Au.cat();setTimeout(()=>Au.cry(e),260);an.innerHTML+='<div class="catch-result" style="color:#44dd44;">Gefangen!</div>';this.s.team.push({...e});this.s.battleOver=true;this.s.battlesWon++;this.s.caughtCount=(this.s.caughtCount||0)+1;this.s.dex=this.s.dex||{};this.s.dex[e.id]='caught';const xp=Math.floor(e.lv*12);const p=this.s.team[this.s.active];p.xp+=xp;while(p.xp>=p.xpN){p.xp-=p.xpN;this.lvUp(p);}this.bl(`${e.nm} gefangen! +${xp} XP`);}
     else{Au.fail();an.innerHTML+='<div class="catch-result" style="color:#dd4444;">Entkommen!</div>';this.bl('Entkommen!');}
     await this.w(1200);an.remove();
     if(!this.s.battleOver){const p=this.s.team[this.s.active];const em=e.moves[Math.floor(Math.random()*e.moves.length)];const r=this.cD(e.atk,p.def,em,e.t,p.t,e.lv);p.hp=Math.max(0,p.hp-r.dmg);this.aS('player','hit');Au.hit();this.sDmg('player',r.dmg,r.crit);this.bl(`${e.nm}: ${em.name}! ${r.dmg}`);this.renderB();if(p.hp<=0){this.hFaint();return;}}
@@ -3320,7 +3853,7 @@ const G = {
   bSw(){if(this.s.battleOver||this.battleBusy)return;
     if(!this.s.team.some((p,i)=>p.hp>0&&i!==this.s.active)){this.bl('Kein anderes Pokemon!');return;}
     const ov=document.getElementById('ov-switch');ov.classList.add('on');const g=document.getElementById('switch-grid');g.innerHTML='';
-    this.s.team.forEach((p,i)=>{if(i===this.s.active||p.hp<=0)return;const c=this.mkCard(p,i,false);c.onclick=async()=>{Au.cl();this.s.active=i;ov.classList.remove('on');this.bl(`${p.nm} eingewechselt!`);this.renderB();await this.w(300);const e=this.s.enemy,pl=this.s.team[this.s.active];const em=e.moves[Math.floor(Math.random()*e.moves.length)];const r=this.cD(e.atk,pl.def,em,e.t,pl.t,e.lv);pl.hp=Math.max(0,pl.hp-r.dmg);this.aS('player','hit');Au.hit();this.sDmg('player',r.dmg,r.crit);this.bl(`${e.nm}: ${em.name}! ${r.dmg}`);this.renderB();if(pl.hp<=0)this.hFaint();this.rBA();};g.appendChild(c);});},
+    this.s.team.forEach((p,i)=>{if(i===this.s.active||p.hp<=0)return;const c=this.mkCard(p,i,false);c.onclick=async()=>{Au.cl();this.s.active=i;ov.classList.remove('on');Au.cry(p);this.bl(`${p.nm} eingewechselt!`);this.renderB();await this.w(300);const e=this.s.enemy,pl=this.s.team[this.s.active];const em=e.moves[Math.floor(Math.random()*e.moves.length)];const r=this.cD(e.atk,pl.def,em,e.t,pl.t,e.lv);pl.hp=Math.max(0,pl.hp-r.dmg);this.aS('player','hit');Au.hit();this.sDmg('player',r.dmg,r.crit);this.bl(`${e.nm}: ${em.name}! ${r.dmg}`);this.renderB();if(pl.hp<=0)this.hFaint();this.rBA();};g.appendChild(c);});},
   closeSwitch(){document.getElementById('ov-switch').classList.remove('on');},
 
   bItem(){if(this.s.battleOver||this.battleBusy)return;
@@ -3363,7 +3896,7 @@ const G = {
     if(Math.random()<ch){Au.fl();this.bl('Geflohen!');this.s.battleOver=true;this.battleBusy=false;this.rBA();}
     else{this.bl('Flucht fehlgeschlagen!');await this.w(300);const e=this.s.enemy;const em=e.moves[Math.floor(Math.random()*e.moves.length)];const r=this.cD(e.atk,p.def,em,e.t,p.t,e.lv);p.hp=Math.max(0,p.hp-r.dmg);this.aS('player','hit');Au.hit();this.sDmg('player',r.dmg,r.crit);this.bl(`${e.nm}: ${em.name}! ${r.dmg}`);this.renderB();if(p.hp<=0){this.hFaint();return;}this.battleBusy=false;this.rBA();}},
 
-  endB(){Au.cl();this.s.inBattle=false;this.s.battleOver=false;this.s.trainerBattle=false;this.s.trainerFlag=null;this.s.gymFlag=null;document.getElementById('b-log').innerHTML='';this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();this.saveGame();},350);},
+  endB(){Au.cl();this.s.inBattle=false;this.s.battleOver=false;this.s.trainerBattle=false;this.s.trainerFlag=null;this.s.gymFlag=null;document.getElementById('b-log').innerHTML='';this.rebuildNpcs();this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();this.saveGame();},350);},
   w(ms){return new Promise(r=>setTimeout(r,ms));},
 
   // Team/Potions
@@ -3371,7 +3904,7 @@ const G = {
 
   openTeam(){if(this.s.inBattle)return;Au.cl();document.getElementById('ov-team').classList.add('on');this.rTG();},
   closeTeam(){document.getElementById('ov-team').classList.remove('on');document.getElementById('team-detail').innerHTML='';},
-  rTG(){const g=document.getElementById('team-grid');g.innerHTML='';this.s.team.forEach((p,i)=>{const c=this.mkCard(p,i,true);c.onclick=()=>{Au.cl();if(p.hp>0){this.s.active=i;this.rTG();this.updateHud();this.sTD(p);}};g.appendChild(c);});},
+  rTG(){const g=document.getElementById('team-grid');g.innerHTML='';this.s.team.forEach((p,i)=>{const c=this.mkCard(p,i,true);c.onclick=()=>{Au.cry(p);if(p.hp>0){this.s.active=i;this.rTG();this.updateHud();this.sTD(p);}};g.appendChild(c);});},
   sTD(p){const d=document.getElementById('team-detail');const xp=p.xpN>0?Math.min(100,p.xp/p.xpN*100):0;d.innerHTML=`<div class="pk-detail"><div class="d-spr">${p.spr}</div><div class="d-nm">${p.nm} <span class="b-type-badge t-${p.t}">${p.t}</span></div><div style="font-size:0.85em;color:#889;">Level ${p.lv}</div><div class="d-stats"><div class="d-stat"><div class="label">HP</div><div class="val">${p.hp}/${p.mhp}</div></div><div class="d-stat"><div class="label">ATK</div><div class="val">${p.atk}</div></div><div class="d-stat"><div class="label">DEF</div><div class="val">${p.def}</div></div><div class="d-stat"><div class="label">SPD</div><div class="val">${p.spd}</div></div></div><div style="font-size:0.8em;color:#889;margin:6px 0;">XP: ${p.xp}/${p.xpN}</div><div class="xp-bg" style="width:80%;margin:0 auto;"><div class="xp-fill" style="width:${xp}%"></div></div><div style="margin-top:10px">${p.moves.map(m=>`<span class="d-move">${m.name} ${m.pow}/${m.acc}%</span>`).join('')}</div>${p.evoId?`<div style="margin-top:8px;font-size:0.8em;color:#889;">Evo ab Lv.${p.evoLv}</div>`:'<div style="margin-top:8px;font-size:0.8em;color:#556;">Max. Entwicklung</div>'}</div>`;},
 
   openPotions(){if(this.s.inBattle)return;Au.cl();this.refreshPot();document.getElementById('ov-potions').classList.add('on');document.getElementById('pot-info').textContent=`Heiltranke: ${this.s.potions}/5 (Taglich)`;this.rPG();},
@@ -3413,10 +3946,13 @@ const G = {
     DB.forEach(d=>{
       const st=dex[d.id];
       const c=document.createElement('div');c.className='pk-card';
+      const img=`<img src="${Sprites.getCreatureUrl(d)}" style="width:2.4em;height:2.4em;image-rendering:pixelated;display:block;margin:0 auto;">`;
       if(st){
-        c.innerHTML=`<div class="c-spr">${d.spr}</div><div class="c-nm">${d.nm}</div><span class="c-type t-${d.t}">${d.t}</span><div class="c-stats">HP:${d.hp} ATK:${d.atk} DEF:${d.def} SPD:${d.spd}</div><div style="font-size:0.65em;margin-top:3px;color:${st==='caught'?'#4a4':'#889'};">${st==='caught'?'Gefangen':'Gesehen'}</div>`;
+        c.innerHTML=`${img}<div class="c-nm">${d.nm}</div><span class="c-type t-${d.t}">${d.t}</span><div class="c-stats">HP:${d.hp} ATK:${d.atk} DEF:${d.def} SPD:${d.spd}</div><div style="font-size:0.65em;margin-top:3px;color:${st==='caught'?'#4a4':'#889'};">${st==='caught'?'Gefangen':'Gesehen'}</div>`;
+        c.style.cursor='pointer';
+        c.onclick=()=>Au.cry(d);
       } else {
-        c.innerHTML=`<div class="c-spr" style="filter:brightness(0) opacity(0.55);">${d.spr}</div><div class="c-nm">???</div><div style="font-size:0.65em;margin-top:3px;color:#556;">Unbekannt</div>`;
+        c.innerHTML=`<div style="filter:brightness(0) opacity(0.5);">${img}</div><div class="c-nm">???</div><div style="font-size:0.65em;margin-top:3px;color:#556;">Unbekannt</div>`;
       }
       g.appendChild(c);
     });
@@ -3536,18 +4072,18 @@ const G = {
     const inH=this.s.inHouse;
     const map=inH?this.s.outdoorPos.map:this.s.map,mw=inH?this.s.outdoorPos.mw:this.s.mw,mh=inH?this.s.outdoorPos.mh:this.s.mh;
     const px=inH?this.s.outdoorPos.px:this.s.px,py=inH?this.s.outdoorPos.py:this.s.py;
-    const regions={...(this.s.regions||{}),[this.s.region]:{map,mw,mh,px,py,randomTrainers:this.s.randomTrainers,outposts:this.s.outposts}};
+    const regions={...(this.s.regions||{}),[this.s.region]:{map,mw,mh,px,py,randomTrainers:this.s.randomTrainers,outposts:this.s.outposts,arenaGate:this.s.arenaGate}};
     localStorage.setItem('pkmn2',JSON.stringify({char:this.s.char,team:this.s.team,active:this.s.active,potions:this.s.potions,cash:this.s.cash,lastPD:this.s.lastPD,battlesWon:this.s.battlesWon,caughtCount:this.s.caughtCount,region:this.s.region,regions,flags:this.s.flags,quests:this.s.quests,dex:this.s.dex}));
   }catch(e){}},
   loadGame(){try{const r=localStorage.getItem('pkmn2');if(!r)return false;const d=JSON.parse(r);if(!d.char||!d.team)return false;
     let region,regions;
     if(d.regions){ region=d.region||'r1'; regions=d.regions; }
-    else if(d.map){ region='r1'; regions={r1:{map:d.map,mw:d.mw,mh:d.mh,px:d.px,py:d.py,randomTrainers:d.randomTrainers||[],outposts:[]}}; }
+    else if(d.map){ region='r1'; regions={r1:{map:d.map,mw:d.mw,mh:d.mh,px:d.px,py:d.py,randomTrainers:d.randomTrainers||[],outposts:[],arenaGate:null}}; }
     else return false;
     const snap=regions[region];
     if(!snap)return false;
     this.s={char:d.char,team:d.team,active:d.active||0,potions:d.potions!==undefined?d.potions:5,cash:d.cash||0,lastPD:d.lastPD||null,battlesWon:d.battlesWon||0,caughtCount:d.caughtCount||0,
-      region,regions,px:snap.px,py:snap.py,map:snap.map,mw:snap.mw,mh:snap.mh,randomTrainers:snap.randomTrainers||[],outposts:snap.outposts||[],
+      region,regions,px:snap.px,py:snap.py,map:snap.map,mw:snap.mw,mh:snap.mh,randomTrainers:snap.randomTrainers||[],outposts:snap.outposts||[],arenaGate:snap.arenaGate||null,
       inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:d.flags||{},quests:d.quests||{},dex:d.dex||{},
       inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
     if(!this.s.quests.q0){this.s.quests.q0=(this.s.flags.badgeR1&&this.s.flags.badgeR2&&this.s.flags.badgeR3&&this.s.flags.champion)?'completed':'active';}
@@ -3562,7 +4098,7 @@ const G = {
     this.s.currentNpcs=this.s.worldNpcs;
     return true;}catch(e){return false;}},
 
-  startNewGame(){Au.cl();this.s={char:this._cc,team:[this.mkP(this._sc,5)],active:0,potions:5,cash:50,lastPD:new Date().toDateString(),battlesWon:0,caughtCount:0,region:'r1',regions:{},px:0,py:0,map:[],mw:0,mh:0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:{},quests:{q0:'active'},dex:{},randomTrainers:[],outposts:[],inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
+  startNewGame(){Au.cl();this.s={char:this._cc,team:[this.mkP(this._sc,5)],active:0,potions:5,cash:50,lastPD:new Date().toDateString(),battlesWon:0,caughtCount:0,region:'r1',regions:{},px:0,py:0,map:[],mw:0,mh:0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:{},quests:{q0:'active'},dex:{},randomTrainers:[],outposts:[],arenaGate:null,inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
     this.s.dex[this._sc.id]='caught';
     this.genWorld('r1');
     this.playWorldCinematic({reverse:false,caption:'Eine neue Welt entsteht...'},()=>{
