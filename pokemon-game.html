@@ -718,32 +718,8 @@ const Sprites = {
   },
 
   // House exterior: roof pieces (part = 'L'|'M'|'R')
-  roofTile(ctx, s, part) {
-    ctx.fillStyle = '#508040'; ctx.fillRect(0, 0, s, s);
-    const roofCol = '#a03020', roofDark = '#801810', roofLight = '#c04030';
-    ctx.fillStyle = roofCol;
-    if (part === 'L') {
-      ctx.beginPath(); ctx.moveTo(s*0.2, s); ctx.lineTo(s, s*0.3); ctx.lineTo(s, s); ctx.closePath(); ctx.fill();
-    } else if (part === 'R') {
-      ctx.beginPath(); ctx.moveTo(s*0.8, s); ctx.lineTo(0, s*0.3); ctx.lineTo(0, s); ctx.closePath(); ctx.fill();
-    } else {
-      ctx.beginPath(); ctx.moveTo(0, s*0.3); ctx.lineTo(s/2, 0); ctx.lineTo(s, s*0.3); ctx.lineTo(s, s); ctx.lineTo(0, s); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = roofLight;
-      ctx.beginPath(); ctx.moveTo(s/2, 0); ctx.lineTo(s*0.65, s*0.25); ctx.lineTo(s*0.35, s*0.25); ctx.closePath(); ctx.fill();
-    }
-    ctx.fillStyle = roofDark; ctx.fillRect(0, s*0.85, s, s*0.15);
-  },
 
   // House wall piece with window (part = 'L'|'R')
-  houseWallTile(ctx, s, part) {
-    ctx.fillStyle = '#e0d0a0'; ctx.fillRect(0, 0, s, s);
-    ctx.strokeStyle = '#c0a870'; ctx.lineWidth = 1;
-    for (let y = s*0.2; y < s; y += s*0.25) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(s, y); ctx.stroke(); }
-    const wx = part === 'L' ? s*0.3 : s*0.15;
-    ctx.fillStyle = '#3a5a8a'; ctx.fillRect(wx, s*0.15, s*0.4, s*0.35);
-    ctx.strokeStyle = '#2a3a5a'; ctx.strokeRect(wx, s*0.15, s*0.4, s*0.35);
-    ctx.fillStyle = '#6a8aba'; ctx.fillRect(wx+s*0.03, s*0.18, s*0.15, s*0.13);
-  },
 
   // Door tile, used both for house entrances and interior exits
   doorTile(ctx, s, exit) {
@@ -753,6 +729,339 @@ const Sprites = {
     ctx.fillStyle = '#4a2a10'; ctx.fillRect(s*0.15, s*0.05, s*0.7, s*0.1);
     ctx.fillStyle = '#ffd860';
     ctx.beginPath(); ctx.arc(s*0.75, s*0.55, s*0.05, 0, Math.PI*2); ctx.fill();
+  },
+
+  // ===== Styled buildings: one renderer, driven by a style + a region palette =====
+  bEmblem(ctx, s, kind, st) {
+    const cx = s*0.5, cy = s*0.42;
+    ctx.save();
+    if (kind === 'cross') {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cx-s*0.055, cy-s*0.17, s*0.11, s*0.34);
+      ctx.fillRect(cx-s*0.17, cy-s*0.055, s*0.34, s*0.11);
+    } else if (kind === 'badge') {
+      ctx.fillStyle = '#ffd858'; ctx.strokeStyle = '#8a6a10'; ctx.lineWidth = s*0.02;
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        const a = -Math.PI/2 + i*Math.PI*2/5, b = a + Math.PI/5;
+        ctx.lineTo(cx+Math.cos(a)*s*0.19, cy+Math.sin(a)*s*0.19);
+        ctx.lineTo(cx+Math.cos(b)*s*0.08, cy+Math.sin(b)*s*0.08);
+      }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (kind === 'flask') {
+      ctx.fillStyle = '#d8f0ff'; ctx.strokeStyle = '#20405a'; ctx.lineWidth = s*0.022;
+      ctx.beginPath();
+      ctx.moveTo(cx-s*0.06, cy-s*0.16); ctx.lineTo(cx-s*0.06, cy-s*0.02);
+      ctx.lineTo(cx-s*0.15, cy+s*0.16); ctx.lineTo(cx+s*0.15, cy+s*0.16);
+      ctx.lineTo(cx+s*0.06, cy-s*0.02); ctx.lineTo(cx+s*0.06, cy-s*0.16);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#40c860';
+      ctx.beginPath(); ctx.moveTo(cx-s*0.11, cy+s*0.06); ctx.lineTo(cx+s*0.11, cy+s*0.06);
+      ctx.lineTo(cx+s*0.15, cy+s*0.16); ctx.lineTo(cx-s*0.15, cy+s*0.16); ctx.closePath(); ctx.fill();
+    } else if (kind === 'crown') {
+      ctx.fillStyle = '#ffe06a'; ctx.strokeStyle = '#7a5c08'; ctx.lineWidth = s*0.02;
+      ctx.beginPath();
+      ctx.moveTo(cx-s*0.19, cy+s*0.14); ctx.lineTo(cx-s*0.19, cy-s*0.12);
+      ctx.lineTo(cx-s*0.08, cy+s*0.01); ctx.lineTo(cx, cy-s*0.17);
+      ctx.lineTo(cx+s*0.08, cy+s*0.01); ctx.lineTo(cx+s*0.19, cy-s*0.12);
+      ctx.lineTo(cx+s*0.19, cy+s*0.14); ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (kind === 'cart') {
+      ctx.fillStyle = '#ffd858'; ctx.strokeStyle = '#7a5a10'; ctx.lineWidth = s*0.02;
+      ctx.beginPath(); ctx.arc(cx, cy-s*0.02, s*0.15, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#7a5a10'; ctx.fillRect(cx-s*0.02, cy-s*0.12, s*0.04, s*0.2);
+    } else if (kind === 'anvil') {
+      ctx.fillStyle = '#3a3a44';
+      ctx.fillRect(cx-s*0.17, cy-s*0.08, s*0.34, s*0.09);
+      ctx.fillRect(cx-s*0.06, cy+s*0.01, s*0.12, s*0.08);
+      ctx.fillRect(cx-s*0.13, cy+s*0.09, s*0.26, s*0.06);
+      ctx.fillStyle = '#ff8a30'; ctx.fillRect(cx-s*0.14, cy-s*0.06, s*0.05, s*0.04);
+    }
+    ctx.restore();
+  },
+
+  bRoof(ctx, s, part, st, pal) {
+    ctx.fillStyle = pal.grd; ctx.fillRect(0, 0, s, s);
+    ctx.fillStyle = st.roof;
+    if (part === 'L') {
+      ctx.beginPath(); ctx.moveTo(s*0.2, s); ctx.lineTo(s, s*0.3); ctx.lineTo(s, s); ctx.closePath(); ctx.fill();
+    } else if (part === 'R') {
+      ctx.beginPath(); ctx.moveTo(s*0.8, s); ctx.lineTo(0, s*0.3); ctx.lineTo(0, s); ctx.closePath(); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.moveTo(0, s*0.3); ctx.lineTo(s/2, 0); ctx.lineTo(s, s*0.3);
+      ctx.lineTo(s, s); ctx.lineTo(0, s); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = st.rl;
+      ctx.beginPath(); ctx.moveTo(s/2, 0); ctx.lineTo(s*0.65, s*0.25); ctx.lineTo(s*0.35, s*0.25); ctx.closePath(); ctx.fill();
+    }
+    // shingle banding gives each roof a material, not a flat colour block
+    ctx.save();
+    ctx.beginPath();
+    if (part === 'L') { ctx.moveTo(s*0.2, s); ctx.lineTo(s, s*0.3); ctx.lineTo(s, s); }
+    else if (part === 'R') { ctx.moveTo(s*0.8, s); ctx.lineTo(0, s*0.3); ctx.lineTo(0, s); }
+    else { ctx.moveTo(0, s*0.3); ctx.lineTo(s/2, 0); ctx.lineTo(s, s*0.3); ctx.lineTo(s, s); ctx.lineTo(0, s); }
+    ctx.closePath(); ctx.clip();
+    ctx.fillStyle = st.rd; ctx.globalAlpha = 0.35;
+    for (let y = s*0.32; y < s*0.85; y += s*0.18) ctx.fillRect(0, y, s, s*0.035);
+    ctx.globalAlpha = 1; ctx.restore();
+    if (part === 'M' && st.emb) this.bEmblem(ctx, s, st.emb, st);
+    ctx.fillStyle = st.rd; ctx.fillRect(0, s*0.85, s, s*0.15);
+    ctx.fillStyle = st.rl; ctx.globalAlpha = 0.4; ctx.fillRect(0, s*0.85, s, s*0.02); ctx.globalAlpha = 1;
+  },
+
+  bWall(ctx, s, part, st, pal) {
+    const wx = part === 'L' ? s*0.3 : s*0.15;
+    const kind = st.wall;
+    if (kind === 'stone' || kind === 'column') {
+      ctx.fillStyle = pal.stone; ctx.fillRect(0, 0, s, s);
+      ctx.fillStyle = pal.stoneD;
+      for (let y = 0; y < s; y += s*0.25) {
+        const off = (Math.round(y/(s*0.25)) % 2) ? s*0.25 : 0;
+        for (let x = -s*0.5; x < s; x += s*0.5) ctx.fillRect(x+off, y, s*0.47, 1);
+        ctx.fillRect(0, y, s, 1);
+      }
+      if (kind === 'column') {
+        ctx.fillStyle = pal.wall;
+        const cxp = part === 'L' ? s*0.55 : s*0.2;
+        ctx.fillRect(cxp, 0, s*0.24, s);
+        ctx.fillStyle = pal.ln; ctx.fillRect(cxp, 0, s*0.03, s); ctx.fillRect(cxp+s*0.21, 0, s*0.03, s);
+        ctx.fillStyle = st.roof; ctx.fillRect(cxp-s*0.04, 0, s*0.32, s*0.09);
+      } else {
+        ctx.fillStyle = st.rd; ctx.fillRect(wx+s*0.08, s*0.16, s*0.22, s*0.34);
+        ctx.fillStyle = pal.winL; ctx.globalAlpha = 0.5; ctx.fillRect(wx+s*0.11, s*0.19, s*0.16, s*0.12); ctx.globalAlpha = 1;
+      }
+      return;
+    }
+    if (kind === 'clinic') {
+      ctx.fillStyle = '#f4f6f8'; ctx.fillRect(0, 0, s, s);
+      ctx.fillStyle = st.roof; ctx.fillRect(0, 0, s, s*0.09);
+      ctx.fillStyle = '#dfe4ea'; ctx.fillRect(0, s*0.62, s, s*0.02);
+      ctx.fillStyle = '#bfe0f0'; ctx.fillRect(wx, s*0.2, s*0.42, s*0.34);
+      ctx.strokeStyle = '#9ab8cc'; ctx.lineWidth = 1; ctx.strokeRect(wx, s*0.2, s*0.42, s*0.34);
+      ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.75; ctx.fillRect(wx+s*0.03, s*0.23, s*0.15, s*0.12); ctx.globalAlpha = 1;
+      return;
+    }
+    if (kind === 'display') {
+      ctx.fillStyle = pal.wall; ctx.fillRect(0, 0, s, s);
+      // striped awning over a wide shop window
+      for (let i = 0; i < 6; i++) {
+        ctx.fillStyle = (i % 2) ? st.roof : '#f0f0f0';
+        ctx.fillRect(i*s/6, 0, s/6, s*0.16);
+      }
+      ctx.fillStyle = st.rd; ctx.fillRect(0, s*0.16, s, s*0.025);
+      ctx.fillStyle = '#8fd0e8'; ctx.fillRect(s*0.1, s*0.24, s*0.8, s*0.44);
+      ctx.strokeStyle = st.rd; ctx.lineWidth = s*0.03; ctx.strokeRect(s*0.1, s*0.24, s*0.8, s*0.44);
+      ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.55;
+      ctx.beginPath(); ctx.moveTo(s*0.16, s*0.66); ctx.lineTo(s*0.44, s*0.26);
+      ctx.lineTo(s*0.58, s*0.26); ctx.lineTo(s*0.3, s*0.66); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 1;
+      return;
+    }
+    if (kind === 'metal') {
+      ctx.fillStyle = '#c3ccd4'; ctx.fillRect(0, 0, s, s);
+      ctx.fillStyle = '#a7b2bc';
+      for (let y = 0; y < s; y += s*0.2) ctx.fillRect(0, y, s, s*0.03);
+      ctx.fillStyle = '#8b98a4';
+      for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.arc(s*0.08+i*s*0.28, s*0.9, s*0.022, 0, Math.PI*2); ctx.fill(); }
+      const rcx = part === 'L' ? s*0.5 : s*0.36;
+      ctx.fillStyle = st.roof; ctx.beginPath(); ctx.arc(rcx, s*0.36, s*0.2, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#d8ecff'; ctx.beginPath(); ctx.arc(rcx, s*0.36, s*0.15, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.6;
+      ctx.beginPath(); ctx.arc(rcx-s*0.05, s*0.31, s*0.05, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
+      return;
+    }
+    if (kind === 'brick') {
+      ctx.fillStyle = '#8a5a44'; ctx.fillRect(0, 0, s, s);
+      ctx.fillStyle = '#6d4433';
+      for (let y = 0; y < s; y += s*0.18) {
+        const off = (Math.round(y/(s*0.18)) % 2) ? s*0.2 : 0;
+        ctx.fillRect(0, y, s, 1);
+        for (let x = -s*0.4; x < s; x += s*0.4) ctx.fillRect(x+off, y, 1, s*0.18);
+      }
+      ctx.fillStyle = '#2a2118'; ctx.fillRect(wx, s*0.22, s*0.4, s*0.34);
+      const gr = ctx.createLinearGradient(0, s*0.22, 0, s*0.56);
+      gr.addColorStop(0, '#ffb040'); gr.addColorStop(1, '#c03810');
+      ctx.fillStyle = gr; ctx.fillRect(wx+s*0.05, s*0.27, s*0.3, s*0.24);
+      return;
+    }
+    if (kind === 'log') {
+      ctx.fillStyle = '#9a7a4e'; ctx.fillRect(0, 0, s, s);
+      for (let y = 0; y < s; y += s*0.22) {
+        ctx.fillStyle = '#8a6a40'; ctx.fillRect(0, y, s, s*0.2);
+        ctx.fillStyle = '#7a5c34'; ctx.fillRect(0, y+s*0.19, s, s*0.03);
+      }
+      ctx.fillStyle = '#5a4028'; ctx.fillRect(wx, s*0.2, s*0.36, s*0.3);
+      ctx.fillStyle = pal.winL; ctx.fillRect(wx+s*0.03, s*0.23, s*0.3, s*0.24);
+      ctx.fillStyle = '#5a4028'; ctx.fillRect(wx+s*0.16, s*0.2, s*0.04, s*0.3);
+      return;
+    }
+    if (kind === 'timber') {
+      ctx.fillStyle = pal.wall; ctx.fillRect(0, 0, s, s);
+      ctx.strokeStyle = st.rd; ctx.lineWidth = s*0.05;
+      ctx.beginPath(); ctx.moveTo(0, s*0.12); ctx.lineTo(s, s*0.12); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, s); ctx.lineTo(s, s*0.2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, s*0.2); ctx.lineTo(s, s); ctx.stroke();
+      ctx.fillStyle = pal.win; ctx.fillRect(wx, s*0.3, s*0.36, s*0.3);
+      ctx.strokeStyle = pal.winD; ctx.lineWidth = 1; ctx.strokeRect(wx, s*0.3, s*0.36, s*0.3);
+      ctx.fillStyle = pal.winL; ctx.fillRect(wx+s*0.03, s*0.33, s*0.13, s*0.11);
+      return;
+    }
+    // 'plaster' default
+    ctx.fillStyle = pal.wall; ctx.fillRect(0, 0, s, s);
+    ctx.strokeStyle = pal.ln; ctx.lineWidth = 1;
+    for (let y = s*0.2; y < s; y += s*0.25) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(s, y); ctx.stroke(); }
+    ctx.fillStyle = pal.win; ctx.fillRect(wx, s*0.15, s*0.4, s*0.35);
+    ctx.strokeStyle = pal.winD; ctx.strokeRect(wx, s*0.15, s*0.4, s*0.35);
+    ctx.fillStyle = pal.winL; ctx.fillRect(wx+s*0.03, s*0.18, s*0.15, s*0.13);
+    ctx.fillStyle = st.rd; ctx.globalAlpha = 0.5;
+    ctx.fillRect(wx-s*0.02, s*0.5, s*0.44, s*0.03); ctx.globalAlpha = 1;
+  },
+
+  bDoor(ctx, s, st, pal) {
+    const kind = st.door;
+    // wall backdrop matching the building's own wall treatment
+    if (st.wall === 'stone' || st.wall === 'column') { ctx.fillStyle = pal.stone; ctx.fillRect(0, 0, s, s); }
+    else if (st.wall === 'clinic') { ctx.fillStyle = '#f4f6f8'; ctx.fillRect(0, 0, s, s); ctx.fillStyle = st.roof; ctx.fillRect(0, 0, s, s*0.09); }
+    else if (st.wall === 'metal') { ctx.fillStyle = '#c3ccd4'; ctx.fillRect(0, 0, s, s); }
+    else if (st.wall === 'brick') { ctx.fillStyle = '#8a5a44'; ctx.fillRect(0, 0, s, s); }
+    else if (st.wall === 'log') { ctx.fillStyle = '#9a7a4e'; ctx.fillRect(0, 0, s, s); }
+    else { ctx.fillStyle = pal.wall; ctx.fillRect(0, 0, s, s); }
+
+    if (kind === 'auto') {
+      ctx.fillStyle = '#7fbfd8'; ctx.fillRect(s*0.12, s*0.14, s*0.76, s*0.86);
+      ctx.strokeStyle = '#cfd8de'; ctx.lineWidth = s*0.05; ctx.strokeRect(s*0.12, s*0.14, s*0.76, s*0.86);
+      ctx.fillStyle = '#e8f4fa'; ctx.globalAlpha = 0.6;
+      ctx.fillRect(s*0.18, s*0.2, s*0.22, s*0.7); ctx.globalAlpha = 1;
+      ctx.fillStyle = '#cfd8de'; ctx.fillRect(s*0.48, s*0.14, s*0.04, s*0.86);
+      ctx.fillStyle = st.roof; ctx.fillRect(s*0.2, s*0.02, s*0.6, s*0.1);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(s*0.475, s*0.035, s*0.05, s*0.075); ctx.fillRect(s*0.44, s*0.055, s*0.12, s*0.035);
+      return;
+    }
+    if (kind === 'glass') {
+      ctx.fillStyle = st.rd; ctx.fillRect(s*0.1, s*0.1, s*0.8, s*0.9);
+      ctx.fillStyle = '#9fd8ec'; ctx.fillRect(s*0.16, s*0.18, s*0.31, s*0.76);
+      ctx.fillRect(s*0.53, s*0.18, s*0.31, s*0.76);
+      ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.5;
+      ctx.fillRect(s*0.2, s*0.22, s*0.1, s*0.66); ctx.globalAlpha = 1;
+      ctx.fillStyle = st.roof; ctx.fillRect(s*0.06, 0, s*0.88, s*0.1);
+      ctx.fillStyle = '#ffd858'; ctx.beginPath(); ctx.arc(s*0.5, s*0.05, s*0.032, 0, Math.PI*2); ctx.fill();
+      return;
+    }
+    if (kind === 'gate') {
+      ctx.fillStyle = st.rd; ctx.fillRect(s*0.04, s*0.02, s*0.92, s*0.98);
+      ctx.fillStyle = '#4a3020'; ctx.fillRect(s*0.09, s*0.08, s*0.82, s*0.92);
+      ctx.fillStyle = '#5d3d28';
+      ctx.fillRect(s*0.12, s*0.12, s*0.36, s*0.84); ctx.fillRect(s*0.52, s*0.12, s*0.36, s*0.84);
+      ctx.fillStyle = '#c8a020';
+      ctx.fillRect(s*0.09, s*0.34, s*0.82, s*0.05); ctx.fillRect(s*0.09, s*0.7, s*0.82, s*0.05);
+      ctx.fillStyle = '#ffd858';
+      ctx.beginPath(); ctx.arc(s*0.36, s*0.55, s*0.055, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(s*0.64, s*0.55, s*0.055, 0, Math.PI*2); ctx.fill();
+      return;
+    }
+    if (kind === 'slide') {
+      ctx.fillStyle = '#8b98a4'; ctx.fillRect(s*0.1, s*0.1, s*0.8, s*0.9);
+      ctx.fillStyle = '#aeb9c3'; ctx.fillRect(s*0.14, s*0.16, s*0.34, s*0.8);
+      ctx.fillRect(s*0.52, s*0.16, s*0.34, s*0.8);
+      ctx.fillStyle = st.roof; ctx.fillRect(s*0.14, s*0.24, s*0.34, s*0.16);
+      ctx.fillRect(s*0.52, s*0.24, s*0.34, s*0.16);
+      ctx.fillStyle = '#40e070'; ctx.beginPath(); ctx.arc(s*0.5, s*0.06, s*0.035, 0, Math.PI*2); ctx.fill();
+      return;
+    }
+    if (kind === 'grand') {
+      ctx.fillStyle = st.rd; ctx.fillRect(s*0.02, 0, s*0.96, s);
+      ctx.fillStyle = '#7a5a18'; ctx.fillRect(s*0.1, s*0.06, s*0.8, s*0.94);
+      const gg = ctx.createLinearGradient(s*0.1, 0, s*0.9, 0);
+      gg.addColorStop(0, '#b48f24'); gg.addColorStop(0.5, '#f6d055'); gg.addColorStop(1, '#b48f24');
+      ctx.fillStyle = gg; ctx.fillRect(s*0.14, s*0.1, s*0.72, s*0.9);
+      ctx.fillStyle = '#7a5a18'; ctx.fillRect(s*0.48, s*0.1, s*0.04, s*0.9);
+      ctx.fillStyle = '#fff0a8';
+      ctx.beginPath(); ctx.arc(s*0.5, s*0.3, s*0.12, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#7a5a18';
+      ctx.beginPath(); ctx.arc(s*0.5, s*0.3, s*0.06, 0, Math.PI*2); ctx.fill();
+      return;
+    }
+    // 'wood' default
+    ctx.fillStyle = pal.door; ctx.fillRect(s*0.15, s*0.05, s*0.7, s*0.95);
+    ctx.fillStyle = pal.doorD; ctx.fillRect(s*0.15, s*0.05, s*0.7, s*0.1);
+    ctx.globalAlpha = 0.35;
+    ctx.fillRect(s*0.32, s*0.15, s*0.03, s*0.85); ctx.fillRect(s*0.62, s*0.15, s*0.03, s*0.85);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = pal.knob; ctx.beginPath(); ctx.arc(s*0.75, s*0.55, s*0.05, 0, Math.PI*2); ctx.fill();
+  },
+
+  // Interiors follow the building's own material, so stepping into a clinic, a
+  // forge and a stone arena does not land you in the same wooden room three times.
+  bFloor(ctx, s, st, pal) {
+    const k = st.wall;
+    if (k === 'clinic') {
+      ctx.fillStyle = '#eef3f6'; ctx.fillRect(0, 0, s, s);
+      ctx.strokeStyle = '#d3dde3'; ctx.lineWidth = 1; ctx.strokeRect(0, 0, s, s);
+      ctx.fillStyle = st.roof; ctx.globalAlpha = 0.16;
+      ctx.fillRect(s*0.42, s*0.16, s*0.16, s*0.5); ctx.fillRect(s*0.22, s*0.36, s*0.56, s*0.16);
+      ctx.globalAlpha = 1;
+    } else if (k === 'stone' || k === 'column') {
+      ctx.fillStyle = pal.stone; ctx.fillRect(0, 0, s, s);
+      ctx.strokeStyle = pal.stoneD; ctx.lineWidth = 1; ctx.strokeRect(0, 0, s, s);
+      ctx.beginPath(); ctx.moveTo(0, s*0.5); ctx.lineTo(s, s*0.5); ctx.stroke();
+      ctx.fillStyle = pal.stoneD; ctx.globalAlpha = 0.5;
+      ctx.fillRect(s*0.12, s*0.12, s*0.1, s*0.1); ctx.fillRect(s*0.7, s*0.66, s*0.1, s*0.1);
+      ctx.globalAlpha = 1;
+    } else if (k === 'metal') {
+      ctx.fillStyle = '#b9c3cb'; ctx.fillRect(0, 0, s, s);
+      ctx.strokeStyle = '#9aa6b0'; ctx.lineWidth = 1;
+      ctx.strokeRect(s*0.06, s*0.06, s*0.88, s*0.88);
+      ctx.beginPath(); ctx.moveTo(s*0.06, s*0.5); ctx.lineTo(s*0.94, s*0.5);
+      ctx.moveTo(s*0.5, s*0.06); ctx.lineTo(s*0.5, s*0.94); ctx.stroke();
+    } else if (k === 'brick') {
+      ctx.fillStyle = '#4a4038'; ctx.fillRect(0, 0, s, s);
+      ctx.fillStyle = '#3a322c'; ctx.fillRect(0, s*0.5, s, 1); ctx.fillRect(s*0.5, 0, 1, s);
+      ctx.fillStyle = '#ff9840'; ctx.globalAlpha = 0.22;
+      ctx.beginPath(); ctx.arc(s*0.3, s*0.3, s*0.12, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
+    } else if (k === 'display') {
+      ctx.fillStyle = '#d8c49a'; ctx.fillRect(0, 0, s, s);
+      ctx.strokeStyle = '#bfa87e'; ctx.lineWidth = 1; ctx.strokeRect(0, 0, s, s);
+      ctx.fillStyle = st.roof; ctx.globalAlpha = 0.18; ctx.fillRect(0, s*0.44, s, s*0.12); ctx.globalAlpha = 1;
+    } else {
+      ctx.fillStyle = '#c8a878'; ctx.fillRect(0, 0, s, s);
+      ctx.strokeStyle = '#b89868'; ctx.lineWidth = 1; ctx.strokeRect(0, 0, s, s);
+      ctx.beginPath(); ctx.moveTo(0, s*0.5); ctx.lineTo(s, s*0.5); ctx.stroke();
+    }
+  },
+
+  bIWall(ctx, s, st, pal) {
+    const k = st.wall;
+    if (k === 'clinic') {
+      ctx.fillStyle = '#e2e9ee'; ctx.fillRect(0, 0, s, s);
+      ctx.fillStyle = st.roof; ctx.fillRect(0, s*0.62, s, s*0.1);
+      ctx.fillStyle = '#cfd9e0'; ctx.fillRect(0, 0, s, s*0.12);
+    } else if (k === 'stone' || k === 'column') {
+      ctx.fillStyle = pal.stoneD; ctx.fillRect(0, 0, s, s);
+      ctx.fillStyle = pal.stone;
+      for (let y = 0; y < s; y += s*0.28) {
+        const off = (Math.round(y/(s*0.28)) % 2) ? s*0.25 : 0;
+        for (let x = -s*0.5; x < s; x += s*0.5) ctx.fillRect(x+off+1, y+1, s*0.46, s*0.24);
+      }
+    } else if (k === 'metal') {
+      ctx.fillStyle = '#8d99a4'; ctx.fillRect(0, 0, s, s);
+      ctx.fillStyle = '#79858f';
+      for (let y = 0; y < s; y += s*0.25) ctx.fillRect(0, y, s, s*0.04);
+      ctx.fillStyle = '#5fd0e0'; ctx.fillRect(s*0.15, s*0.3, s*0.7, s*0.06);
+    } else if (k === 'brick') {
+      ctx.fillStyle = '#5e4034'; ctx.fillRect(0, 0, s, s);
+      ctx.fillStyle = '#4a3128';
+      for (let y = 0; y < s; y += s*0.22) ctx.fillRect(0, y, s, 2);
+      ctx.fillStyle = '#ff8a30'; ctx.globalAlpha = 0.3; ctx.fillRect(s*0.3, s*0.42, s*0.4, s*0.12); ctx.globalAlpha = 1;
+    } else if (k === 'display') {
+      ctx.fillStyle = '#6a5236'; ctx.fillRect(0, 0, s, s);
+      ctx.fillStyle = '#8a6d48'; ctx.fillRect(0, s*0.2, s, s*0.1); ctx.fillRect(0, s*0.6, s, s*0.1);
+      ctx.fillStyle = st.roof; ctx.globalAlpha = 0.5;
+      ctx.fillRect(s*0.15, s*0.06, s*0.18, s*0.14); ctx.fillRect(s*0.55, s*0.46, s*0.18, s*0.14);
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.fillStyle = '#5a4a3a'; ctx.fillRect(0, 0, s, s);
+      ctx.fillStyle = '#4a3a2a';
+      for (let y = 0; y < s; y += s*0.3) ctx.fillRect(0, y, s, 2);
+    }
   },
 
   floorTile(ctx, s) {
@@ -847,25 +1156,6 @@ const Sprites = {
     ctx.fillStyle='#241830'; ctx.fillRect(s*0.08,0,s*0.06,s); ctx.fillRect(s*0.86,0,s*0.06,s);
     ctx.fillStyle='#8070a0';
     for (let y=s*0.12;y<s;y+=s/4){ ctx.fillRect(s*0.1,y,2,2); ctx.fillRect(s*0.86,y,2,2); }
-  },
-  roofTileShadow(ctx, s, part) {
-    ctx.fillStyle='#3a3050'; ctx.fillRect(0,0,s,s);
-    const roofCol='#402060', roofDark='#2a1440', roofLight='#5a3080';
-    ctx.fillStyle=roofCol;
-    if (part==='L'){ ctx.beginPath(); ctx.moveTo(s*0.2,s); ctx.lineTo(s,s*0.3); ctx.lineTo(s,s); ctx.closePath(); ctx.fill(); }
-    else if (part==='R'){ ctx.beginPath(); ctx.moveTo(s*0.8,s); ctx.lineTo(0,s*0.3); ctx.lineTo(0,s); ctx.closePath(); ctx.fill(); }
-    else { ctx.beginPath(); ctx.moveTo(0,s*0.3); ctx.lineTo(s/2,0); ctx.lineTo(s,s*0.3); ctx.lineTo(s,s); ctx.lineTo(0,s); ctx.closePath(); ctx.fill();
-      ctx.fillStyle=roofLight; ctx.beginPath(); ctx.moveTo(s/2,0); ctx.lineTo(s*0.65,s*0.25); ctx.lineTo(s*0.35,s*0.25); ctx.closePath(); ctx.fill(); }
-    ctx.fillStyle=roofDark; ctx.fillRect(0,s*0.85,s,s*0.15);
-  },
-  houseWallTileShadow(ctx, s, part) {
-    ctx.fillStyle='#4a4258'; ctx.fillRect(0,0,s,s);
-    ctx.strokeStyle='#3a3448'; ctx.lineWidth=1;
-    for (let y=s*0.2;y<s;y+=s*0.25){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(s,y); ctx.stroke(); }
-    const wx = part==='L'? s*0.3 : s*0.15;
-    ctx.fillStyle='#7050a0'; ctx.fillRect(wx,s*0.15,s*0.4,s*0.35);
-    ctx.strokeStyle='#402860'; ctx.strokeRect(wx,s*0.15,s*0.4,s*0.35);
-    ctx.fillStyle='#a080d0'; ctx.fillRect(wx+s*0.03,s*0.18,s*0.15,s*0.13);
   },
   doorTileShadow(ctx, s, exit) {
     ctx.fillStyle='#4a4258'; ctx.fillRect(0,0,s,s);
@@ -1029,26 +1319,6 @@ const Sprites = {
     ctx.fillStyle='#4a3a28'; ctx.fillRect(s*0.08,0,s*0.06,s); ctx.fillRect(s*0.86,0,s*0.06,s);
     ctx.fillStyle='#e8f4fa';
     for (let y=s*0.12;y<s;y+=s/4){ ctx.fillRect(s*0.1,y,2,2); ctx.fillRect(s*0.86,y,2,2); }
-  },
-  roofTileFrost(ctx, s, part) {
-    ctx.fillStyle='#c8dce8'; ctx.fillRect(0,0,s,s);
-    const roofCol='#2868a0', roofDark='#1a4a78', roofLight='#5090c8';
-    ctx.fillStyle=roofCol;
-    if (part==='L'){ ctx.beginPath(); ctx.moveTo(s*0.2,s); ctx.lineTo(s,s*0.3); ctx.lineTo(s,s); ctx.closePath(); ctx.fill(); }
-    else if (part==='R'){ ctx.beginPath(); ctx.moveTo(s*0.8,s); ctx.lineTo(0,s*0.3); ctx.lineTo(0,s); ctx.closePath(); ctx.fill(); }
-    else { ctx.beginPath(); ctx.moveTo(0,s*0.3); ctx.lineTo(s/2,0); ctx.lineTo(s,s*0.3); ctx.lineTo(s,s); ctx.lineTo(0,s); ctx.closePath(); ctx.fill();
-      ctx.fillStyle=roofLight; ctx.beginPath(); ctx.moveTo(s/2,0); ctx.lineTo(s*0.65,s*0.25); ctx.lineTo(s*0.35,s*0.25); ctx.closePath(); ctx.fill(); }
-    ctx.fillStyle='rgba(255,255,255,0.7)'; ctx.fillRect(0,s*0.82,s,s*0.1);
-    ctx.fillStyle=roofDark; ctx.fillRect(0,s*0.9,s,s*0.1);
-  },
-  houseWallTileFrost(ctx, s, part) {
-    ctx.fillStyle='#e0ecf2'; ctx.fillRect(0,0,s,s);
-    ctx.strokeStyle='#c0d4e0'; ctx.lineWidth=1;
-    for (let y=s*0.2;y<s;y+=s*0.25){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(s,y); ctx.stroke(); }
-    const wx = part==='L'? s*0.3 : s*0.15;
-    ctx.fillStyle='#3070b0'; ctx.fillRect(wx,s*0.15,s*0.4,s*0.35);
-    ctx.strokeStyle='#1a4a78'; ctx.strokeRect(wx,s*0.15,s*0.4,s*0.35);
-    ctx.fillStyle='#80b8e0'; ctx.fillRect(wx+s*0.03,s*0.18,s*0.15,s*0.13);
   },
   doorTileFrost(ctx, s, exit) {
     ctx.fillStyle='#e0ecf2'; ctx.fillRect(0,0,s,s);
@@ -1216,25 +1486,6 @@ const Sprites = {
     ctx.fillStyle='#5a4018'; ctx.fillRect(s*0.08,0,s*0.06,s); ctx.fillRect(s*0.86,0,s*0.06,s);
     ctx.fillStyle='#ffe8a0';
     for (let y=s*0.12;y<s;y+=s/4){ ctx.fillRect(s*0.1,y,2,2); ctx.fillRect(s*0.86,y,2,2); }
-  },
-  roofTileChamp(ctx, s, part) {
-    ctx.fillStyle='#c0a860'; ctx.fillRect(0,0,s,s);
-    const roofCol='#c09020', roofDark='#906810', roofLight='#e8b840';
-    ctx.fillStyle=roofCol;
-    if (part==='L'){ ctx.beginPath(); ctx.moveTo(s*0.2,s); ctx.lineTo(s,s*0.3); ctx.lineTo(s,s); ctx.closePath(); ctx.fill(); }
-    else if (part==='R'){ ctx.beginPath(); ctx.moveTo(s*0.8,s); ctx.lineTo(0,s*0.3); ctx.lineTo(0,s); ctx.closePath(); ctx.fill(); }
-    else { ctx.beginPath(); ctx.moveTo(0,s*0.3); ctx.lineTo(s/2,0); ctx.lineTo(s,s*0.3); ctx.lineTo(s,s); ctx.lineTo(0,s); ctx.closePath(); ctx.fill();
-      ctx.fillStyle=roofLight; ctx.beginPath(); ctx.moveTo(s/2,0); ctx.lineTo(s*0.65,s*0.25); ctx.lineTo(s*0.35,s*0.25); ctx.closePath(); ctx.fill(); }
-    ctx.fillStyle=roofDark; ctx.fillRect(0,s*0.85,s,s*0.15);
-  },
-  houseWallTileChamp(ctx, s, part) {
-    ctx.fillStyle='#f0e0b0'; ctx.fillRect(0,0,s,s);
-    ctx.strokeStyle='#d8c090'; ctx.lineWidth=1;
-    for (let y=s*0.2;y<s;y+=s*0.25){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(s,y); ctx.stroke(); }
-    const wx = part==='L'? s*0.3 : s*0.15;
-    ctx.fillStyle='#c09020'; ctx.fillRect(wx,s*0.15,s*0.4,s*0.35);
-    ctx.strokeStyle='#906810'; ctx.strokeRect(wx,s*0.15,s*0.4,s*0.35);
-    ctx.fillStyle='#ffd868'; ctx.fillRect(wx+s*0.03,s*0.18,s*0.15,s*0.13);
   },
   doorTileChamp(ctx, s, exit) {
     ctx.fillStyle='#f0e0b0'; ctx.fillRect(0,0,s,s);
@@ -1508,7 +1759,7 @@ const TRAINERS=[
 // ===================== STORY / QUESTS / NPCs =====================
 const QUESTS={
   q0:{id:'q0',giverName:'Schicksal',name:'Hauptquest: Die Welt reparieren',
-    desc:'Die Welt zerbarst, als deine Reise begann. Nur wer alle drei Orden gewinnt und den Champion der Pokemon-Liga bezwingt, kann sie wieder heilen.',
+    desc:'In der Nacht, in der deine Reise begann, riss die Welt auf. Drei Ankersteine halten die Nahte notdurftig zu - je einer in einer Arena. Gewinne ihr Vertrauen, dann bezwinge den Champion an der grossen Naht, und die Welt wird wieder ganz.',
     check:s=>!!(s.flags.badgeR1&&s.flags.badgeR2&&s.flags.badgeR3&&s.flags.champion),
     progress:s=>{const b=(s.flags.badgeR1?1:0)+(s.flags.badgeR2?1:0)+(s.flags.badgeR3?1:0);return `${b}/3 Orden, Champion: ${s.flags.champion?'besiegt':'noch offen'}`;},
     reward:{}},
@@ -1539,7 +1790,9 @@ function questStatus(qid,s){
   const st=(s.quests||{})[qid];
   if(!st)return 'none';
   if(st==='completed')return 'done';
-  return QUESTS[qid].check(s)?'ready':'active';
+  const q=QUESTS[qid];
+  if(!q)return 'active';
+  return q.check(s)?'ready':'active';
 }
 function startQuest(qid){ G.s.quests=G.s.quests||{}; if(!G.s.quests[qid])G.s.quests[qid]='active'; G.saveGame(); }
 function completeQuest(qid){
@@ -1553,111 +1806,207 @@ function completeQuest(qid){
 }
 
 function professorLines(s){
-  if(!s.flags.metProfessor) return ['Willkommen in meinem Labor, Trainer!','Ich bin Professor Eichenholz und erforsche die Pokemon dieser Region.','Nimm diese zwei zusatzlichen Heiltranke fur den Start deiner Reise mit!','Als kleine Aufgabe: Gewinne 3 Kampfe gegen wilde Pokemon, ich habe etwas fur dich!'];
+  if(!s.flags.metProfessor) return ['Professor Eichenholz: Du hast es gespurt, nicht wahr? Vor einer Stunde.',
+    'Der Boden hat gezittert, der Himmel ist aufgesprungen wie eine alte Naht - und dann war er wieder zu.',
+    'Das war der Riss. Die Welt ist zerbrochen, und sie halt sich seither nur noch muhsam selbst zusammen.',
+    'Es gibt drei Ankersteine, die die Nahte geschlossen halten. Je einer liegt in einer Arena, bewacht von einem Meister.',
+    'Ein Orden ist kein Abzeichen. Er ist das Vertrauen eines Ankers - und Anker folgen nur, wem sie folgen wollen.',
+    'Nimm diese zwei Heiltranke. Und fang klein an: Gewinne drei Kampfe, dann reden wir weiter.'];
   const st=questStatus('q1',s);
-  if(st==='ready') return ['Du hast schon 3 Kampfe gewonnen? Fantastisch! Hier ist deine Belohnung.'];
-  if(st==='active') return [`Wie lauft die Aufgabe? Fortschritt: ${QUESTS.q1.progress(s)}.`];
-  if(s.battlesWon<10) return ['Wie lauft dein Abenteuer? Fange fleissig weitere Pokemon!'];
-  if(s.battlesWon<30) return ['Beeindruckend! Mit der Zeit tauchen immer starkere wilde Pokemon auf.'];
-  return ['Man erzahlt sich, dass legendare Pokemon in den entferntesten Winkeln der Welt umherstreifen...'];
+  if(st==='ready') return ['Professor Eichenholz: Drei Siege. Gut.','Ich habe die Messwerte verglichen: Wo du kampfst, wird die Naht ruhiger. Das ist kein Zufall.','Hier, nimm das - und geh weiter.'];
+  if(st==='active') return [`Professor Eichenholz: Fortschritt: ${QUESTS.q1.progress(s)}.`,'Die Nahte warten nicht auf dich. Aber sie reissen auch nicht schneller, wenn du hetzt.'];
+  const b=(s.flags.badgeR1?1:0)+(s.flags.badgeR2?1:0)+(s.flags.badgeR3?1:0);
+  if(s.flags.champion) return ['Professor Eichenholz: Der Himmel ist wieder ganz. Ich habe dreissig Jahre geforscht und nie damit gerechnet, das zu sehen.','Danke. Von uns allen.'];
+  if(b===3) return ['Professor Eichenholz: Alle drei Anker folgen dir. Damit hat noch nie jemand die Liga betreten.','Die letzte Naht liegt dort. Sie ist die grosste. Sei vorsichtig.'];
+  if(b===2) return ['Professor Eichenholz: Zwei Anker. Die Erschutterungen werden seltener - man merkt es an den Instrumenten.','Einer fehlt noch. Der schwerste, naturlich.'];
+  if(b===1) return ['Professor Eichenholz: Ein Anker folgt dir bereits. Die Naht uber unserem Dorf hat sich messbar beruhigt.','Zwei fehlen. Weiter im Osten wartet mehr.'];
+  if(s.battlesWon<10) return ['Professor Eichenholz: Fang weiter Pokemon. Jede Art, die du eintragst, ist ein Punkt, an dem die Welt sich noch sicher ist.'];
+  return ['Professor Eichenholz: Man erzahlt sich, dass in den entferntesten Winkeln Pokemon umherstreifen, die alter sind als der Riss.','Ob sie ihn kommen sahen? Ich wurde sie gern fragen.'];
 }
 function rivalLines(s){
   const w=s.flags.rivalWins||0;
-  if(!s.flags.metRival) return ['Na, bist du bereit fur dein erstes Abenteuer?','Zeig mir mal, was dein Pokemon drauf hat!','Ubrigens, im Dorf gibt es andere Trainer - besiege beide, dann hab ich was Feines fur dich!'];
+  if(!s.flags.metRival) return ['Rivale Gary: Da bist du ja. Ich hab die ganze Nacht nicht geschlafen.',
+    'Als es passierte, stand ich am Fenster. Unser Schuppen war danach einfach nicht mehr da. Nicht kaputt - weg.',
+    'Alle reden davon, dass jemand das richten soll. Warum nicht ich? Warum nicht du?',
+    'Also machen wir es zum Wettkampf. Besiege die beiden Trainer im Dorf, dann zeig ich dir, wo ich stehe.'];
   const st=questStatus('q4',s);
-  if(st==='ready') return ['Du hast wirklich beide Trainer besiegt? Respekt! Hier, nimm das.','Aber jetzt zu uns beiden...'];
-  if(w===0) return ['Diesmal gewinne ich, das schwore ich dir!'];
-  return [`Du hast mich schon ${w}x besiegt... Aber diesmal wird es anders!`];
+  if(st==='ready') return ['Rivale Gary: Beide? Wirklich beide?','Gut. Ich hasse es, aber gut. Hier, das gehort jetzt dir.','Und jetzt zu uns beiden.'];
+  if(s.flags.champion) return [`Rivale Gary: Du hast die Welt zusammengeflickt und ich hab dabei zugesehen.`,'Weisst du was? Damit komm ich klar. Aber revanchieren will ich mich trotzdem.'];
+  if(w===0) return ['Rivale Gary: Diesmal gewinne ich. Ich hab trainiert, bis mir schlecht wurde.'];
+  if(w>=3) return [`Rivale Gary: ${w} Niederlagen. Ich zahle mit.`,'Und ich hore trotzdem nicht auf. Das ist der ganze Punkt.'];
+  return [`Rivale Gary: Du hast mich schon ${w}x besiegt. Das andert heute gar nichts an meinem Plan.`];
 }
 function villagerLines1(s){
   const st=questStatus('q2',s);
-  if(st==='none') return ['Hast du gewusst? Wasser-Pokemon sind stark gegen Feuer-Pokemon.','Kannst du mir von 3 gefangenen wilden Pokemon berichten? Ich sammle Notizen daruber!'];
-  if(st==='ready') return ['Du hast schon 3 Pokemon gefangen? Wunderbar, hier ist mein Dank!'];
-  if(st==='active') return [`Hast du schon 3 Pokemon gefangen? Fortschritt: ${QUESTS.q2.progress(s)}.`];
-  return ['Die Heiltranke erneuern sich jeden Tag - nutze sie weise!'];
+  if(st==='none') return ['Anwohnerin Lisa: Meine Grossmutter hat immer gesagt, man erkennt eine gesunde Welt an ihren Tieren.',
+    'Seit dem Riss sind manche Arten einfach verschwunden. Andere sind aufgetaucht, die es hier nie gab.',
+    'Ich fuhre Buch daruber. Fang drei wilde Pokemon und berichte mir - dann weiss ich mehr.'];
+  if(st==='ready') return ['Anwohnerin Lisa: Drei Eintrage. Danke, das hilft wirklich.','Und - Wasser schlagt Feuer. Das galt vor dem Riss und gilt noch immer. Wenigstens etwas.'];
+  if(st==='active') return [`Anwohnerin Lisa: Fortschritt: ${QUESTS.q2.progress(s)}.`];
+  return ['Anwohnerin Lisa: Die Heiltranke erneuern sich jeden Tag. Im Center kostet die Heilung gar nichts - geh ruhig hin.'];
 }
 function villagerLines2(s){
   const st=questStatus('q3',s);
-  if(st==='none') return ['Ich hab gehort, im hohen Gras trifft man auf wilde Pokemon.','Trainiere dein Team, bis eines Level 15 erreicht - dann hab ich was fur dich!'];
-  if(st==='ready') return ['Level 15 schon erreicht? Starke Leistung! Hier, nimm das.'];
-  if(st==='active') return [`Wie weit bist du? Fortschritt: ${QUESTS.q3.progress(s)}.`];
-  return ['Trainiere dein Team, um gegen starkere Gegner zu bestehen!'];
+  if(st==='none') return ['Anwohner Tom: Im hohen Gras trifft man auf wilde Pokemon. Das war schon immer so.',
+    'Neu ist, dass sie starker sind als fruher. Deutlich starker.',
+    'Bring eines deiner Pokemon auf Level 15, dann hab ich was fur dich - und einen guten Rat dazu.'];
+  if(st==='ready') return ['Anwohner Tom: Level 15. Damit uberlebst du die Strasse nach Osten.','Der Rat: Lauf nie mit nur einem Pokemon los. Nie.'];
+  if(st==='active') return [`Anwohner Tom: Fortschritt: ${QUESTS.q3.progress(s)}.`];
+  return ['Anwohner Tom: Ausserhalb des Dorfes stehen Hofe und Hutten. Die Leute dort sehen mehr als wir - sprich mit ihnen.'];
 }
-function wandererLines(){ return ['Sehr effektive Treffer verursachen doppelten Schaden!','Pass auf deine Heiltranke auf, du bekommst nur 5 pro Tag.']; }
+function wandererLines(s){
+  if(s&&s.flags&&s.flags.champion) return ['Wanderin Mara: Ich bin heute Morgen bis zum Horizont gelaufen. Er war wieder da.','Vorher hat er einfach... aufgehort. Du hast das gemacht.'];
+  return ['Wanderin Mara: Sehr effektive Treffer verursachen doppelten Schaden - merk dir das, es rettet Leben.',
+    'Und geh raus aus dem Dorf. Uberall im Land stehen Hauser, und jeder darin hat eine Aufgabe fur dich.'];
+}
 function elder2Lines(s){
   const st=questStatus('q6',s);
-  if(st==='none') return ['Willkommen in der Schattenregion, junger Trainer.','Die Pokemon hier sind machtiger als in deiner Heimat.','Fang eines der Stufe 3 oder hoher, und ich belohne dich.'];
-  if(st==='ready') return ['Ein machtiges Pokemon! Genau das habe ich gemeint. Hier, nimm das.'];
-  if(st==='active') return [`Fortschritt: ${QUESTS.q6.progress(s)}.`];
-  return ['Diese Region birgt noch viele Geheimnisse...'];
+  if(st==='none') return ['Alteste Elana: Willkommen in der Schattenregion. Sag nicht, man hatte dich nicht gewarnt.',
+    'Was du hier fur Dunkelheit haltst, ist keine. Es ist das Fehlen von Licht - es lauft aus der Naht heraus, Tag fur Tag.',
+    'Wir leben damit, seit der Riss geschah. Manche Kinder hier haben nie einen Mittag gesehen.',
+    'Wer hier bestehen will, braucht ein Pokemon der Stufe 3 oder hoher. Bring mir eines.'];
+  if(st==='ready') return ['Alteste Elana: Stark genug. Gut.','Der Anker unserer Region liegt in der Schattenarena. Meister Voss hutet ihn - und er gibt ihn nicht leicht her.'];
+  if(st==='active') return [`Alteste Elana: Fortschritt: ${QUESTS.q6.progress(s)}.`];
+  return ['Alteste Elana: Wenn du den Anker gewinnst, wird es hier wieder hell. Nicht sofort. Aber wieder.'];
 }
 function v3Lines(s){
   const st=questStatus('q7',s);
-  if(st==='none') return ['Ich bin viel gereist und habe starke Trainer getroffen.','Gewinne insgesamt 25 Kampfe, dann erzahle ich dir mehr.'];
-  if(st==='ready') return ['25 Siege! Beeindruckend. Hier, nimm das als Anerkennung.'];
-  if(st==='active') return [`Fortschritt: ${QUESTS.q7.progress(s)}.`];
-  return ['Die starksten Pokemon findest du weit weg von jedem Dorf.'];
+  if(st==='none') return ['Reisender Kilian: Ich war in allen vier Regionen. Vor dem Riss waren es sechs.',
+    'Zwei sind weg. Nicht zerstort - herausgeschnitten. Die Strassen dorthin enden mitten im Nichts.',
+    'Gewinne 25 Kampfe, dann erzahle ich dir, was ich am Rand gesehen habe.'];
+  if(st==='ready') return ['Reisender Kilian: 25 Siege. Also gut, du hast es dir verdient:',
+    'Am Rand steht eine Wand aus nichts. Und dahinter - ich schwore es - bewegt sich etwas.'];
+  if(st==='active') return [`Reisender Kilian: Fortschritt: ${QUESTS.q7.progress(s)}.`];
+  return ['Reisender Kilian: Die starksten Pokemon findest du weit weg von jedem Dorf. Das war schon immer der Preis.'];
 }
 function v4Lines(s){
   const st=questStatus('q8',s);
-  if(st==='none') return ['Ich sammle Kraeuter fur starkendes Pokemon-Futter.','Bringe ein Pokemon auf Level 25, dann teile ich mein bestes Rezept mit dir.'];
-  if(st==='ready') return ['Level 25! Wahre Meisterschaft. Hier ist meine Belohnung.'];
-  if(st==='active') return [`Fortschritt: ${QUESTS.q8.progress(s)}.`];
-  return ['Pokemon-Futter aus dem Laden hilft beim Trainieren.'];
+  if(st==='none') return ['Krauterfrau Toni: Ich mische Futter, das Pokemon durch diese Region bringt.',
+    'Die Krauter hier wachsen falschherum, seit dem Riss. Wurzeln nach oben. Man gewohnt sich an alles.',
+    'Bring ein Pokemon auf Level 25, dann bekommst du mein bestes Rezept.'];
+  if(st==='ready') return ['Krauterfrau Toni: Level 25 in dieser Gegend. Das schafft kaum jemand.','Hier - und pass auf dich auf.'];
+  if(st==='active') return [`Krauterfrau Toni: Fortschritt: ${QUESTS.q8.progress(s)}.`];
+  return ['Krauterfrau Toni: Futter aus dem Laden hilft beim Trainieren. Und im Center heilen sie dich umsonst.'];
 }
-function silasLines(){ return ['Willkommen in meinem Laden!','Auch hier in der Schattenregion gibt es Heiltranke und starkendes Futter.']; }
-function v5Lines(){ return ['Diese Region war einst so hell wie deine Heimat, bis der Schatten kam.','Manche sagen, tief im Wald hausen noch altere Wesen...']; }
-function v6Lines(){ return ['Ich schmiede robuste Ausrustung fur Reisende wie dich.','Pass auf dich auf - die Pokemon hier sind nicht zu unterschatzen.']; }
+function silasLines(){ return ['Handler Silas: Willkommen. Bar zahlen, keine Fragen, keine Namen.',
+  'Ich handle seit dem Riss mit allem, was noch existiert. Das Sortiment wird jedes Jahr kleiner.',
+  'Heiltranke und Futter hab ich. Schau es dir an.']; }
+function v5Lines(){ return ['Geisterseherin Vala: Setz dich nicht auf den Stuhl links. Der ist besetzt.',
+  'Seit der Riss geschah, sind die Toten dieser Region nicht weitergegangen. Sie stehen an der Naht und warten.',
+  'Wenn du sie schliesst, konnen sie endlich gehen. Vergiss das nicht, wenn es hart wird.']; }
+function v6Lines(){ return ['Schmied Boris: Meine Esse ist in jener Nacht ausgegangen. Zum ersten Mal seit vier Generationen.',
+  'Ich hab sie wieder angezundet. Was soll man sonst tun.',
+  'Die Pokemon hier sind nicht zu unterschatzen - rust dich aus, bevor du in die Arena gehst.']; }
 function conductorLines(s){
   const st=questStatus('q5',s);
-  if(st==='none') return ['Halt! Ohne Fahrkarte kein Zutritt zum Bahnhof.','Beweise erst deine Starke: Gewinne insgesamt 10 Kampfe, dann bekommst du die Fahrkarte zur Schattenregion.'];
-  if(st==='active') return [`Noch keine Fahrkarte fur dich. Fortschritt: ${QUESTS.q5.progress(s)}.`];
-  if(st==='ready') return ['Beeindruckend! Hier ist deine Fahrkarte fur die Schattenregion.'];
-  return ['Der Zug zur Schattenregion steht bereit. Einsteigen?'];
+  if(st==='none') return ['Schaffner Aldric: Halt. Ohne Fahrkarte kein Bahnsteig.',
+    'Die Strecke nach Osten fuhrt durch eine Naht. Wer da schwach einsteigt, steigt gar nicht mehr aus.',
+    'Gewinne 10 Kampfe. Dann - und nur dann - bekommst du deine Karte.'];
+  if(st==='active') return [`Schaffner Aldric: Fortschritt: ${QUESTS.q5.progress(s)}.`,'Ich mach die Regeln nicht. Ich zahle nur die Ruckkehrer.'];
+  if(st==='ready') return ['Schaffner Aldric: Zehn Siege. Hier ist deine Fahrkarte zur Schattenregion.','Und - komm zuruck. Ich mag es, wenn die Zahlen stimmen.'];
+  return ['Schaffner Aldric: Der Zug zur Schattenregion steht bereit. Einsteigen?'];
 }
-function returnConductorLines(){ return ['Der Zug zuruck ins Heimatdorf steht bereit. Einsteigen?']; }
+function returnConductorLines(){ return ['Schaffner Elrik: Der Zug zuruck ins Heimatdorf steht bereit. Einsteigen?']; }
 function yaraLines(s){
-  if(!s.flags.badgeR2) return ['Hinter mir liegt eine weitere, unerforschte Region.','Doch der Weg ist versperrt - erst wer den Meister der Schattenarena bezwingt, darf weiterreisen.'];
-  return ['Du hast dich als Meister/in bewiesen! Bereit fur die Frostregion?'];
+  if(!s.flags.badgeR2) return ['Schaffnerin Yara: Dahinter liegt die Frostregion. Die Strecke ist gesperrt.',
+    'Nicht aus Bosheit - der Zug fahrt durch eine offene Naht. Ohne den Anker dieser Region zerreisst es dich unterwegs.',
+    'Bezwinge Meister Voss in der Schattenarena. Dann offne ich das Gleis.'];
+  return ['Schaffnerin Yara: Der Anker folgt dir. Damit halt der Zug die Strecke aus.','Bereit fur die Frostregion?'];
 }
-function junoLines(){ return ['Der Zug zuruck in die Schattenregion steht bereit. Einsteigen?']; }
+function junoLines(){ return ['Schaffner Juno: Der Zug zuruck in die Schattenregion steht bereit. Einsteigen?']; }
 function friggaLines(s){
   const st=questStatus('q9',s);
-  if(st==='none') return ['Willkommen in der Frostregion, Reisende/r.','Hier zahlt nur, wer eisige Entschlossenheit beweist: Gewinne insgesamt 35 Kampfe.'];
-  if(st==='ready') return ['35 Siege trotz der Kalte! Beeindruckend. Hier, nimm das.'];
-  if(st==='active') return [`Fortschritt: ${QUESTS.q9.progress(s)}.`];
-  return ['Tief im ewigen Eis schlummern uralte Geheimnisse...'];
+  if(st==='none') return ['Hueterin Frigga: Willkommen in der Frostregion. Zieh die Kapuze hoch.',
+    'Hier ist nicht einfach Winter. Hier ist der Moment des Risses eingefroren - die Zeit selbst ist stehengeblieben.',
+    'Siehst du den Rauch uber dem See? Der steht dort seit jener Nacht. Unverandert.',
+    'Wer hier bestehen will, muss 35 Kampfe gewonnen haben. Komm wieder, wenn du soweit bist.'];
+  if(st==='ready') return ['Hueterin Frigga: 35 Siege bei dieser Kalte. Du gehorst hierher, ob du willst oder nicht.','Hier, nimm das.'];
+  if(st==='active') return [`Hueterin Frigga: Fortschritt: ${QUESTS.q9.progress(s)}.`];
+  return ['Hueterin Frigga: Wenn du den letzten Anker gewinnst, lauft die Zeit hier weiter. Der Rauch wird ziehen.','Ich mochte das noch erleben.'];
 }
 function finnLines(s){
   const st=questStatus('q10',s);
-  if(st==='none') return ['Ich schurfe seit Jahren Kristalle in diesem Eis.','Bringe ein Pokemon auf Level 30, dann teile ich meinen besten Fund mit dir.'];
-  if(st==='ready') return ['Level 30! Ein wahrer eisiger Meister. Hier, nimm das.'];
-  if(st==='active') return [`Fortschritt: ${QUESTS.q10.progress(s)}.`];
-  return ['Die tiefsten Hohlen bergen die wertvollsten Kristalle.'];
+  if(st==='none') return ['Kristallschurfer Finn: Ich schurfe hier seit Jahren. Das Eis gibt Kristalle her, die es nicht geben durfte.',
+    'In einem steckte ein Blatt. Grun, frisch, mitten im Eis - und alter als mein Urgrossvater.',
+    'Bring ein Pokemon auf Level 30, dann zeig ich dir meinen besten Fund.'];
+  if(st==='ready') return ['Kristallschurfer Finn: Level 30. Da - der Fund gehort dir.','Halt ihn ins Licht. Man sieht die Naht darin.'];
+  if(st==='active') return [`Kristallschurfer Finn: Fortschritt: ${QUESTS.q10.progress(s)}.`];
+  return ['Kristallschurfer Finn: Die tiefsten Hohlen bergen die wertvollsten Kristalle. Und die kaltesten Uberraschungen.'];
 }
 function runaLines(s){
   const st=questStatus('q11',s);
-  if(st==='none') return ['Ich jage die seltensten Pokemon dieser Region.','Fang eines der Stufe 4, und ich zeige dir meinen Respekt.'];
-  if(st==='ready') return ['Ein Pokemon der Stufe 4! Unglaublich. Hier, nimm das.'];
-  if(st==='active') return [`Fortschritt: ${QUESTS.q11.progress(s)}.`];
-  return ['Die machtigsten Pokemon verstecken sich weit draussen im Schnee.'];
+  if(st==='none') return ['Schneejagerin Runa: Ich jage die seltenen. Nicht zum Toten - zum Zahlen.',
+    'Die Stufe-4-Pokemon sind erst nach dem Riss aufgetaucht. Als hatte die Welt in Panik etwas Grosses erschaffen.',
+    'Fang eines. Dann weiss ich, dass du bereit bist fur das, was in der Liga wartet.'];
+  if(st==='ready') return ['Schneejagerin Runa: Ein Stufe-4-Pokemon. An deiner Seite, freiwillig.','Dann stimmt es also, was sie uber dich erzahlen. Nimm das hier.'];
+  if(st==='active') return [`Schneejagerin Runa: Fortschritt: ${QUESTS.q11.progress(s)}.`];
+  return ['Schneejagerin Runa: Die machtigsten Pokemon verstecken sich weit draussen im Schnee. Geh nicht ohne Heiltranke.'];
 }
-function bjornLines(){ return ['Ich habe schon manchen Sturm auf dem zugefrorenen See uberlebt.','Auch hier gibt es einen Laden - schau doch mal vorbei.']; }
-function nieveLines(){ return ['Willkommen in meinem Laden!','Selbst hier am Ende der Welt gibt es Heiltranke und starkendes Futter.']; }
-function arena1Lines(s){ return s.flags.badgeR1?['Meister Boreas: Du hast meinen Orden bereits verdient. Gut gemacht!']:['Meister Boreas: Willkommen in der Arena! Zeig mir deine Starke im Kampf!']; }
-function arena2Lines(s){ return s.flags.badgeR2?['Meister Voss: Den Orden der Schattenarena hast du bereits verdient...']:['Meister Voss: Nur die Starksten bestehen in der Schattenarena!']; }
-function arena3Lines(s){ return s.flags.badgeR3?['Meisterin Elsa: Du bist bereits eine wurdige Meisterin des Eises.']:['Meisterin Elsa: In der Frostarena zahlt nur eisige Entschlossenheit!']; }
+function bjornLines(){ return ['Alter Fischer Bjorn: Ich sitze seit vierzig Jahren an diesem See. Seit dem Riss beisst nichts mehr.',
+  'Aber ich sitze weiter. Irgendwann lauft die Zeit hier wieder, und dann will ich als Erster die Angel im Wasser haben.',
+  'Im Basar gibt es Vorrate. Und im Center heilen sie umsonst - nutz das.']; }
+function nieveLines(){ return ['Handlerin Nieve: Willkommen! Ja, es ist kalt. Nein, daran gewohnt man sich nicht.',
+  'Selbst hier am Ende der Welt gibt es Heiltranke und starkendes Futter. Das Geschaft halt die Leute bei Verstand.']; }
+function arena1Lines(s){
+  if(s.flags.badgeR1) return ['Meister Boreas: Der Anker folgt dir, und das Dorf schlaft wieder ruhiger.','Geh nach Osten. Voss wird es dir schwerer machen als ich.'];
+  return ['Meister Boreas: Willkommen. Du kommst wegen des Ankersteins, nicht wegen mir.',
+    'Er liegt unter dieser Halle, seit meine Familie ihn hutet - elf Generationen.',
+    'Ich kann ihn dir nicht geben. Anker folgen keinem Befehl, nur einer Leistung.',
+    'Also zeig mir deine. Jetzt.'];
+}
+function arena2Lines(s){
+  if(s.flags.badgeR2) return ['Meister Voss: Zwei Anker. Du bist weiter gekommen als alle vor dir.','Elsa im Frost gibt ihren nicht her, ohne dich bluten zu lassen. Sei bereit.'];
+  return ['Meister Voss: Leise. Der Anker hier hasst Larm.',
+    'Seit der Riss geschah, saugt die Naht das Licht aus dieser Region. Mein Stein bremst es. Mehr kann er nicht.',
+    'Ich habe vierzehn Herausforderer gesehen. Keiner hat bestanden.',
+    'Zeig mir, dass du der Funfzehnte bist - oder geh nach Hause.'];
+}
+function arena3Lines(s){
+  if(s.flags.badgeR3) return ['Meisterin Elsa: Alle drei Anker folgen dir. Das hat es noch nie gegeben.','Geh zur Liga. Seraphina wartet seit dem Riss auf jemanden wie dich - im Wortsinn.'];
+  return ['Meisterin Elsa: Du zitterst. Gut, das heisst du lebst noch.',
+    'Mein Anker halt die Zeit hier an. Ohne ihn ware diese Region in jener Nacht einfach ausgeloscht worden.',
+    'Der Preis: Nichts hier verandert sich. Nichts wachst. Nichts endet.',
+    'Wenn du ihn mitnimmst, lauft die Zeit weiter - und wir altern alle auf einmal nach. Wir haben abgestimmt. Wir wollen es.',
+    'Also nimm ihn dir. Wenn du kannst.'];
+}
 function noraLines(s){
   const ready=!!(s.flags.badgeR1&&s.flags.badgeR2&&s.flags.badgeR3);
-  if(!ready) return ['Die Pokemon-Liga ist der Hohepunkt jeder Reise.','Doch nur wer alle drei Orden besitzt, darf den Zug dorthin nehmen.'];
-  return ['Alle drei Orden! Du bist bereit fur die Pokemon-Liga.','Der Zug steht bereit. Einsteigen?'];
+  if(!ready) return ['Schaffnerin Nora: Die Liga liegt am Ursprung. Dort, wo der Riss anfing.',
+    'Der Zug fahrt direkt in die grosse Naht hinein. Ohne alle drei Anker ist das kein Reisen, das ist Selbstmord.',
+    'Komm wieder, wenn du sie hast.'];
+  return ['Schaffnerin Nora: Alle drei. Ich hab das nie fur moglich gehalten.','Der Zug steht bereit. Einsteigen?'];
 }
-function returnLigaLines(){ return ['Der Zug zuruck in die Frostregion steht bereit. Einsteigen?']; }
-function ligaLines(s){ return s.flags.champion?['Champion Seraphina: Du bist und bleibst Pokemon-Meister/in. Eine Ehre, dich zu kennen.']:['Champion Seraphina: Du hast es bis hierher geschafft. Zeig mir, ob du wurdig bist!']; }
-function lshopLines(){ return ['Willkommen im Liga-Shop!','Hier bekommst du das Beste, was PokeCash kaufen kann.']; }
+function returnLigaLines(){ return ['Schaffner Otto: Der Zug zuruck in die Frostregion steht bereit. Einsteigen?']; }
+function ligaLines(s){
+  if(s.flags.champion) return ['Champion Seraphina: Sieh dir den Himmel an. Ganz. Einfach ganz.',
+    'Ich habe hier gestanden und gehalten, was zu halten war, seit jener Nacht. Du hast es beendet.',
+    'Du bist und bleibst Pokemon-Meister/in. Und ich - ich glaube, ich gehe jetzt einfach mal spazieren.'];
+  return ['Champion Seraphina: Du kommst mit allen drei Ankern. Ich habe darauf gewartet.',
+    'Hinter mir liegt die erste Naht - die, aus der alle anderen entstanden sind.',
+    'Ich halte sie zu, seit der Riss geschah. Ich kann sie nicht schliessen, nur halten. Dafur ist ein Anker zu wenig und ich bin nur eine Person.',
+    'Drei Anker und ein vierter Wille konnten es schaffen. Aber die Anker folgen dir, nicht mir.',
+    'Also musst du starker sein als ich. Sonst gebe ich dich nicht frei - und die Welt bleibt, wie sie ist.',
+    'Letzter Kampf. Enttausch mich nicht.'];
+}
+function lloreLines(){ return ['Chronist Aldo: Willkommen in der Ruhmeshalle. Die meisten Namen hier sind alter als der Riss.',
+  'Danach hat niemand mehr etwas eingetragen. Es gab nichts einzutragen.',
+  'Ich halte eine Seite frei. Seit Jahren. Die Tinte ist langst eingetrocknet, aber ich ruhre sie jeden Morgen neu an.',
+  'Ich hoffe sehr, dass du sie mir fullst.']; }
+function lshopLines(){ return ['Handlerin Perle: Willkommen im Liga-Shop. Hier endet die Handelskette der ganzen Welt.',
+  'Was ich hier habe, ist das Beste, was noch existiert. Der Preis spiegelt das leider wider.',
+  'Kauf gut ein. Danach gibt es keinen Laden mehr - nur noch Seraphina.']; }
 function lloreLines(){ return ['Nur die Besten der Besten erreichen je die Pokemon-Liga.','Die Halle der Champions hat schon viele Legenden kommen und gehen sehen.']; }
 
+function centerLines(s){
+  const hurt=s.team.filter(p=>p.hp<p.mhp).length;
+  const base=['Schwester Joy: Willkommen im Pokemon-Center!'];
+  if(hurt===0) return base.concat(['Dein Team ist bei bester Gesundheit.','Trotzdem: ich sehe einmal nach. Das Haus zahlt - hier wird nie abgerechnet.']);
+  return base.concat([`Ich sehe ${hurt===1?'ein verletztes Pokemon':hurt+' verletzte Pokemon'}. Gib sie mir.`,
+    'Die Heilung ist kostenlos. Seit dem Riss ist das keine Wohltatigkeit mehr, sondern Pflicht.']);
+}
 const HOUSES={
+  center:{name:'Pokemon-Center',npc:{name:'Schwester Joy',shirt:'#f4f4f6',hair:'#e0506a',lines:s=>centerLines(s),
+    onEnd:()=>{ G.healTeamFree(); }}},
   lab:{name:'Pokemon-Labor',npc:{name:'Professor Eichenholz',shirt:'#f0f0f0',hair:'#3a2a1a',lines:s=>professorLines(s),
     onEnd:()=>{ const s=G.s;
       if(!s.flags.metProfessor){ s.flags.metProfessor=true; s.potions+=2; startQuest('q1'); G.updateHud(); G.saveGame(); return; }
@@ -1709,6 +2058,112 @@ const HOUSES={
   llore:{name:'Ruhmeshalle',npc:{name:'Chronist Aldo',shirt:'#706040',hair:'#302010',lines:()=>lloreLines()}},
 };
 
+// ===== Outlying homesteads: residents scattered over the map who hand out work =====
+// Each archetype carries a piece of the world's backstory, so wandering off the
+// beaten path is how the plot actually gets told.
+const OUT_GOALS={
+  battles:{d:n=>`Gewinne insgesamt ${n} Kampfe.`,chk:n=>s=>s.battlesWon>=n,pg:n=>s=>Math.min(s.battlesWon,n)+'/'+n},
+  fangen: {d:n=>`Fange insgesamt ${n} Pokemon.`,chk:n=>s=>(s.caughtCount||0)>=n,pg:n=>s=>Math.min(s.caughtCount||0,n)+'/'+n},
+  level:  {d:n=>`Bringe ein Pokemon auf Level ${n}.`,chk:n=>s=>s.team.some(p=>p.lv>=n),pg:n=>s=>Math.max(0,...s.team.map(p=>p.lv))+'/'+n},
+  dex:    {d:n=>`Trage ${n} verschiedene Arten in deinen Dex ein.`,chk:n=>s=>Object.keys(s.dex||{}).length>=n,pg:n=>s=>Math.min(Object.keys(s.dex||{}).length,n)+'/'+n},
+  team:   {d:n=>`Stelle ein Team aus ${n} Pokemon zusammen.`,chk:n=>s=>s.team.length>=n,pg:n=>s=>Math.min(s.team.length,n)+'/'+n},
+};
+const OUT_MULT={r1:1,r2:1.9,r3:2.8,r4:3.6};
+const OUTPOST_DEFS=[
+  {nm:'Waldhutte',npc:'Einsiedler Ansgar',shirt:'#5a6a3a',hair:'#c8c8c0',goal:'battles',amt:7,rp:2,rc:70,
+   qn:'Wachter der Lichtung',
+   intro:['Einsiedler Ansgar: Selten kommt jemand so weit hinaus.','In der Nacht, als der Himmel zerriss, stand ich genau hier.','Die Baume bogen sich nach innen - als wollte die Welt sich selbst verschlucken.','Wenn du sie wirklich heilen willst, musst du stark genug sein. Beweise es mir.'],
+   wait:['Einsiedler Ansgar: Die Wildnis lugt nicht. Kampfe weiter.'],
+   done:['Einsiedler Ansgar: Du hast das Mark eines Wachters. Nimm das hier - du wirst es brauchen.'],
+   after:['Einsiedler Ansgar: Der Riss hat den Wald verandert. Hor genau hin, dann horst du ihn atmen.']},
+  {nm:'Fischerkate',npc:'Fischerin Marla',shirt:'#2a6a8a',hair:'#7a5a30',goal:'fangen',amt:5,rp:2,rc:80,
+   qn:'Was das Wasser hergibt',
+   intro:['Fischerin Marla: Vorsicht, die Netze liegen aus.','Seit der Zersplitterung steigen Pokemon aus Tiefen auf, die es fruher gar nicht gab.','Ich kann sie nicht alle katalogisieren. Fang du sie - fur die Aufzeichnungen.'],
+   wait:['Fischerin Marla: Noch nicht genug. Das Wasser ist geduldig, ich weniger.'],
+   done:['Fischerin Marla: Beeindruckend. Die Aufzeichnungen werden dich uberdauern.'],
+   after:['Fischerin Marla: Manche Nachte hore ich das Meer ruckwarts rauschen. Frag nicht.']},
+  {nm:'Bergwacht',npc:'Bergwachterin Sina',shirt:'#8a4a2a',hair:'#2a2a2a',goal:'level',amt:14,rp:3,rc:110,
+   qn:'Der harte Aufstieg',
+   intro:['Bergwachterin Sina: Von hier oben sieht man, wie falsch alles steht.','Die Bergkette bricht mitten in der Luft ab. Dahinter: nichts. Nur Naht.','Ein schwaches Pokemon uberlebt da oben keinen Tag. Zieh eines gross, dann reden wir.'],
+   wait:['Bergwachterin Sina: Noch zu grun. Der Berg vergibt keine Eile.'],
+   done:['Bergwachterin Sina: Jetzt hast du eines, das den Grat halt. Respekt.'],
+   after:['Bergwachterin Sina: Die Naht am Horizont wird schmaler, seit du unterwegs bist.']},
+  {nm:'Sternwarte',npc:'Sternenkundler Ove',shirt:'#30306a',hair:'#d8d8e8',goal:'dex',amt:8,rp:3,rc:120,
+   qn:'Karte der Arten',
+   intro:['Sternenkundler Ove: Still! Ich zahle.','Achtzehn Sternbilder fehlen seit jener Nacht. Achtzehn.','Die Pokemon sind das letzte verlassliche Register dieser Welt.','Trage mir Arten in deinen Dex ein - jede einzelne ist ein Fixpunkt.'],
+   wait:['Sternenkundler Ove: Zu wenige Fixpunkte. Die Karte wackelt noch.'],
+   done:['Sternenkundler Ove: Ja! Die Rechnung geht wieder auf. Du ahnst nicht, was das bedeutet.'],
+   after:['Sternenkundler Ove: Ein Orden ist kein Schmuck. Es ist eine Klammer. Sammle sie.']},
+  {nm:'Gehoft',npc:'Bauerin Hedda',shirt:'#7a8a30',hair:'#a08040',goal:'team',amt:3,rp:3,rc:90,
+   qn:'Niemand schafft es allein',
+   intro:['Bauerin Hedda: Setz dich, du siehst durchgefroren aus.','Mein Hof stand fruher zwei Taler weiter. Dann verschob sich der Boden - einfach so.','Weisst du, was uns gerettet hat? Dass wir zu viert waren.','Geh nicht allein da raus. Bau dir ein Team auf.'],
+   wait:['Bauerin Hedda: Ein Pokemon ist ein Freund. Zwei sind ein Anfang. Du brauchst mehr.'],
+   done:['Bauerin Hedda: So gefallst du mir. Das halt zusammen, was sonst zerbricht.'],
+   after:['Bauerin Hedda: Iss was, bevor du gehst. Die Welt lauft dir nicht davon. Hoffentlich.']},
+  {nm:'Ruinenlager',npc:'Ausgraberin Perel',shirt:'#6a5a8a',hair:'#402a1a',goal:'battles',amt:16,rp:4,rc:160,
+   qn:'Was unter dem Staub liegt',
+   intro:['Ausgraberin Perel: Fass nichts an, das alter aussieht als du.','Unter diesem Lager liegt eine Halle. Ihre Wande zeigen den Riss - gemalt vor tausend Jahren.','Sie wussten, dass es passieren wurde. Und sie wussten, wer es richten kann.','Die Wandbilder zeigen jemanden mit drei Orden. Also: kampfe dich frei.'],
+   wait:['Ausgraberin Perel: Die Halle offnet sich nur Leuten mit Geschichte. Sammle welche.'],
+   done:['Ausgraberin Perel: Da - genau dein Umriss auf der Wand. Ich sage nur ungern "Schicksal", aber.'],
+   after:['Ausgraberin Perel: Die letzte Kammer zeigt die Liga. Und danach: leere Wand. Kein gutes Zeichen.']},
+  {nm:'Leuchtturm',npc:'Warterin Isolde',shirt:'#204a6a',hair:'#e8e0c0',goal:'fangen',amt:9,rp:4,rc:170,
+   qn:'Licht gegen die Leere',
+   intro:['Warterin Isolde: Der Turm brennt seit dreihundert Jahren ohne Unterbrechung.','In der Nacht des Risses ging er aus. Vier Sekunden. Ich habe sie gezahlt.','Was in diesen vier Sekunden hereinkam, streift noch immer durchs Land.','Fang es ein. Fang alles ein, was du findest. Es ist sicherer bei dir.'],
+   wait:['Warterin Isolde: Noch zu viele draussen. Ich sehe sie im Lichtkegel.'],
+   done:['Warterin Isolde: Der Kegel ist ruhig heute Nacht. Das war lange nicht so.'],
+   after:['Warterin Isolde: Wenn du die Liga erreichst - schau nicht in die Naht. Versprich es mir.']},
+  {nm:'Grenzposten',npc:'Grenzerin Vike',shirt:'#5a2a2a',hair:'#101010',goal:'level',amt:22,rp:5,rc:220,
+   qn:'Bis hierher und weiter',
+   intro:['Grenzerin Vike: Halt. Dahinter faltet sich das Land.','Ich lasse niemanden durch, der nicht bestehen wurde. Das ist keine Schikane, das ist Statistik.','Bring mir ein Pokemon, das dieser Gegend gewachsen ist, dann offne ich den Weg.'],
+   wait:['Grenzerin Vike: Nicht stark genug. Ich habe zu viele begraben, die es trotzdem versucht haben.'],
+   done:['Grenzerin Vike: Durchgelassen. Und - komm zuruck. Das sage ich sonst nie.'],
+   after:['Grenzerin Vike: Die Faltung wandert. Jeden Tag ein Stuck naher. Beeil dich.']},
+];
+function outQuestId(region,idx){ return 'o_'+(region||'r1')+'_'+idx; }
+function registerOutpostQuests(region,outposts){
+  (outposts||[]).forEach(o=>{
+    const qid=outQuestId(region,o.idx);
+    if(QUESTS[qid])return;
+    const def=OUTPOST_DEFS[o.def%OUTPOST_DEFS.length];
+    const g=OUT_GOALS[def.goal];
+    const amt=Math.max(1,Math.round(def.amt*(OUT_MULT[region]||1)));
+    QUESTS[qid]={id:qid,giverName:def.npc,name:def.qn,desc:g.d(amt),
+      check:g.chk(amt),progress:g.pg(amt),
+      reward:{potions:def.rp,cash:Math.round(def.rc*(OUT_MULT[region]||1))}};
+  });
+}
+// Register every visited region's homestead quests, not just the current one:
+// an outstanding quest from an earlier region still has to render in the log.
+function registerAllOutpostQuests(s){
+  if(!s)return;
+  registerOutpostQuests(s.region,s.outposts);
+  const regs=s.regions||{};
+  Object.keys(regs).forEach(r=>registerOutpostQuests(r,regs[r]&&regs[r].outposts));
+}
+function outpostLines(def,qid,s){
+  const st=questStatus(qid,s);
+  if(st==='none')return def.intro;
+  if(st==='active')return def.wait;
+  if(st==='ready')return def.done;
+  return def.after;
+}
+// Resolves both the fixed village buildings and the procedurally placed homesteads.
+function houseCfgFor(id){
+  if(HOUSES[id])return HOUSES[id];
+  const mm=/^out(\d+)$/.exec(id||'');
+  if(mm){
+    const o=((G.s&&G.s.outposts)||[]).find(x=>x.idx===+mm[1]);
+    if(o){
+      const def=OUTPOST_DEFS[o.def%OUTPOST_DEFS.length];
+      const qid=outQuestId(G.s.region,o.idx);
+      return {name:def.nm,npc:{name:def.npc,shirt:def.shirt,hair:def.hair,
+        lines:s=>outpostLines(def,qid,s),
+        onEnd:()=>{const st=questStatus(qid,G.s);if(st==='none')startQuest(qid);else if(st==='ready')completeQuest(qid);}}};
+    }
+  }
+  return {name:'Haus',npc:{name:'Bewohner',shirt:'#808080',hair:'#402a1a',lines:()=>['Hier ist niemand mehr zu Hause.']}};
+}
+
 // Random wandering trainers scattered across the map
 const RANDOM_TRAINER_NAMES=['Wanderer Ben','Youngster Timo','Camper Lena','Wanderin Sofia','Angler Paul','Schulerin Nina','Kraftprotz Max','Rocker Dennis','Wanderin Petra','Sammler Jonas','Youngster Finn','Camper Greta'];
 const RANDOM_SHIRTS=['#2050a0','#c04070','#40a040','#a0a020','#8040a0','#c07020','#409090','#6060c0'];
@@ -1726,16 +2181,231 @@ const T={GRASS:0,TALL:1,WATER:2,TREE:3,ROCK:4,PATH:5,FLOWER:6,SAND:7,BRIDGE:8,
   FLOOR:18,IWALL:19,EXITDOOR:20,DOOR_SHOP:21,DOOR_ELDER2:22,DOOR_V3:23,DOOR_V4:24,DOOR_SHOP2:25,
   DOOR_V5:26,DOOR_V6:27,DOOR_ARENA1:28,DOOR_ARENA2:29,DOOR_ARENA3:30,
   DOOR_F1:31,DOOR_F2:32,DOOR_F3:33,DOOR_F4:34,DOOR_F5:35,
-  DOOR_LIGA:36,DOOR_LSHOP:37,DOOR_LLORE:38};
+  DOOR_LIGA:36,DOOR_LSHOP:37,DOOR_LLORE:38,
+  DOOR_CENTER:39,
+  DOOR_OUT0:40,DOOR_OUT1:41,DOOR_OUT2:42,DOOR_OUT3:43,DOOR_OUT4:44,DOOR_OUT5:45,DOOR_OUT6:46,DOOR_OUT7:47};
+const OUT_DOORS=[T.DOOR_OUT0,T.DOOR_OUT1,T.DOOR_OUT2,T.DOOR_OUT3,T.DOOR_OUT4,T.DOOR_OUT5,T.DOOR_OUT6,T.DOOR_OUT7];
 const TW=new Set([T.GRASS,T.TALL,T.PATH,T.FLOWER,T.SAND,T.BRIDGE,T.DOOR_LAB,T.DOOR_RIVAL,T.DOOR_V1,T.DOOR_V2,T.DOOR_SHOP,T.DOOR_ELDER2,T.DOOR_V3,T.DOOR_V4,T.DOOR_SHOP2,T.DOOR_V5,T.DOOR_V6,
-  T.DOOR_ARENA1,T.DOOR_ARENA2,T.DOOR_ARENA3,T.DOOR_F1,T.DOOR_F2,T.DOOR_F3,T.DOOR_F4,T.DOOR_F5,T.DOOR_LIGA,T.DOOR_LSHOP,T.DOOR_LLORE]);
+  T.DOOR_ARENA1,T.DOOR_ARENA2,T.DOOR_ARENA3,T.DOOR_F1,T.DOOR_F2,T.DOOR_F3,T.DOOR_F4,T.DOOR_F5,T.DOOR_LIGA,T.DOOR_LSHOP,T.DOOR_LLORE,
+  T.DOOR_CENTER,...OUT_DOORS]);
 const IW=new Set([T.FLOOR,T.EXITDOOR]);
 const DOOR_HOUSE={[T.DOOR_LAB]:'lab',[T.DOOR_RIVAL]:'rival',[T.DOOR_V1]:'v1',[T.DOOR_V2]:'v2',[T.DOOR_SHOP]:'shop',[T.DOOR_ELDER2]:'elder2',[T.DOOR_V3]:'v3',[T.DOOR_V4]:'v4',[T.DOOR_SHOP2]:'shop2',[T.DOOR_V5]:'v5',[T.DOOR_V6]:'v6',
   [T.DOOR_ARENA1]:'arena1',[T.DOOR_ARENA2]:'arena2',[T.DOOR_ARENA3]:'arena3',
   [T.DOOR_F1]:'f1',[T.DOOR_F2]:'f2',[T.DOOR_F3]:'f3',[T.DOOR_F4]:'f4',[T.DOOR_F5]:'f5',
-  [T.DOOR_LIGA]:'liga',[T.DOOR_LSHOP]:'lshop',[T.DOOR_LLORE]:'llore'};
+  [T.DOOR_LIGA]:'liga',[T.DOOR_LSHOP]:'lshop',[T.DOOR_LLORE]:'llore',
+  [T.DOOR_CENTER]:'center'};
+OUT_DOORS.forEach((d,i)=>{DOOR_HOUSE[d]='out'+i;});
+
+// ===== Building design system =====
+// Each building style owns its roof colours, wall treatment and roof emblem, so a
+// shop, an arena and a Pokemon-Center never look like the same house with a recolour.
+const BSTYLE={
+  house: {roof:'#a83428',rd:'#7c1d14',rl:'#cc5040',emb:null,   wall:'plaster',door:'wood'},
+  house2:{roof:'#3c7a58',rd:'#265340',rl:'#569c74',emb:null,   wall:'timber', door:'wood'},
+  home:  {roof:'#b06838',rd:'#874a24',rl:'#d08a54',emb:null,   wall:'timber', door:'wood'},
+  shop:  {roof:'#2a7ab4',rd:'#1a5686',rl:'#44a0d8',emb:'cart', wall:'display',door:'glass'},
+  center:{roof:'#e2454e',rd:'#a82830',rl:'#ff6f76',emb:'cross',wall:'clinic', door:'auto'},
+  arena: {roof:'#7a4aa4',rd:'#553076',rl:'#9d6cc8',emb:'badge',wall:'stone',  door:'gate'},
+  lab:   {roof:'#5a82ac',rd:'#3d5c80',rl:'#7fa8d0',emb:'flask',wall:'metal',  door:'slide'},
+  liga:  {roof:'#d0a828',rd:'#977610',rl:'#f6d055',emb:'crown',wall:'column', door:'grand'},
+  forge: {roof:'#6a5a4a',rd:'#463a2e',rl:'#8e7c66',emb:'anvil',wall:'brick',  door:'wood'},
+  out:   {roof:'#7d6a3c',rd:'#584a26',rl:'#a08a54',emb:null,   wall:'log',    door:'wood'},
+};
+// Region palettes supply the walls/ground so buildings still read as local architecture.
+const BPAL={
+  r1:{wall:'#e0d0a0',ln:'#c0a870',grd:'#508040',win:'#3a5a8a',winD:'#2a3a5a',winL:'#6a8aba',door:'#6a4020',doorD:'#4a2a10',knob:'#ffd860',stone:'#9a9186',stoneD:'#776f65'},
+  r2:{wall:'#4a4258',ln:'#3a3448',grd:'#3a3050',win:'#7050a0',winD:'#402860',winL:'#a080d0',door:'#3a2050',doorD:'#201030',knob:'#c0a0ff',stone:'#585067',stoneD:'#413b4f'},
+  r3:{wall:'#e0ecf2',ln:'#c0d4e0',grd:'#c8dce8',win:'#3070b0',winD:'#1a4a78',winL:'#80b8e0',door:'#5a4030',doorD:'#302010',knob:'#ffd860',stone:'#b9c8d2',stoneD:'#94a4b0'},
+  r4:{wall:'#f0e0b0',ln:'#d8c090',grd:'#c0a860',win:'#c09020',winD:'#906810',winL:'#ffd868',door:'#a87828',doorD:'#5a3e14',knob:'#ffe870',stone:'#cbb98c',stoneD:'#a4936a'},
+};
+const DOOR_STYLE={
+  [T.DOOR_LAB]:'lab',[T.DOOR_RIVAL]:'home',[T.DOOR_V1]:'house',[T.DOOR_V2]:'house2',
+  [T.DOOR_SHOP]:'shop',[T.DOOR_ELDER2]:'home',[T.DOOR_V3]:'house',[T.DOOR_V4]:'house2',
+  [T.DOOR_SHOP2]:'shop',[T.DOOR_V5]:'house',[T.DOOR_V6]:'forge',
+  [T.DOOR_ARENA1]:'arena',[T.DOOR_ARENA2]:'arena',[T.DOOR_ARENA3]:'arena',
+  [T.DOOR_F1]:'home',[T.DOOR_F2]:'shop',[T.DOOR_F3]:'house',[T.DOOR_F4]:'house2',[T.DOOR_F5]:'out',
+  [T.DOOR_LIGA]:'liga',[T.DOOR_LSHOP]:'shop',[T.DOOR_LLORE]:'home',
+  [T.DOOR_CENTER]:'center'};
+OUT_DOORS.forEach(d=>{DOOR_STYLE[d]='out';});
+const HOUSE_STYLE={};
+Object.keys(DOOR_HOUSE).forEach(k=>{ HOUSE_STYLE[DOOR_HOUSE[k]]=DOOR_STYLE[k]||'house'; });
+
+// Resolve which building a roof/wall piece belongs to by locating its door tile:
+// a building is always a 3x2 block with the door at the bottom centre.
+function bStyleAt(map,mx,my,t){
+  let dx,dy;
+  if(t===T.ROOFL){dx=1;dy=1;} else if(t===T.ROOFM){dx=0;dy=1;} else if(t===T.ROOFR){dx=-1;dy=1;}
+  else if(t===T.WALLL){dx=1;dy=0;} else if(t===T.WALLR){dx=-1;dy=0;}
+  else return DOOR_STYLE[t]||'house';
+  const row=map[my+dy];
+  if(row){const d=row[mx+dx];if(d!==undefined&&DOOR_STYLE[d])return DOOR_STYLE[d];}
+  return 'house';
+}
 const TILE=32;
 function villRFor(region){ return region==='r2'?18:(region==='r3'?13:(region==='r4'?8:9)); }
+
+// ===================== TOWN & MAP BUILDING =====================
+const ARENA_DOOR={r1:T.DOOR_ARENA1,r2:T.DOOR_ARENA2,r3:T.DOOR_ARENA3};
+function isBuildTile(t){ return (t>=T.ROOFL&&t<=T.WALLR)||DOOR_HOUSE[t]!==undefined; }
+
+// A building is a 3x2 block: roof row on top, walls flanking the door, path in front.
+function placeBuilding(m,doorX,doorY,doorTile,W,H){
+  if(doorX-1<0||doorX+1>=W||doorY-1<0||doorY>=H)return false;
+  m[doorY-1][doorX-1]=T.ROOFL;m[doorY-1][doorX]=T.ROOFM;m[doorY-1][doorX+1]=T.ROOFR;
+  m[doorY][doorX-1]=T.WALLL;m[doorY][doorX]=doorTile;m[doorY][doorX+1]=T.WALLR;
+  if(doorY+1<H)m[doorY+1][doorX]=T.PATH;
+  return true;
+}
+
+// Flatten a plot: paved directly in front of the door, grass around the rim.
+function carvePlaza(m,x,y,r,W,H){
+  for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+    const ny=y+dy,nx=x+dx;
+    if(ny<2||ny>=H-2||nx<2||nx>=W-2)continue;
+    if(isBuildTile(m[ny][nx]))continue;
+    m[ny][nx]=(Math.abs(dx)<=1||Math.abs(dy)<=1)?T.PATH:T.GRASS;
+  }
+}
+
+// L-shaped road; water underneath becomes a bridge so the route always stays walkable.
+function carveRoad(m,x1,y1,x2,y2,W,H){
+  const lay=(x,y)=>{
+    if(y<0||y>=H||x<0||x>=W)return;
+    if(isBuildTile(m[y][x]))return;
+    m[y][x]=(m[y][x]===T.WATER)?T.BRIDGE:T.PATH;
+  };
+  const sx=x1<x2?1:-1;
+  for(let x=x1;x!==x2+sx;x+=sx)lay(x,y1);
+  const sy=y1<y2?1:-1;
+  for(let y=y1;y!==y2+sy;y+=sy)lay(x2,y);
+}
+
+// Tiles that must stay clear while buildings are placed: the fixed NPCs (station
+// conductors above all) would otherwise end up walled inside a house, which silently
+// cuts off travel to the next region.
+let reservedPts=[];
+function fixedNpcSpots(region,sx,sy,W){
+  if(region==='r2') return [{x:12,y:sy},{x:sx,y:sy-2}];
+  if(region==='r3') return [{x:sx,y:sy-2},{x:W-12,y:sy}];
+  if(region==='r4') return [{x:sx,y:sy-2}];
+  return [{x:sx,y:sy-2},{x:sx-8,y:sy},{x:sx+8,y:sy},{x:W-12,y:sy}];
+}
+function isReserved(x,y){
+  for(const p of reservedPts){ if(Math.abs(p.x-x)<=1&&Math.abs(p.y-y)<=1) return true; }
+  return false;
+}
+
+// Fraction of solid ground in the plot; -1 when the plot runs off the map,
+// overlaps an existing building, or covers a reserved NPC tile.
+function landScore(m,x,y,r,W,H){
+  if(x-r-1<2||x+r+1>=W-2||y-r-1<2||y+r+1>=H-2)return -1;
+  let land=0,tot=0;
+  for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+    const t=m[y+dy][x+dx];
+    if(isBuildTile(t))return -1;
+    if(isReserved(x+dx,y+dy))return -1;
+    tot++; if(t!==T.WATER)land++;
+  }
+  return land/tot;
+}
+
+// Walkable tiles actually connected to the spawn point.
+function reachableMask(m,sx,sy,W,H){
+  const seen=new Uint8Array(W*H),st=[sx+sy*W];
+  seen[sy*W+sx]=1;
+  while(st.length){
+    const i=st.pop(),x=i%W,y=(i/W)|0;
+    for(const [dx,dy] of [[0,1],[0,-1],[1,0],[-1,0]]){
+      const nx=x+dx,ny=y+dy;
+      if(nx<0||nx>=W||ny<0||ny>=H)continue;
+      const j=ny*W+nx;
+      if(seen[j]||!TW.has(m[ny][nx]))continue;
+      seen[j]=1;st.push(j);
+    }
+  }
+  return seen;
+}
+
+// Probe a fixed, ordered ring of candidate offsets and keep the most solid one.
+// Deterministic in intent (always the same ring, always the same order) but still
+// terrain-aware, so the building is neither dropped at random nor left in a lake.
+// Always yields a site as long as one candidate fits on the map and clashes with
+// no existing building: the plot is levelled afterwards, so a damp candidate is
+// still usable and a missing arena would be far worse than an imperfect one.
+function pickBuildSpot(m,sx,sy,W,H,offsets,r){
+  let best=null,bestScore=-1;
+  for(const [ox,oy] of offsets){
+    const x=sx+ox,y=sy+oy;
+    const sc=landScore(m,x,y,r,W,H);
+    if(sc<0)continue;
+    if(sc>=0.999)return {x,y};
+    if(sc>bestScore){bestScore=sc;best={x,y};}
+  }
+  return best;
+}
+function arenaOffsets(R){
+  const d=R+8,q=Math.round(d*0.72),e=d+7;
+  return [[0,d],[q,q],[-q,q],[d,0],[-d,0],[0,-d],[q,-q],[-q,-q],
+          [0,e],[e,0],[-e,0],[0,-e],[Math.round(e*0.72),Math.round(e*0.72)],[-Math.round(e*0.72),Math.round(e*0.72)]];
+}
+
+// Spiral out from a sector centre until a plot of solid ground turns up.
+function findLandNear(m,cx,cy,W,H,r,minOk){
+  let best=null,bestScore=-1;
+  for(let rad=0;rad<=14;rad+=2){
+    for(let dy=-rad;dy<=rad;dy+=2)for(let dx=-rad;dx<=rad;dx+=2){
+      if(rad>0&&Math.abs(dx)!==rad&&Math.abs(dy)!==rad)continue;
+      const sc=landScore(m,cx+dx,cy+dy,r,W,H);
+      if(sc<0)continue;
+      if(sc>=0.999)return {x:cx+dx,y:cy+dy};
+      if(sc>bestScore){bestScore=sc;best={x:cx+dx,y:cy+dy};}
+    }
+  }
+  // A homestead is optional scenery: skip a sector that is mostly open water
+  // rather than stranding a house on a carved islet.
+  return bestScore>=minOk?best:null;
+}
+
+// Nearest existing road, so an outlying homestead hooks into the road network
+// instead of sprouting its own private highway to the village.
+function nearestPath(m,x,y,W,H,maxR){
+  for(let r=2;r<=maxR;r+=2){
+    for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+      if(Math.abs(dx)!==r&&Math.abs(dy)!==r)continue;
+      const ny=y+dy,nx=x+dx;
+      if(ny<2||ny>=H-2||nx<2||nx>=W-2)continue;
+      const t=m[ny][nx];
+      if(t===T.PATH||t===T.BRIDGE)return {x:nx,y:ny};
+    }
+  }
+  return null;
+}
+
+// Homesteads scattered over the whole map, one per sector of a 3x3 grid
+// (the village owns the middle sector), each with a resident who has a job for you.
+function placeOutposts(m,region,sx,sy,W,H,villR){
+  const max=region==='r4'?3:6;
+  const cells=[];
+  for(let iy=0;iy<3;iy++)for(let ix=0;ix<3;ix++){
+    if(ix===1&&iy===1)continue;
+    cells.push([Math.round(W*(ix+0.5)/3),Math.round(H*(iy+0.5)/3)]);
+  }
+  const out=[];
+  for(let i=0;i<cells.length&&out.length<max;i++){
+    const spot=findLandNear(m,cells[i][0],cells[i][1],W,H,3,0.8);
+    if(!spot)continue;
+    if(Math.abs(spot.x-sx)+Math.abs(spot.y-sy)<villR+8)continue;
+    if(out.some(o=>Math.abs(o.x-spot.x)+Math.abs(o.y-spot.y)<14))continue;
+    const idx=out.length;
+    carvePlaza(m,spot.x,spot.y,3,W,H);
+    const hook=nearestPath(m,spot.x,spot.y+3,W,H,22);
+    if(hook)carveRoad(m,spot.x,spot.y+2,hook.x,hook.y,W,H);
+    else carveRoad(m,spot.x,spot.y+2,sx,sy,W,H);
+    placeBuilding(m,spot.x,spot.y,OUT_DOORS[idx],W,H);
+    out.push({x:spot.x,y:spot.y,idx,def:(i+(region==='r2'?3:region==='r3'?5:region==='r4'?7:0))%OUTPOST_DEFS.length});
+  }
+  return out;
+}
 
 // ===================== GAME =====================
 const G = {
@@ -1764,6 +2434,29 @@ const G = {
     this.startAnimLoop();
   },
 
+  // Styled building tiles are generated on demand and cached per style+part+region,
+  // so adding a building style costs nothing until it is actually on screen.
+  bTile(style,part,region) {
+    const st=BSTYLE[style]||BSTYLE.house, pal=BPAL[region]||BPAL.r1;
+    return Sprites.getTile('b_'+style+'_'+part+'_'+(region||'r1'),TILE,(c,sz)=>{
+      if(part==='rL')Sprites.bRoof(c,sz,'L',st,pal);
+      else if(part==='rM')Sprites.bRoof(c,sz,'M',st,pal);
+      else if(part==='rR')Sprites.bRoof(c,sz,'R',st,pal);
+      else if(part==='wL')Sprites.bWall(c,sz,'L',st,pal);
+      else if(part==='wR')Sprites.bWall(c,sz,'R',st,pal);
+      else Sprites.bDoor(c,sz,st,pal);
+    });
+  },
+
+  // Interior surfaces for the building currently being stood in.
+  iTile(part,region) {
+    const style=this.s.inHouseStyle||'house';
+    const st=BSTYLE[style]||BSTYLE.house, pal=BPAL[region]||BPAL.r1;
+    return Sprites.getTile('i_'+style+'_'+part+'_'+(region||'r1'),TILE,(c,sz)=>{
+      if(part==='fl')Sprites.bFloor(c,sz,st,pal); else Sprites.bIWall(c,sz,st,pal);
+    });
+  },
+
   precacheTiles() {
     const s = TILE;
     this.tileCache.grass = Sprites.getTile('grass', s, (c,sz) => Sprites.grassTile(c,sz,0));
@@ -1777,12 +2470,6 @@ const G = {
       this.tileCache['flower'+v] = Sprites.getTile('flower'+v, s, (c,sz) => Sprites.flowerTile(c,sz,v,v*3));
     }
     // house exterior + interior tiles
-    this.tileCache.roofL = Sprites.getTile('roofL', s, (c,sz) => Sprites.roofTile(c,sz,'L'));
-    this.tileCache.roofM = Sprites.getTile('roofM', s, (c,sz) => Sprites.roofTile(c,sz,'M'));
-    this.tileCache.roofR = Sprites.getTile('roofR', s, (c,sz) => Sprites.roofTile(c,sz,'R'));
-    this.tileCache.wallL = Sprites.getTile('wallL', s, (c,sz) => Sprites.houseWallTile(c,sz,'L'));
-    this.tileCache.wallR = Sprites.getTile('wallR', s, (c,sz) => Sprites.houseWallTile(c,sz,'R'));
-    this.tileCache.door = Sprites.getTile('door', s, (c,sz) => Sprites.doorTile(c,sz,false));
     this.tileCache.exitdoor = Sprites.getTile('exitdoor', s, (c,sz) => Sprites.doorTile(c,sz,true));
     this.tileCache.floor = Sprites.getTile('floor', s, (c,sz) => Sprites.floorTile(c,sz));
     this.tileCache.iwall = Sprites.getTile('iwall', s, (c,sz) => Sprites.interiorWallTile(c,sz));
@@ -1799,12 +2486,6 @@ const G = {
     for (let v = 0; v < 5; v++) {
       c2['flower'+v] = Sprites.getTile('flowerS'+v, s, (c,sz) => Sprites.flowerTileShadow(c,sz,v,v*3));
     }
-    c2.roofL = Sprites.getTile('roofLS', s, (c,sz) => Sprites.roofTileShadow(c,sz,'L'));
-    c2.roofM = Sprites.getTile('roofMS', s, (c,sz) => Sprites.roofTileShadow(c,sz,'M'));
-    c2.roofR = Sprites.getTile('roofRS', s, (c,sz) => Sprites.roofTileShadow(c,sz,'R'));
-    c2.wallL = Sprites.getTile('wallLS', s, (c,sz) => Sprites.houseWallTileShadow(c,sz,'L'));
-    c2.wallR = Sprites.getTile('wallRS', s, (c,sz) => Sprites.houseWallTileShadow(c,sz,'R'));
-    c2.door = Sprites.getTile('doorS', s, (c,sz) => Sprites.doorTileShadow(c,sz,false));
     c2.exitdoor = Sprites.getTile('exitdoorS', s, (c,sz) => Sprites.doorTileShadow(c,sz,true));
     c2.floor = Sprites.getTile('floorS', s, (c,sz) => Sprites.floorTileShadow(c,sz));
     c2.iwall = Sprites.getTile('iwallS', s, (c,sz) => Sprites.interiorWallTileShadow(c,sz));
@@ -1821,12 +2502,6 @@ const G = {
     for (let v = 0; v < 5; v++) {
       c3['flower'+v] = Sprites.getTile('flowerF'+v, s, (c,sz) => Sprites.flowerTileFrost(c,sz,v,v*3));
     }
-    c3.roofL = Sprites.getTile('roofLF', s, (c,sz) => Sprites.roofTileFrost(c,sz,'L'));
-    c3.roofM = Sprites.getTile('roofMF', s, (c,sz) => Sprites.roofTileFrost(c,sz,'M'));
-    c3.roofR = Sprites.getTile('roofRF', s, (c,sz) => Sprites.roofTileFrost(c,sz,'R'));
-    c3.wallL = Sprites.getTile('wallLF', s, (c,sz) => Sprites.houseWallTileFrost(c,sz,'L'));
-    c3.wallR = Sprites.getTile('wallRF', s, (c,sz) => Sprites.houseWallTileFrost(c,sz,'R'));
-    c3.door = Sprites.getTile('doorF', s, (c,sz) => Sprites.doorTileFrost(c,sz,false));
     c3.exitdoor = Sprites.getTile('exitdoorF', s, (c,sz) => Sprites.doorTileFrost(c,sz,true));
     c3.floor = Sprites.getTile('floorF', s, (c,sz) => Sprites.floorTileFrost(c,sz));
     c3.iwall = Sprites.getTile('iwallF', s, (c,sz) => Sprites.interiorWallTileFrost(c,sz));
@@ -1843,12 +2518,6 @@ const G = {
     for (let v = 0; v < 5; v++) {
       c4['flower'+v] = Sprites.getTile('flowerC'+v, s, (c,sz) => Sprites.flowerTileChamp(c,sz,v,v*3));
     }
-    c4.roofL = Sprites.getTile('roofLC', s, (c,sz) => Sprites.roofTileChamp(c,sz,'L'));
-    c4.roofM = Sprites.getTile('roofMC', s, (c,sz) => Sprites.roofTileChamp(c,sz,'M'));
-    c4.roofR = Sprites.getTile('roofRC', s, (c,sz) => Sprites.roofTileChamp(c,sz,'R'));
-    c4.wallL = Sprites.getTile('wallLC', s, (c,sz) => Sprites.houseWallTileChamp(c,sz,'L'));
-    c4.wallR = Sprites.getTile('wallRC', s, (c,sz) => Sprites.houseWallTileChamp(c,sz,'R'));
-    c4.door = Sprites.getTile('doorC', s, (c,sz) => Sprites.doorTileChamp(c,sz,false));
     c4.exitdoor = Sprites.getTile('exitdoorC', s, (c,sz) => Sprites.doorTileChamp(c,sz,true));
     c4.floor = Sprites.getTile('floorC', s, (c,sz) => Sprites.floorTileChamp(c,sz));
     c4.iwall = Sprites.getTile('iwallC', s, (c,sz) => Sprites.interiorWallTileChamp(c,sz));
@@ -1916,34 +2585,59 @@ const G = {
   // where the corridor crosses it). Re-run on every load/region-switch so existing
   // save files get repaired retroactively, not just freshly generated maps.
   fixConductorCorridor(m,region,sx,sy,W,H,villR) {
-    if(region==='r2'){
-      for(let x=12;x<=sx-villR;x++){ if(x>=0&&x<W) m[sy][x]=(m[sy][x]===T.WATER)?T.BRIDGE:T.PATH; }
-    } else {
-      for(let x=sx+villR;x<=W-12;x++){ if(x>=0&&x<W) m[sy][x]=(m[sy][x]===T.WATER)?T.BRIDGE:T.PATH; }
-    }
+    // Never pave over a building: a structure standing on this row always has a
+    // cleared plaza around it, so the corridor is walked around rather than through.
+    const lay=x=>{ if(x<0||x>=W)return; if(isBuildTile(m[sy][x]))return;
+      m[sy][x]=(m[sy][x]===T.WATER)?T.BRIDGE:T.PATH; };
+    if(region==='r2'){ for(let x=12;x<=sx-villR;x++) lay(x); }
+    else { for(let x=sx+villR;x<=W-12;x++) lay(x); }
   },
 
-  // Retroactively add the arena house to maps saved before it existed (r1/r2).
-  // Also clears a safe patch + connecting corridor, since older r2 saves used a
-  // smaller village radius that never covered the arena's current position.
-  ensureArenaHouse(m,region,sx,sy,W,H) {
-    const doorTile = region==='r2' ? T.DOOR_ARENA2 : (region==='r1'||region===undefined ? T.DOOR_ARENA1 : null);
-    if(!doorTile) return;
-    for(let y=0;y<m.length;y++){ if(m[y].indexOf(doorTile)!==-1) return; }
-    const doorX=sx, doorY=region==='r2'?sy+16:sy-6;
-    if(doorY-1<0||doorY+1>=H) return;
-    for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){
-      const ny=doorY+dy,nx=doorX+dx;
-      if(ny<0||ny>=H||nx<0||nx>=W)continue;
-      m[ny][nx]=T.GRASS;
+  // Bring maps written by older versions up to the current town layout: the arena
+  // relocated onto its own grounds outside the village, a Pokemon-Center in the
+  // village, and outlying homesteads across the map. Runs on every load and region
+  // switch, so an existing save is repaired in place rather than being thrown away.
+  upgradeMap(m,region,sx,sy,W,H) {
+    const findTile=tile=>{for(let y=0;y<m.length;y++){const x=m[y].indexOf(tile);if(x!==-1)return {x,y};}return null;};
+    const villR=villRFor(region);
+    reservedPts=fixedNpcSpots(region,sx,sy,W);
+
+    const ad=ARENA_DOOR[region];
+    if(ad){
+      const cur=findTile(ad);
+      const inVillage=cur&&(Math.abs(cur.x-sx)+Math.abs(cur.y-sy))<villR+4;
+      if(!cur||inVillage){
+        if(cur){
+          for(let dy=-1;dy<=0;dy++)for(let dx=-1;dx<=1;dx++){
+            const ny=cur.y+dy,nx=cur.x+dx;
+            if(ny>=0&&ny<H&&nx>=0&&nx<W)m[ny][nx]=T.PATH;
+          }
+        }
+        const spot=pickBuildSpot(m,sx,sy,W,H,arenaOffsets(villR),4);
+        if(spot){
+          carvePlaza(m,spot.x,spot.y,4,W,H);
+          carveRoad(m,sx,sy,spot.x,spot.y+2,W,H);
+          placeBuilding(m,spot.x,spot.y,ad,W,H);
+        } else if(cur){
+          placeBuilding(m,cur.x,cur.y,ad,W,H);
+        }
+      }
     }
-    if(region==='r2'){
-      const villR=villRFor('r2');
-      for(let y=Math.min(sy+villR,doorY);y<=Math.max(sy+villR,doorY);y++){ m[y][sx]=(m[y][sx]===T.WATER)?T.BRIDGE:T.PATH; }
+
+    if(!findTile(T.DOOR_CENTER)){
+      const slots=[[0,-6],[0,-8],[0,5],[0,4],[-6,-6],[6,-6],[-8,-8],[8,-8],[-6,4],[6,4],[-8,5],[8,5],[0,-11],[0,9]];
+      for(const [ox,oy] of slots){
+        const x=sx+ox,y=sy+oy;
+        if(landScore(m,x,y,2,W,H)<0.95)continue;
+        carvePlaza(m,x,y,2,W,H);
+        placeBuilding(m,x,y,T.DOOR_CENTER,W,H);
+        break;
+      }
     }
-    m[doorY-1][doorX-1]=T.ROOFL;m[doorY-1][doorX]=T.ROOFM;m[doorY-1][doorX+1]=T.ROOFR;
-    m[doorY][doorX-1]=T.WALLL;m[doorY][doorX]=doorTile;m[doorY][doorX+1]=T.WALLR;
-    if(doorY+1<H)m[doorY+1][doorX]=T.PATH;
+
+    if(!(this.s.outposts||[]).length&&!OUT_DOORS.some(d=>findTile(d))){
+      this.s.outposts=placeOutposts(m,region,sx,sy,W,H,villR);
+    }
   },
 
   buildFixedNpcs(region,sx,sy,mw) {
@@ -2014,7 +2708,7 @@ const G = {
   travelToRegion(target) {
     const cur=this.s.region;
     this.s.regions=this.s.regions||{};
-    this.s.regions[cur]={map:this.s.map,mw:this.s.mw,mh:this.s.mh,px:this.s.px,py:this.s.py,randomTrainers:this.s.randomTrainers};
+    this.s.regions[cur]={map:this.s.map,mw:this.s.mw,mh:this.s.mh,px:this.s.px,py:this.s.py,randomTrainers:this.s.randomTrainers,outposts:this.s.outposts};
     this.s.region=target;
     const snap=this.s.regions[target];
     if(!snap){
@@ -2022,10 +2716,12 @@ const G = {
     } else {
       this.s.map=snap.map;this.s.mw=snap.mw;this.s.mh=snap.mh;this.s.px=snap.px;this.s.py=snap.py;
       this.s.randomTrainers=snap.randomTrainers||[];
+      this.s.outposts=snap.outposts||[];
       const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
-      if(target!=='r3'&&target!=='r4'){
+      this.upgradeMap(this.s.map,target,sx,sy,this.s.mw,this.s.mh);
+      registerOutpostQuests(target,this.s.outposts);
+      if(target!=='r4'){
         this.fixConductorCorridor(this.s.map,target,sx,sy,this.s.mw,this.s.mh,villRFor(target));
-        this.ensureArenaHouse(this.s.map,target,sx,sy,this.s.mw,this.s.mh);
       }
       this.s.worldNpcs=this.buildFixedNpcs(target,sx,sy,this.s.mw).concat(this.s.randomTrainers.map(buildRandomTrainerNpc));
       this.s.currentNpcs=this.s.worldNpcs;
@@ -2111,45 +2807,76 @@ const G = {
     }
 
     // Place houses (roof row above door row, door walkable path below)
-    const placeHouse=(doorX,doorY,doorTile)=>{
-      m[doorY-1][doorX-1]=T.ROOFL;m[doorY-1][doorX]=T.ROOFM;m[doorY-1][doorX+1]=T.ROOFR;
-      m[doorY][doorX-1]=T.WALLL;m[doorY][doorX]=doorTile;m[doorY][doorX+1]=T.WALLR;
-      if(doorY+1<H)m[doorY+1][doorX]=T.PATH;
-    };
+    const placeHouse=(doorX,doorY,doorTile)=>placeBuilding(m,doorX,doorY,doorTile,W,H);
     if(region==='r2'){
-      // Larger village: two rows of three houses, plus the arena further south
+      // Larger village: two rows of three houses; the Center anchors the north row
       placeHouse(sx-8,sy-8,T.DOOR_ELDER2);
-      placeHouse(sx,sy-8,T.DOOR_SHOP2);
+      placeHouse(sx,sy-8,T.DOOR_CENTER);
       placeHouse(sx+8,sy-8,T.DOOR_V3);
       placeHouse(sx-8,sy+5,T.DOOR_V4);
-      placeHouse(sx,sy+5,T.DOOR_V5);
+      placeHouse(sx,sy+5,T.DOOR_SHOP2);
       placeHouse(sx+8,sy+5,T.DOOR_V6);
-      placeHouse(sx,sy+16,T.DOOR_ARENA2);
+      placeHouse(sx-16,sy+5,T.DOOR_V5);
     } else if(region==='r3'){
-      // Frost village: two rows of three houses, including the arena
+      // Frost village: two rows of three houses
       placeHouse(sx-8,sy-8,T.DOOR_F1);
-      placeHouse(sx,sy-8,T.DOOR_F2);
+      placeHouse(sx,sy-8,T.DOOR_CENTER);
       placeHouse(sx+8,sy-8,T.DOOR_F3);
       placeHouse(sx-8,sy+5,T.DOOR_F4);
-      placeHouse(sx,sy+5,T.DOOR_F5);
-      placeHouse(sx+8,sy+5,T.DOOR_ARENA3);
+      placeHouse(sx,sy+5,T.DOOR_F2);
+      placeHouse(sx+8,sy+5,T.DOOR_F5);
     } else if(region==='r4'){
-      // Small, focused League grounds: one row of three buildings
+      // Small, focused League grounds
       placeHouse(sx-8,sy-6,T.DOOR_LLORE);
       placeHouse(sx,sy-6,T.DOOR_LIGA);
       placeHouse(sx+8,sy-6,T.DOOR_LSHOP);
+      placeHouse(sx,sy+5,T.DOOR_CENTER);
     } else {
       placeHouse(sx-6,sy-6,T.DOOR_LAB);
-      placeHouse(sx,sy-6,T.DOOR_ARENA1);
+      placeHouse(sx,sy-6,T.DOOR_CENTER);
       placeHouse(sx+6,sy-6,T.DOOR_RIVAL);
       placeHouse(sx-6,sy+4,T.DOOR_V1);
       placeHouse(sx+6,sy+4,T.DOOR_V2);
       placeHouse(sx,sy+4,T.DOOR_SHOP);
     }
 
-    if(region!=='r3'&&region!=='r4') this.fixConductorCorridor(m,region,sx,sy,W,H,villR);
+    // Lay the conductor corridor first, so anything built afterwards sees it as
+    // terrain and its plaza keeps the route walkable instead of severing it.
+    if(region!=='r4') this.fixConductorCorridor(m,region,sx,sy,W,H,villR);
+    reservedPts=fixedNpcSpots(region,sx,sy,W);
 
-    // Scatter random trainers across the wider map (away from the village, further = stronger)
+    // The arena sits on its own grounds outside the village: a fixed ring of candidate
+    // sites is probed in a set order and the first solid-ground one wins, so it is
+    // never dumped in the village centre and never lands in water.
+    const arenaDoor=ARENA_DOOR[region];
+    let arenaSpot=null;
+    if(arenaDoor){
+      arenaSpot=pickBuildSpot(m,sx,sy,W,H,arenaOffsets(villR),4);
+      if(arenaSpot){
+        carvePlaza(m,arenaSpot.x,arenaSpot.y,4,W,H);
+        carveRoad(m,sx,sy,arenaSpot.x,arenaSpot.y+2,W,H);
+        placeBuilding(m,arenaSpot.x,arenaSpot.y,arenaDoor,W,H);
+      }
+    }
+
+    // Outlying homesteads: quest-giving households spread across the whole map.
+    const outposts=placeOutposts(m,region,sx,sy,W,H,villR);
+    this.s.outposts=outposts;
+    registerOutpostQuests(region,outposts);
+
+    // A road hooked onto a stray path fragment can leave a building stranded on a
+    // disconnected patch, so verify every door and drive a direct road to the
+    // village for any that the player could not actually walk to.
+    let reach=reachableMask(m,sx,sy,W,H);
+    const strays=outposts.concat(arenaSpot?[arenaSpot]:[]).filter(o=>!reach[o.y*W+o.x]);
+    if(strays.length){
+      strays.forEach(o=>carveRoad(m,o.x,o.y+2,sx,sy,W,H));
+      reach=reachableMask(m,sx,sy,W,H);
+    }
+
+    // Scatter random trainers across the wider map (away from the village, further = stronger).
+    // Restricted to tiles actually connected to the village, so no challenger ends up
+    // marooned on an island the player can never walk to.
     const randomTrainers=[];
     let attempts=0;
     const numTrainers=region==='r2'?14:(region==='r3'?16:(region==='r4'?10:20));
@@ -2160,6 +2887,7 @@ const G = {
       const rx=Math.floor(Math.random()*W),ry=Math.floor(Math.random()*H);
       const dist=Math.abs(rx-sx)+Math.abs(ry-sy);
       if(dist<minDist)continue;
+      if(!reach[ry*W+rx])continue;
       const t=m[ry][rx];
       if(t!==T.GRASS&&t!==T.PATH&&t!==T.SAND)continue;
       if(randomTrainers.some(o=>Math.abs(o.x-rx)+Math.abs(o.y-ry)<8))continue;
@@ -2242,22 +2970,13 @@ const G = {
         ctx.drawImage(tc.sand,px,py);
       } else if(t===T.BRIDGE){
         ctx.drawImage(tc.bridge,px,py);
-      } else if(t===T.ROOFL){
-        ctx.drawImage(tc.roofL,px,py);
-      } else if(t===T.ROOFM){
-        ctx.drawImage(tc.roofM,px,py);
-      } else if(t===T.ROOFR){
-        ctx.drawImage(tc.roofR,px,py);
-      } else if(t===T.WALLL){
-        ctx.drawImage(tc.wallL,px,py);
-      } else if(t===T.WALLR){
-        ctx.drawImage(tc.wallR,px,py);
-      } else if(DOOR_HOUSE[t]!==undefined){
-        ctx.drawImage(tc.door,px,py);
+      } else if(t===T.ROOFL||t===T.ROOFM||t===T.ROOFR||t===T.WALLL||t===T.WALLR||DOOR_HOUSE[t]!==undefined){
+        const part=t===T.ROOFL?'rL':t===T.ROOFM?'rM':t===T.ROOFR?'rR':t===T.WALLL?'wL':t===T.WALLR?'wR':'dr';
+        ctx.drawImage(this.bTile(bStyleAt(this.s.map,mx,my,t),part,region),px,py);
       } else if(t===T.FLOOR){
-        ctx.drawImage(tc.floor,px,py);
+        ctx.drawImage(this.s.inHouse?this.iTile('fl',region):tc.floor,px,py);
       } else if(t===T.IWALL){
-        ctx.drawImage(tc.iwall,px,py);
+        ctx.drawImage(this.s.inHouse?this.iTile('iw',region):tc.iwall,px,py);
       } else if(t===T.EXITDOOR){
         ctx.drawImage(tc.exitdoor,px,py);
       }
@@ -2341,11 +3060,24 @@ const G = {
     document.getElementById('h-battles').textContent=`⚔️ ${this.s.battlesWon}`;
     const regionLabels={r2:'\u{1F30C} Schattenregion',r3:'❄️ Frostregion',r4:'🏆 Pokemon-Liga'};
     const regionLabel=regionLabels[this.s.region]||'';
-    document.getElementById('h-house').textContent=this.s.inHouse?('\u{1F3E0} '+(HOUSES[this.s.inHouse].name||'Haus')):regionLabel;
+    document.getElementById('h-house').textContent=this.s.inHouse?('\u{1F3E0} '+(houseCfgFor(this.s.inHouse).name||'Haus')):regionLabel;
     const badgeCount=(this.s.flags.badgeR1?1:0)+(this.s.flags.badgeR2?1:0)+(this.s.flags.badgeR3?1:0);
     document.getElementById('h-badges').textContent=`\u{1F396}️ ${badgeCount}/3`;
   },
   refreshPot(){const t=new Date().toDateString();if(this.s.lastPD!==t){this.s.potions=5;this.s.lastPD=t;}},
+
+  // Pokemon-Center: restores the whole team at no cost.
+  healTeamFree(){
+    const s=this.s;
+    const hurt=s.team.filter(p=>p.hp<p.mhp).length;
+    s.team.forEach(p=>{p.hp=p.mhp;});
+    if(s.team[s.active].hp<=0){const i=s.team.findIndex(p=>p.hp>0);if(i>=0)s.active=i;}
+    Au.lv();
+    this.popup(hurt>0
+      ? `Dein Team wurde vollstandig geheilt!<div class="lvl-sub">${hurt} Pokemon wiederhergestellt - kostenlos</div>`
+      : 'Dein Team ist in Bestform!<div class="lvl-sub">Alles bereit fur den Weg</div>','caught-popup',2400);
+    this.updateHud();this.saveGame();
+  },
 
   // Movement
   initKeys() {
@@ -2391,7 +3123,7 @@ const G = {
 
   // Houses & NPC interaction
   mkInterior(houseId) {
-    const cfg=HOUSES[houseId];
+    const cfg=houseCfgFor(houseId);
     const w=7,h=6;
     const map=[];
     for(let y=0;y<h;y++){map[y]=[];for(let x=0;x<w;x++){
@@ -2409,6 +3141,7 @@ const G = {
     this.s.map=inter.map;this.s.mw=inter.w;this.s.mh=inter.h;
     this.s.px=inter.entryX;this.s.py=inter.entryY;
     this.s.inHouse=houseId;
+    this.s.inHouseStyle=HOUSE_STYLE[houseId]||'house';
     this.s.currentNpcs=[inter.npc];
     this.s.facing={dx:0,dy:-1};
     this.mmC.style.display='none';
@@ -2654,6 +3387,7 @@ const G = {
     if(entries.length===0){el.innerHTML='<p style="color:#667;">Noch keine Aufgaben angenommen. Sprich mit den Bewohnern im Dorf!</p>';return;}
     el.innerHTML=entries.map(qid=>{
       const q=QUESTS[qid];const st=this.s.quests[qid];
+      if(!q)return '';
       const isMain=qid==='q0';
       const ready=st!=='completed'&&q.check(this.s);
       const statusTxt=st==='completed'?'Abgeschlossen':(ready?(isMain?'Bereit! Werde jetzt Pokemon-Meister!':'Bereit zur Abgabe! Sprich mit '+q.giverName):'In Arbeit: '+q.progress(this.s));
@@ -2766,7 +3500,7 @@ const G = {
   showEnding(){
     const stats=`Orden gesammelt: 3/3<br>Pokemon gefangen: ${this.s.caughtCount||0}<br>Kaempfe gewonnen: ${this.s.battlesWon}<br>PokeCash: ${this.s.cash||0}`;
     this.playWorldCinematic({reverse:true,caption:'Die Welt wird repariert...'},()=>{
-      document.getElementById('ending-text').innerHTML=`Du hast Champion Seraphina bezwungen und bist offiziell Pokemon-Meister/in! Die Welt ist wieder heil.<br><br>${stats}`;
+      document.getElementById('ending-text').innerHTML=`Seraphina tritt zur Seite, und zum ersten Mal seit jener Nacht beruhrt die Naht kein Widerstand mehr.<br><br>Drei Anker, ein Wille - der Riss schliesst sich. Der Rauch uber dem Frostsee zieht endlich weiter. In der Schattenregion geht die Sonne auf. Zwei verlorene Regionen liegen wieder am Ende ihrer Strassen.<br><br>Chronist Aldo tragt einen Namen auf die Seite ein, die er jahrelang freigehalten hat. Deinen.<br><br>${stats}`;
       document.getElementById('ending-screen').classList.add('on');
     });
   },
@@ -2802,32 +3536,33 @@ const G = {
     const inH=this.s.inHouse;
     const map=inH?this.s.outdoorPos.map:this.s.map,mw=inH?this.s.outdoorPos.mw:this.s.mw,mh=inH?this.s.outdoorPos.mh:this.s.mh;
     const px=inH?this.s.outdoorPos.px:this.s.px,py=inH?this.s.outdoorPos.py:this.s.py;
-    const regions={...(this.s.regions||{}),[this.s.region]:{map,mw,mh,px,py,randomTrainers:this.s.randomTrainers}};
+    const regions={...(this.s.regions||{}),[this.s.region]:{map,mw,mh,px,py,randomTrainers:this.s.randomTrainers,outposts:this.s.outposts}};
     localStorage.setItem('pkmn2',JSON.stringify({char:this.s.char,team:this.s.team,active:this.s.active,potions:this.s.potions,cash:this.s.cash,lastPD:this.s.lastPD,battlesWon:this.s.battlesWon,caughtCount:this.s.caughtCount,region:this.s.region,regions,flags:this.s.flags,quests:this.s.quests,dex:this.s.dex}));
   }catch(e){}},
   loadGame(){try{const r=localStorage.getItem('pkmn2');if(!r)return false;const d=JSON.parse(r);if(!d.char||!d.team)return false;
     let region,regions;
     if(d.regions){ region=d.region||'r1'; regions=d.regions; }
-    else if(d.map){ region='r1'; regions={r1:{map:d.map,mw:d.mw,mh:d.mh,px:d.px,py:d.py,randomTrainers:d.randomTrainers||[]}}; }
+    else if(d.map){ region='r1'; regions={r1:{map:d.map,mw:d.mw,mh:d.mh,px:d.px,py:d.py,randomTrainers:d.randomTrainers||[],outposts:[]}}; }
     else return false;
     const snap=regions[region];
     if(!snap)return false;
     this.s={char:d.char,team:d.team,active:d.active||0,potions:d.potions!==undefined?d.potions:5,cash:d.cash||0,lastPD:d.lastPD||null,battlesWon:d.battlesWon||0,caughtCount:d.caughtCount||0,
-      region,regions,px:snap.px,py:snap.py,map:snap.map,mw:snap.mw,mh:snap.mh,randomTrainers:snap.randomTrainers||[],
+      region,regions,px:snap.px,py:snap.py,map:snap.map,mw:snap.mw,mh:snap.mh,randomTrainers:snap.randomTrainers||[],outposts:snap.outposts||[],
       inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:d.flags||{},quests:d.quests||{},dex:d.dex||{},
       inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
     if(!this.s.quests.q0){this.s.quests.q0=(this.s.flags.badgeR1&&this.s.flags.badgeR2&&this.s.flags.badgeR3&&this.s.flags.champion)?'completed':'active';}
     this.s.team.forEach(p=>this.rcP(p));
     const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
-    if(region!=='r3'&&region!=='r4'){
+    this.upgradeMap(this.s.map,region,sx,sy,this.s.mw,this.s.mh);
+    registerAllOutpostQuests(this.s);
+    if(region!=='r4'){
       this.fixConductorCorridor(this.s.map,region,sx,sy,this.s.mw,this.s.mh,villRFor(region));
-      this.ensureArenaHouse(this.s.map,region,sx,sy,this.s.mw,this.s.mh);
     }
     this.s.worldNpcs=this.buildFixedNpcs(region,sx,sy,this.s.mw).concat(this.s.randomTrainers.map(buildRandomTrainerNpc));
     this.s.currentNpcs=this.s.worldNpcs;
     return true;}catch(e){return false;}},
 
-  startNewGame(){Au.cl();this.s={char:this._cc,team:[this.mkP(this._sc,5)],active:0,potions:5,cash:50,lastPD:new Date().toDateString(),battlesWon:0,caughtCount:0,region:'r1',regions:{},px:0,py:0,map:[],mw:0,mh:0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:{},quests:{q0:'active'},dex:{},randomTrainers:[],inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
+  startNewGame(){Au.cl();this.s={char:this._cc,team:[this.mkP(this._sc,5)],active:0,potions:5,cash:50,lastPD:new Date().toDateString(),battlesWon:0,caughtCount:0,region:'r1',regions:{},px:0,py:0,map:[],mw:0,mh:0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:{},quests:{q0:'active'},dex:{},randomTrainers:[],outposts:[],inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
     this.s.dex[this._sc.id]='caught';
     this.genWorld('r1');
     this.playWorldCinematic({reverse:false,caption:'Eine neue Welt entsteht...'},()=>{
