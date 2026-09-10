@@ -1338,6 +1338,162 @@ const Sprites = {
     }
   },
 
+
+  // Moebelkacheln fuer die 2D-Ansicht: erst der Raumboden, dann das Moebelstueck
+  // leicht schraeg von oben, damit es sich vom Boden abhebt.
+  bFurn(ctx, s, t, st, pal) {
+    this.bFloor(ctx, s, st, pal);
+    const acc = st.roof, accD = this.shade(acc, -28);
+    const wd = '#8a5a30', wdD = '#5a3818', wdL = '#b4803f';
+    const mt = '#aeb8c2', mtD = '#78828c', mtL = '#dde4ea';
+    const cl = st.wall === 'clinic' || st.wall === 'metal';
+    const box = (x, y, w, h, c, d, l) => {
+      ctx.fillStyle = d; ctx.fillRect(s*x, s*y, s*w, s*h);
+      ctx.fillStyle = c; ctx.fillRect(s*x, s*y, s*w, s*h - s*0.06);
+      if (l) { ctx.fillStyle = l; ctx.fillRect(s*x, s*y, s*w, s*0.05); }
+    };
+    if (t === T.RUG) {
+      ctx.fillStyle = accD; ctx.fillRect(s*0.02, s*0.02, s*0.96, s*0.96);
+      ctx.fillStyle = acc;  ctx.fillRect(s*0.08, s*0.08, s*0.84, s*0.84);
+      ctx.fillStyle = 'rgba(255,255,255,0.16)';
+      ctx.fillRect(s*0.2, s*0.2, s*0.6, s*0.08); ctx.fillRect(s*0.2, s*0.72, s*0.6, s*0.08);
+    } else if (t === T.TABLE) {
+      ctx.fillStyle = wdD;
+      [[0.14,0.66],[0.76,0.66],[0.14,0.12],[0.76,0.12]].forEach(([x,y])=>ctx.fillRect(s*x,s*y,s*0.1,s*0.22));
+      box(0.06, 0.16, 0.88, 0.62, wd, wdD, wdL);
+      ctx.strokeStyle = wdD; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(s*0.5, s*0.16); ctx.lineTo(s*0.5, s*0.72); ctx.stroke();
+    } else if (t === T.CHAIR) {
+      box(0.24, 0.12, 0.52, 0.16, wdL, wdD);
+      box(0.22, 0.38, 0.56, 0.36, wd, wdD, wdL);
+      ctx.fillStyle = wdD; ctx.fillRect(s*0.24, s*0.72, s*0.08, s*0.16); ctx.fillRect(s*0.68, s*0.72, s*0.08, s*0.16);
+    } else if (t === T.BED) {
+      box(0.08, 0.08, 0.84, 0.84, cl ? '#e8eef2' : '#d8cbb4', cl ? '#b8c4cc' : '#a8977c');
+      ctx.fillStyle = '#fbfdff'; ctx.fillRect(s*0.16, s*0.14, s*0.68, s*0.2);
+      ctx.strokeStyle = '#c6d0d8'; ctx.lineWidth = 1; ctx.strokeRect(s*0.16, s*0.14, s*0.68, s*0.2);
+      ctx.fillStyle = acc; ctx.globalAlpha = 0.8; ctx.fillRect(s*0.1, s*0.46, s*0.8, s*0.4); ctx.globalAlpha = 1;
+      ctx.fillStyle = accD; ctx.fillRect(s*0.1, s*0.46, s*0.8, s*0.05);
+    } else if (t === T.SHELF) {
+      box(0.04, 0.04, 0.92, 0.9, wd, wdD, wdL);
+      const cols = ['#e05050','#50a0e0','#f0c040','#60c070','#c070d0'];
+      for (let r = 0; r < 3; r++) {
+        ctx.fillStyle = wdD; ctx.fillRect(s*0.06, s*(0.32 + r*0.28), s*0.88, s*0.04);
+        for (let k = 0; k < 4; k++) {
+          ctx.fillStyle = cols[(r*4+k) % cols.length];
+          ctx.fillRect(s*(0.1 + k*0.21), s*(0.14 + r*0.28), s*0.15, s*0.17);
+        }
+      }
+    } else if (t === T.COUNTER || t === T.TILL) {
+      box(0, 0.18, 1, 0.66, cl ? '#e6ecf0' : wdL, cl ? '#b6c2ca' : wdD, '#ffffff');
+      ctx.fillStyle = accD; ctx.fillRect(0, s*0.78, s, s*0.08);
+      if (t === T.TILL) {
+        ctx.fillStyle = '#3a3f46'; ctx.fillRect(s*0.2, s*0.16, s*0.6, s*0.5);
+        ctx.fillStyle = '#20242a'; ctx.fillRect(s*0.2, s*0.58, s*0.6, s*0.1);
+        ctx.fillStyle = '#7ce0b0'; ctx.fillRect(s*0.26, s*0.2, s*0.48, s*0.16);
+        ctx.fillStyle = '#c8d0d8';
+        for (let k = 0; k < 3; k++) for (let r = 0; r < 2; r++)
+          ctx.fillRect(s*(0.28 + k*0.16), s*(0.42 + r*0.09), s*0.1, s*0.06);
+      }
+    } else if (t === T.PLANT) {
+      ctx.fillStyle = '#a05a34'; ctx.fillRect(s*0.3, s*0.62, s*0.4, s*0.28);
+      ctx.fillStyle = '#7c4222'; ctx.fillRect(s*0.28, s*0.58, s*0.44, s*0.08);
+      ctx.fillStyle = '#2f7a34';
+      [[0.5,0.34,0.3,0.24],[0.32,0.46,0.2,0.16],[0.68,0.46,0.2,0.16],[0.5,0.2,0.18,0.16]].forEach(([x,y,w,h])=>{
+        ctx.beginPath(); ctx.ellipse(s*x, s*y, s*w/2, s*h/2, 0, 0, Math.PI*2); ctx.fill();
+      });
+      ctx.fillStyle = '#49a04a';
+      ctx.beginPath(); ctx.ellipse(s*0.44, s*0.32, s*0.1, s*0.08, 0, 0, Math.PI*2); ctx.fill();
+    } else if (t === T.BOOKS) {
+      box(0.04, 0.04, 0.92, 0.9, wdD, '#3a2410');
+      const cols = ['#b03030','#2a6aa0','#c08020','#3a8a50','#7a3a90','#a05030'];
+      for (let r = 0; r < 3; r++) {
+        for (let k = 0; k < 6; k++) {
+          ctx.fillStyle = cols[(r*3+k) % cols.length];
+          ctx.fillRect(s*(0.08 + k*0.145), s*(0.1 + r*0.28), s*0.12, s*0.2);
+        }
+        ctx.fillStyle = '#3a2410'; ctx.fillRect(s*0.06, s*(0.3 + r*0.28), s*0.88, s*0.04);
+      }
+    } else if (t === T.STOVE) {
+      box(0.04, 0.2, 0.92, 0.7, mt, mtD, mtL);
+      ctx.fillStyle = '#2c3036'; ctx.fillRect(s*0.08, s*0.12, s*0.84, s*0.34);
+      ctx.fillStyle = '#4a5058';
+      [[0.26,0.2],[0.62,0.2],[0.26,0.34],[0.62,0.34]].forEach(([x,y])=>{
+        ctx.beginPath(); ctx.arc(s*x, s*y, s*0.085, 0, Math.PI*2); ctx.fill();
+      });
+      ctx.fillStyle = '#d8dde2'; ctx.fillRect(s*0.12, s*0.56, s*0.76, s*0.06);
+    } else if (t === T.CRATE) {
+      box(0.08, 0.1, 0.84, 0.8, wd, wdD, wdL);
+      ctx.strokeStyle = wdD; ctx.lineWidth = Math.max(1, s*0.05);
+      ctx.beginPath(); ctx.moveTo(s*0.1, s*0.12); ctx.lineTo(s*0.9, s*0.84);
+      ctx.moveTo(s*0.9, s*0.12); ctx.lineTo(s*0.1, s*0.84); ctx.stroke();
+      ctx.strokeRect(s*0.1, s*0.12, s*0.8, s*0.72);
+    } else if (t === T.HEAL) {
+      box(0.04, 0.16, 0.92, 0.74, '#e8eef3', '#aab6c0', '#ffffff');
+      ctx.fillStyle = '#2a3038'; ctx.fillRect(s*0.1, s*0.1, s*0.8, s*0.24);
+      ctx.fillStyle = '#6ce0d0'; ctx.fillRect(s*0.14, s*0.14, s*0.34, s*0.16);
+      ctx.fillStyle = '#e2454e'; ctx.fillRect(s*0.56, s*0.16, s*0.28, s*0.05); ctx.fillRect(s*0.68, s*0.12, s*0.05, s*0.14);
+      for (let k = 0; k < 3; k++) {
+        const cx = s*(0.22 + k*0.28), cy = s*0.58;
+        ctx.fillStyle = '#e2454e'; ctx.beginPath(); ctx.arc(cx, cy, s*0.09, Math.PI, 0); ctx.fill();
+        ctx.fillStyle = '#f2f5f8'; ctx.beginPath(); ctx.arc(cx, cy, s*0.09, 0, Math.PI); ctx.fill();
+        ctx.strokeStyle = '#2a3038'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(cx, cy, s*0.09, 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx - s*0.09, cy); ctx.lineTo(cx + s*0.09, cy); ctx.stroke();
+      }
+    } else if (t === T.LAMP) {
+      ctx.fillStyle = mtD; ctx.beginPath(); ctx.ellipse(s*0.5, s*0.86, s*0.18, s*0.07, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = mt; ctx.fillRect(s*0.46, s*0.4, s*0.08, s*0.46);
+      ctx.fillStyle = 'rgba(255,222,150,0.35)';
+      ctx.beginPath(); ctx.arc(s*0.5, s*0.3, s*0.3, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#f6dc9a';
+      ctx.beginPath(); ctx.moveTo(s*0.28, s*0.42); ctx.lineTo(s*0.72, s*0.42);
+      ctx.lineTo(s*0.62, s*0.12); ctx.lineTo(s*0.38, s*0.12); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#d8b868'; ctx.fillRect(s*0.28, s*0.4, s*0.44, s*0.05);
+    } else if (t === T.STATUE) {
+      ctx.fillStyle = pal.stoneD; ctx.fillRect(s*0.16, s*0.66, s*0.68, s*0.26);
+      ctx.fillStyle = pal.stone;  ctx.fillRect(s*0.16, s*0.62, s*0.68, s*0.08);
+      ctx.fillStyle = this.shade(pal.stone, 14);
+      ctx.fillRect(s*0.36, s*0.28, s*0.28, s*0.36);
+      ctx.beginPath(); ctx.arc(s*0.5, s*0.24, s*0.12, 0, Math.PI*2); ctx.fill();
+      ctx.fillRect(s*0.26, s*0.34, s*0.12, s*0.22); ctx.fillRect(s*0.62, s*0.3, s*0.12, s*0.26);
+      ctx.fillStyle = pal.stoneD; ctx.fillRect(s*0.36, s*0.5, s*0.28, s*0.04);
+    } else if (t === T.ANVIL) {
+      ctx.fillStyle = wdD; ctx.fillRect(s*0.22, s*0.6, s*0.56, s*0.3);
+      ctx.fillStyle = '#3c4046';
+      ctx.beginPath(); ctx.moveTo(s*0.14, s*0.34); ctx.lineTo(s*0.86, s*0.34);
+      ctx.lineTo(s*0.66, s*0.5); ctx.lineTo(s*0.66, s*0.62); ctx.lineTo(s*0.34, s*0.62);
+      ctx.lineTo(s*0.34, s*0.5); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#5c626a'; ctx.fillRect(s*0.14, s*0.34, s*0.72, s*0.06);
+      ctx.fillStyle = 'rgba(255,150,60,0.5)'; ctx.fillRect(s*0.4, s*0.28, s*0.2, s*0.06);
+    } else if (t === T.SOFA) {
+      box(0.04, 0.1, 0.92, 0.3, this.shade(acc, 18), accD);
+      box(0.04, 0.38, 0.92, 0.44, acc, accD, this.shade(acc, 30));
+      ctx.fillStyle = accD; ctx.fillRect(s*0.04, s*0.38, s*0.14, s*0.44); ctx.fillRect(s*0.82, s*0.38, s*0.14, s*0.44);
+      ctx.strokeStyle = accD; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(s*0.5, s*0.42); ctx.lineTo(s*0.5, s*0.78); ctx.stroke();
+    } else if (t === T.PCDESK) {
+      box(0.04, 0.42, 0.92, 0.48, mt, mtD, mtL);
+      ctx.fillStyle = '#2a2e34'; ctx.fillRect(s*0.2, s*0.08, s*0.6, s*0.38);
+      ctx.fillStyle = '#4be0d8'; ctx.fillRect(s*0.24, s*0.12, s*0.52, s*0.28);
+      ctx.fillStyle = '#1c8a86';
+      for (let r = 0; r < 4; r++) ctx.fillRect(s*0.28, s*(0.16 + r*0.06), s*(0.2 + (r%3)*0.12), s*0.03);
+      ctx.fillStyle = '#c8d0d8'; ctx.fillRect(s*0.26, s*0.56, s*0.48, s*0.1);
+    } else if (t === T.BARREL) {
+      ctx.fillStyle = wdD; ctx.beginPath(); ctx.ellipse(s*0.5, s*0.54, s*0.34, s*0.38, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = wd;  ctx.beginPath(); ctx.ellipse(s*0.5, s*0.5, s*0.32, s*0.36, 0, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = mtD; ctx.lineWidth = Math.max(1, s*0.05);
+      ctx.beginPath(); ctx.ellipse(s*0.5, s*0.34, s*0.3, s*0.1, 0, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(s*0.5, s*0.66, s*0.3, s*0.1, 0, 0, Math.PI*2); ctx.stroke();
+      ctx.fillStyle = wdL; ctx.beginPath(); ctx.ellipse(s*0.5, s*0.2, s*0.24, s*0.1, 0, 0, Math.PI*2); ctx.fill();
+    } else if (t === T.SIGNI) {
+      ctx.fillStyle = wdD; ctx.fillRect(s*0.46, s*0.5, s*0.08, s*0.4);
+      box(0.1, 0.1, 0.8, 0.46, '#f0e4c4', '#bda87e', '#fffaf0');
+      ctx.fillStyle = accD; ctx.fillRect(s*0.14, s*0.14, s*0.72, s*0.07);
+      ctx.fillStyle = '#8a7c60';
+      for (let r = 0; r < 3; r++) ctx.fillRect(s*0.16, s*(0.28 + r*0.08), s*(0.56 - r*0.12), s*0.04);
+    }
+  },
+
   floorTile(ctx, s) {
     ctx.fillStyle = '#c8a878'; ctx.fillRect(0, 0, s, s);
     ctx.strokeStyle = '#b89868'; ctx.lineWidth = 1; ctx.strokeRect(0, 0, s, s);
@@ -2601,12 +2757,14 @@ const T={GRASS:0,TALL:1,WATER:2,TREE:3,ROCK:4,PATH:5,FLOWER:6,SAND:7,BRIDGE:8,
   DOOR_F1:31,DOOR_F2:32,DOOR_F3:33,DOOR_F4:34,DOOR_F5:35,
   DOOR_LIGA:36,DOOR_LSHOP:37,DOOR_LLORE:38,
   DOOR_CENTER:39,
-  DOOR_OUT0:40,DOOR_OUT1:41,DOOR_OUT2:42,DOOR_OUT3:43,DOOR_OUT4:44,DOOR_OUT5:45,DOOR_OUT6:46,DOOR_OUT7:47};
+  DOOR_OUT0:40,DOOR_OUT1:41,DOOR_OUT2:42,DOOR_OUT3:43,DOOR_OUT4:44,DOOR_OUT5:45,DOOR_OUT6:46,DOOR_OUT7:47,
+  RUG:48,TABLE:49,CHAIR:50,BED:51,SHELF:52,COUNTER:53,TILL:54,PLANT:55,BOOKS:56,STOVE:57,
+  CRATE:58,HEAL:59,LAMP:60,STATUE:61,ANVIL:62,SOFA:63,PCDESK:64,BARREL:65,SIGNI:66};
 const OUT_DOORS=[T.DOOR_OUT0,T.DOOR_OUT1,T.DOOR_OUT2,T.DOOR_OUT3,T.DOOR_OUT4,T.DOOR_OUT5,T.DOOR_OUT6,T.DOOR_OUT7];
 const TW=new Set([T.GRASS,T.TALL,T.PATH,T.FLOWER,T.SAND,T.BRIDGE,T.DOOR_LAB,T.DOOR_RIVAL,T.DOOR_V1,T.DOOR_V2,T.DOOR_SHOP,T.DOOR_ELDER2,T.DOOR_V3,T.DOOR_V4,T.DOOR_SHOP2,T.DOOR_V5,T.DOOR_V6,
   T.DOOR_ARENA1,T.DOOR_ARENA2,T.DOOR_ARENA3,T.DOOR_F1,T.DOOR_F2,T.DOOR_F3,T.DOOR_F4,T.DOOR_F5,T.DOOR_LIGA,T.DOOR_LSHOP,T.DOOR_LLORE,
   T.DOOR_CENTER,...OUT_DOORS]);
-const IW=new Set([T.FLOOR,T.EXITDOOR]);
+const IW=new Set([T.FLOOR,T.EXITDOOR,T.RUG]);
 const DOOR_HOUSE={[T.DOOR_LAB]:'lab',[T.DOOR_RIVAL]:'rival',[T.DOOR_V1]:'v1',[T.DOOR_V2]:'v2',[T.DOOR_SHOP]:'shop',[T.DOOR_ELDER2]:'elder2',[T.DOOR_V3]:'v3',[T.DOOR_V4]:'v4',[T.DOOR_SHOP2]:'shop2',[T.DOOR_V5]:'v5',[T.DOOR_V6]:'v6',
   [T.DOOR_ARENA1]:'arena1',[T.DOOR_ARENA2]:'arena2',[T.DOOR_ARENA3]:'arena3',
   [T.DOOR_F1]:'f1',[T.DOOR_F2]:'f2',[T.DOOR_F3]:'f3',[T.DOOR_F4]:'f4',[T.DOOR_F5]:'f5',
@@ -2659,6 +2817,192 @@ function bStyleAt(map,mx,my,t){
   if(row){const d=row[mx+dx];if(d!==undefined&&DOOR_STYLE[d])return DOOR_STYLE[d];}
   return 'house';
 }
+
+// ===== Innenraum-Ausstattung =====
+// Jeder Gebaeudestil bekommt einen eigenen, moeblierten Grundriss. Die Raeume sind
+// als ASCII-Plan hinterlegt: ein Zeichen pro Kachel, damit sich Moebel verschieben
+// lassen, ohne Code anzufassen.
+const IFCH={'.':T.FLOOR,'#':T.IWALL,'D':T.EXITDOOR,'=':T.RUG,'T':T.TABLE,'c':T.CHAIR,
+  'B':T.BED,'S':T.SHELF,'C':T.COUNTER,'K':T.TILL,'P':T.PLANT,'b':T.BOOKS,'v':T.STOVE,
+  'x':T.CRATE,'H':T.HEAL,'l':T.LAMP,'M':T.STATUE,'A':T.ANVIL,'f':T.SOFA,'p':T.PCDESK,
+  'o':T.BARREL,'g':T.SIGNI,'1':T.FLOOR,'2':T.FLOOR,'3':T.FLOOR};
+// Moebeldaten: solide Kacheln blockieren, Servicetheken leiten zum Personal weiter.
+const FURN={
+  [T.RUG]:    {nm:'Teppich',   walk:true, txt:'Ein weicher, abgetretener Teppich.'},
+  [T.TABLE]:  {nm:'Tisch',     txt:'Auf dem Tisch liegen Krumel und eine halb gelesene Karte.'},
+  [T.CHAIR]:  {nm:'Stuhl',     txt:'Ein schlichter Holzstuhl.'},
+  [T.BED]:    {nm:'Liege',     txt:'Eine frisch bezogene Liege. Hier ruhen sich Pokemon aus.'},
+  [T.SHELF]:  {nm:'Regal',     txt:'Regalweise Traenke, Baelle und Futter - alles an der Kasse erhaltlich.'},
+  [T.COUNTER]:{nm:'Theke',     svc:true, txt:'Eine lange Theke.'},
+  [T.TILL]:   {nm:'Kasse',     svc:true, txt:'Eine Registrierkasse klimpert erwartungsvoll.'},
+  [T.PLANT]:  {nm:'Zimmerpflanze', txt:'Eine erstaunlich gut gepflegte Topfpflanze.'},
+  [T.BOOKS]:  {nm:'Bucherregal',   txt:'Baende uber Pokemon-Kunde, dick mit Staub bedeckt.'},
+  [T.STOVE]:  {nm:'Kuchenzeile',   txt:'Es riecht nach Eintopf.'},
+  [T.CRATE]:  {nm:'Kiste',     txt:'Gestapelte Kisten. Nichts Brauchbares darin.'},
+  [T.HEAL]:   {nm:'Heilstation', svc:true, txt:'Die Heilstation summt leise vor sich hin.'},
+  [T.LAMP]:   {nm:'Stehlampe', txt:'Warmes Licht faellt in den Raum.'},
+  [T.STATUE]: {nm:'Statue',    txt:'Eine Statue vergangener Meister blickt streng auf dich herab.'},
+  [T.ANVIL]:  {nm:'Amboss',    txt:'Der Amboss ist von tausend Schlagen blank poliert.'},
+  [T.SOFA]:   {nm:'Sofa',      txt:'Ein durchgesessenes Sofa - erstaunlich bequem.'},
+  [T.PCDESK]: {nm:'Terminal',  txt:'Auf dem Bildschirm laufen Messreihen durch.'},
+  [T.BARREL]: {nm:'Fass',      txt:'Ein Fass mit Beerensaft.'},
+  [T.SIGNI]:  {nm:'Aushang',   txt:'Ein Aushang mit den Hausregeln. Kurz gefasst: keine Kampfe drinnen.'},
+};
+function furnAt(t){ return FURN[t]; }
+function isFurn(t){ return FURN[t]!==undefined; }
+// Moebel blockieren, ausser sie sind ausdruecklich begehbar (Teppiche).
+Object.keys(FURN).forEach(k=>{ if(FURN[k].walk) IW.add(+k); });
+
+const IROOMS={
+  house:[
+    "#############",
+    "#vvo..P.BB..#",
+    "#....l....b.#",
+    "#...........#",
+    "#..=====..1.#",
+    "#f.=====....#",
+    "#..=====.Tc.#",
+    "#....2....c.#",
+    "#P.......x..#",
+    "#...........#",
+    "######D######"],
+  house2:[
+    "#############",
+    "#bbb..P..vv.#",
+    "#........o..#",
+    "#..T.....c..#",
+    "#..c......1.#",
+    "#.......f...#",
+    "#=====......#",
+    "#=====..BB..#",
+    "#=====.l....#",
+    "#P..2......P#",
+    "######D######"],
+  home:[
+    "#############",
+    "#vv.o..bbb..#",
+    "#.......l...#",
+    "#..BB.......#",
+    "#..BB....1..#",
+    "#........c..#",
+    "#..=====.T..#",
+    "#f.=====.c..#",
+    "#..=====....#",
+    "#P..2.....P.#",
+    "######D######"],
+  shop:[
+    "###############",
+    "#SSSS.....SSSS#",
+    "#....P...P....#",
+    "#SSSS.....SSSS#",
+    "#.............#",
+    "#xx.......gxx.#",
+    "#....1........#",
+    "#..CCKCC......#",
+    "#.......==...o#",
+    "#P..2...==..P.#",
+    "#######D#######"],
+  center:[
+    "###############",
+    "#BBB..#...#p..#",
+    "#.....#.1.#...#",
+    "#..2..HCCCH.P.#",
+    "#.............#",
+    "#..=======....#",
+    "#f.=======..f.#",
+    "#..=======....#",
+    "#.........Tc..#",
+    "#P...ff....gP.#",
+    "#.............#",
+    "#######D#######"],
+  arena:[
+    "###############",
+    "#M...........M#",
+    "#......1......#",
+    "#.....===.....#",
+    "#l....===....l#",
+    "#.....===.....#",
+    "#M....===....M#",
+    "#.....===.....#",
+    "#cc...===...cc#",
+    "#cc...===...cc#",
+    "#g..2.......g.#",
+    "#.............#",
+    "#######D#######"],
+  lab:[
+    "###############",
+    "#ppp.....bbbb.#",
+    "#.............#",
+    "#..CCC...1....#",
+    "#........p....#",
+    "#..xx.........#",
+    "#..xx....TT...#",
+    "#........cc...#",
+    "#P..2........P#",
+    "#.....==......#",
+    "#######D#######"],
+  liga:[
+    "###############",
+    "#M.....1.....M#",
+    "#.....===.....#",
+    "#l....===....l#",
+    "#.....===.....#",
+    "#M....===....M#",
+    "#.....===.....#",
+    "#g....===....g#",
+    "#.....===.....#",
+    "#bb...===...bb#",
+    "#..2.........P#",
+    "#.............#",
+    "#######D#######"],
+  forge:[
+    "#############",
+    "#vv...x.oo..#",
+    "#.....x.....#",
+    "#...A...1...#",
+    "#...........#",
+    "#xx......TT.#",
+    "#xx......cc.#",
+    "#..2........#",
+    "#o.....l..g.#",
+    "#...........#",
+    "######D######"],
+  out:[
+    "###########",
+    "#vvo...BB.#",
+    "#.........#",
+    "#..T....l.#",
+    "#..c...1..#",
+    "#.===.....#",
+    "#.===..x..#",
+    "#P.2.....P#",
+    "#.........#",
+    "#####D#####"],
+};
+// Nebenfiguren geben den Raeumen Leben, ohne in die Questlogik einzugreifen.
+const IEXTRA={
+  house:[{name:'Kind Nele',shirt:'#e07090',hair:'#f0d060',
+    lines:['Kind Nele: Mama sagt, ich darf noch nicht ins hohe Gras.','Wenn ich gross bin, werde ich Champion. Ganz sicher!']}],
+  house2:[{name:'Grossvater Ewald',shirt:'#7a6a50',hair:'#d8d8d0',
+    lines:['Grossvater Ewald: Setz dich ruhig, das Sofa haelt noch.','Frueher lief hier ein Fluss vorbei. Heute liegt er zwei Taler weiter. Merkwuerdige Zeiten.']}],
+  home:[{name:'Mutter Ida',shirt:'#c06090',hair:'#8a5a30',
+    lines:['Mutter Ida: Hast du auch genug gegessen?','Nimm dir Zeit fuer die Reise. Das Haus bleibt stehen, wo es steht. Hoffentlich.']}],
+  shop:[{name:'Kundin Berit',shirt:'#40a0a0',hair:'#503020',
+    lines:['Kundin Berit: Die Traenke sind hier guenstiger als im Basar.','Stell dich einfach an die Kasse, dann bedient sie dich.']}],
+  center:[{name:'Trainer Kalle',shirt:'#3060c0',hair:'#202020',
+    lines:['Trainer Kalle: Mein Team liegt seit einer Stunde auf den Liegen.','Schwester Joy heilt kostenlos - stell dich einfach an die Theke.']}],
+  arena:[{name:'Schiedsrichter Mirko',shirt:'#f0f0f0',hair:'#303030',
+    lines:['Schiedsrichter Mirko: Regeln sind Regeln: ein Kampf, keine Ausreden.','Der Meister wartet vorne. Viel Glueck.']}],
+  lab:[{name:'Assistentin Mira',shirt:'#e8e8f0',hair:'#603020',
+    lines:['Assistentin Mira: Nicht an die Terminals kommen, die rechnen noch.','Der Professor redet gern lange. Bring Zeit mit.']}],
+  liga:[{name:'Ordner Damian',shirt:'#c0a040',hair:'#302020',
+    lines:['Ordner Damian: Ohne alle Orden kommst du hier nicht weit.','Der Teppich fuehrt direkt zur Championin. Geh ihn zu Ende.']}],
+  forge:[{name:'Lehrling Kuno',shirt:'#8a5a30',hair:'#402010',
+    lines:['Lehrling Kuno: Vorsicht, der Amboss ist noch warm.','Der Meister schmiedet seit dem Riss nur noch nachts. Fragt mich nicht warum.']}],
+  out:[{name:'Gast Silva',shirt:'#60805a',hair:'#503820',
+    lines:['Gast Silva: Wer so weit rausgeht, hat entweder Mut oder einen Auftrag.','Bei dir ist es wohl beides.']}],
+};
+
 const TILE=32;
 function villRFor(region){ return region==='r2'?18:(region==='r3'?13:(region==='r4'?8:9)); }
 
@@ -2942,7 +3286,7 @@ const ENV3 = {
   r2:{skyT:[0.07,0.04,0.15], fog:[0.14,0.09,0.26], amb:[0.34,0.30,0.48], sun:[0.40,0.30,0.62], dir:[ 0.40,0.72,0.57]},
   r3:{skyT:[0.52,0.70,0.86], fog:[0.84,0.91,0.95], amb:[0.64,0.68,0.74], sun:[0.52,0.56,0.66], dir:[-0.30,0.82,0.49]},
   r4:{skyT:[0.86,0.66,0.28], fog:[0.90,0.82,0.60], amb:[0.60,0.55,0.42], sun:[0.74,0.64,0.40], dir:[ 0.34,0.76,0.55]},
-  in:{skyT:[0.03,0.03,0.05], fog:[0.05,0.05,0.08], amb:[0.62,0.58,0.52], sun:[0.44,0.38,0.30], dir:[-0.35,0.86,0.36]},
+  in:{skyT:[0.04,0.04,0.06], fog:[0.06,0.06,0.09], amb:[0.76,0.72,0.66], sun:[0.50,0.45,0.36], dir:[-0.35,0.86,0.36]},
 };
 
 const VS_WORLD = `#version 300 es
@@ -3338,6 +3682,342 @@ const R3 = {
     });
   },
 
+
+  // ---- interior furniture ---------------------------------------------------
+  // Moebeloberflaechen sind bewusst region-unabhaengig: ein Tisch bleibt ein Tisch,
+  // egal in welcher Region das Haus steht. Nur Teppich und Sofa nehmen die
+  // Hausfarbe auf, damit die Raeume nicht alle gleich wirken.
+  furnLayer(kind, acc) {
+    return this.layer('f:' + kind + (acc ? ':' + acc : ''), (c, s) => {
+      const sh = Sprites.shade;
+      const wd = '#8a5a30', wdD = '#5a3818', wdL = '#b4803f';
+      const plank = (base, dark, n, vert) => {
+        c.fillStyle = base; c.fillRect(0, 0, s, s);
+        c.fillStyle = dark;
+        for (let i = 1; i < n; i++) {
+          const p = s * i / n;
+          if (vert) c.fillRect(p - s * 0.012, 0, s * 0.024, s); else c.fillRect(0, p - s * 0.012, s, s * 0.024);
+        }
+        c.fillStyle = 'rgba(255,255,255,0.06)';
+        for (let i = 0; i < n; i++) { const p = s * i / n; if (vert) c.fillRect(p + s * 0.02, 0, s * 0.03, s); else c.fillRect(0, p + s * 0.02, s, s * 0.03); }
+      };
+      if (kind === 'wood') plank(wd, wdD, 4, true);
+      else if (kind === 'woodT') { plank(wdL, wdD, 5, false); c.fillStyle = 'rgba(0,0,0,0.08)'; c.fillRect(0, 0, s, s * 0.06); }
+      else if (kind === 'metal') {
+        c.fillStyle = '#b3bdc6'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#8f9aa4'; for (let i = 0; i < 7; i++) c.fillRect(i * s / 7, 0, s * 0.03, s);
+        c.fillStyle = 'rgba(255,255,255,0.22)'; c.fillRect(0, s * 0.1, s, s * 0.06);
+      } else if (kind === 'stone') {
+        c.fillStyle = '#a9a49a'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#8b867c';
+        for (let i = 0; i < 20; i++) c.fillRect((i * 43 + 5) % s, (i * 31 + 9) % s, 4, 3);
+        c.fillStyle = '#c2bdb2'; c.fillRect(0, 0, s, s * 0.08);
+      } else if (kind === 'mat') {
+        c.fillStyle = '#f2f5f8'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#dbe2e8'; for (let i = 0; i < 5; i++) c.fillRect(0, i * s / 5, s, s * 0.03);
+      } else if (kind === 'pillow') {
+        c.fillStyle = '#fbfdff'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#e0e7ee';
+        c.beginPath(); c.ellipse(s * 0.5, s * 0.5, s * 0.38, s * 0.26, 0, 0, Math.PI * 2); c.fill();
+        c.fillStyle = '#c9d3db'; c.fillRect(0, s * 0.86, s, s * 0.1);
+      } else if (kind === 'blanket' || kind === 'blanketC') {
+        const b = kind === 'blanketC' ? '#7fc9d6' : '#c2694f';
+        c.fillStyle = b; c.fillRect(0, 0, s, s);
+        c.fillStyle = sh(b, -20); for (let i = 0; i < 4; i++) c.fillRect(0, i * s / 4 + s * 0.06, s, s * 0.05);
+        c.fillStyle = 'rgba(255,255,255,0.2)'; c.fillRect(0, 0, s, s * 0.1);
+      } else if (kind === 'rug') {
+        // Nahtlos: die Borte kommt aus 'rugB' und nur an den echten Teppichkanten.
+        c.fillStyle = acc; c.fillRect(0, 0, s, s);
+        c.fillStyle = sh(acc, -14);
+        for (let i = 0; i < 8; i++) { c.fillRect(i * s / 8, 0, s * 0.045, s); c.fillRect(0, i * s / 8, s, s * 0.045); }
+        c.fillStyle = sh(acc, 18);
+        for (let i = 0; i < 4; i++) c.fillRect(i * s / 4 + s * 0.1, s * 0.1, s * 0.09, s * 0.09);
+        c.fillStyle = 'rgba(0,0,0,0.07)'; c.fillRect(0, 0, s, s);
+      } else if (kind === 'sofa') {
+        c.fillStyle = acc; c.fillRect(0, 0, s, s);
+        c.fillStyle = sh(acc, -22); c.fillRect(0, s * 0.88, s, s * 0.12); c.fillRect(s * 0.48, 0, s * 0.04, s);
+        c.fillStyle = 'rgba(255,255,255,0.14)'; c.fillRect(0, 0, s, s * 0.14);
+      } else if (kind === 'sofaT') {
+        c.fillStyle = sh(acc, -26); c.fillRect(0, 0, s, s);
+        c.fillStyle = sh(acc, 12);
+        c.fillRect(s * 0.03, s * 0.04, s * 0.44, s * 0.92); c.fillRect(s * 0.53, s * 0.04, s * 0.44, s * 0.92);
+        c.fillStyle = 'rgba(255,255,255,0.16)';
+        c.fillRect(s * 0.03, s * 0.04, s * 0.44, s * 0.14); c.fillRect(s * 0.53, s * 0.04, s * 0.44, s * 0.14);
+      } else if (kind === 'rugB') {
+        c.fillStyle = sh(acc, -36); c.fillRect(0, 0, s, s);
+        c.fillStyle = sh(acc, 24);
+        for (let i = 0; i < 8; i++) c.fillRect(i * s / 8 + s * 0.02, s * 0.2, s * 0.07, s * 0.6);
+      } else if (kind === 'lampS') {
+        const g = c.createLinearGradient(0, 0, 0, s);
+        g.addColorStop(0, '#fff0c4'); g.addColorStop(1, '#e0b869');
+        c.fillStyle = g; c.fillRect(0, 0, s, s);
+        c.fillStyle = 'rgba(255,255,255,0.3)'; c.fillRect(s * 0.14, 0, s * 0.12, s);
+        c.fillStyle = '#c79c52'; c.fillRect(0, s * 0.9, s, s * 0.1);
+      } else if (kind === 'lampT') {
+        c.fillStyle = '#3c3a34'; c.fillRect(0, 0, s, s);
+        const g = c.createRadialGradient(s * 0.5, s * 0.5, 0, s * 0.5, s * 0.5, s * 0.5);
+        g.addColorStop(0, '#fff3d0'); g.addColorStop(1, '#c79c52');
+        c.fillStyle = g; c.fillRect(s * 0.1, s * 0.1, s * 0.8, s * 0.8);
+      } else if (kind === 'stoneD') {
+        c.fillStyle = '#8b867c'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#726d64'; for (let i = 0; i < 4; i++) c.fillRect(0, i * s / 4, s, s * 0.04);
+        c.fillStyle = '#a09a90'; c.fillRect(0, 0, s, s * 0.1);
+      } else if (kind === 'shelfF') {
+        c.fillStyle = wdD; c.fillRect(0, 0, s, s);
+        const cols = ['#e05050', '#4f9fe0', '#f0c040', '#5fc070', '#c070d0', '#e88030'];
+        for (let r = 0; r < 3; r++) {
+          c.fillStyle = wd; c.fillRect(0, s * (0.3 + r * 0.31) - s * 0.04, s, s * 0.055);
+          for (let k = 0; k < 4; k++) {
+            c.fillStyle = cols[(r * 4 + k) % cols.length];
+            c.fillRect(s * (0.06 + k * 0.235), s * (0.06 + r * 0.31), s * 0.17, s * 0.2);
+            c.fillStyle = 'rgba(255,255,255,0.25)';
+            c.fillRect(s * (0.06 + k * 0.235), s * (0.06 + r * 0.31), s * 0.17, s * 0.05);
+          }
+        }
+      } else if (kind === 'ctop') {
+        c.fillStyle = '#e9eef2'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#cfd8df'; for (let i = 0; i < 14; i++) c.fillRect((i * 37 + 3) % s, (i * 53 + 7) % s, 5, 2);
+        c.fillStyle = 'rgba(255,255,255,0.35)'; c.fillRect(0, 0, s, s * 0.12);
+      } else if (kind === 'cfront') {
+        c.fillStyle = sh(acc, -18); c.fillRect(0, 0, s, s);
+        c.fillStyle = sh(acc, 8); c.fillRect(s * 0.06, s * 0.12, s * 0.88, s * 0.66);
+        c.fillStyle = '#e9eef2'; c.fillRect(0, 0, s, s * 0.1);
+      } else if (kind === 'till') {
+        c.fillStyle = '#3a4048'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#2a2f36'; c.fillRect(0, s * 0.62, s, s * 0.38);
+        c.fillStyle = '#7ce0b0'; c.fillRect(s * 0.14, s * 0.12, s * 0.56, s * 0.34);
+        c.fillStyle = '#1e6a52'; for (let i = 0; i < 3; i++) c.fillRect(s * 0.18, s * (0.18 + i * 0.08), s * (0.4 - i * 0.1), s * 0.04);
+        c.fillStyle = '#d0d8e0'; c.fillRect(s * 0.76, s * 0.12, s * 0.14, s * 0.34);
+      } else if (kind === 'tillT') {
+        c.fillStyle = '#4a5058'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#c8d0d8';
+        for (let r = 0; r < 3; r++) for (let k = 0; k < 4; k++) c.fillRect(s * (0.12 + k * 0.2), s * (0.16 + r * 0.24), s * 0.13, s * 0.14);
+      } else if (kind === 'healF') {
+        c.fillStyle = '#eef3f7'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#2b3138'; c.fillRect(s * 0.08, s * 0.1, s * 0.84, s * 0.42);
+        c.fillStyle = '#6ce0d0'; c.fillRect(s * 0.12, s * 0.14, s * 0.5, s * 0.34);
+        c.fillStyle = '#1f8f86'; for (let i = 0; i < 3; i++) c.fillRect(s * 0.16, s * (0.2 + i * 0.09), s * (0.36 - i * 0.08), s * 0.05);
+        c.fillStyle = '#e2454e'; c.fillRect(s * 0.7, s * 0.2, s * 0.16, s * 0.05); c.fillRect(s * 0.76, s * 0.14, s * 0.05, s * 0.17);
+        c.fillStyle = '#c9d4dc'; c.fillRect(0, s * 0.6, s, s * 0.05);
+      } else if (kind === 'healT') {
+        c.fillStyle = '#e4ebf0'; c.fillRect(0, 0, s, s);
+        for (let k = 0; k < 3; k++) {
+          const cx = s * (0.22 + k * 0.28), cy = s * 0.5, r = s * 0.11;
+          c.fillStyle = '#c4cfd8'; c.beginPath(); c.arc(cx, cy, r * 1.35, 0, Math.PI * 2); c.fill();
+          c.fillStyle = '#e2454e'; c.beginPath(); c.arc(cx, cy, r, Math.PI, 0); c.fill();
+          c.fillStyle = '#fafcfe'; c.beginPath(); c.arc(cx, cy, r, 0, Math.PI); c.fill();
+          c.fillStyle = '#2b3138'; c.fillRect(cx - r, cy - s * 0.012, r * 2, s * 0.024);
+        }
+      } else if (kind === 'books') {
+        c.fillStyle = '#3f2a16'; c.fillRect(0, 0, s, s);
+        const cols = ['#b03030', '#2a6aa0', '#c08020', '#3a8a50', '#7a3a90', '#a05030', '#456080'];
+        for (let r = 0; r < 3; r++) {
+          for (let k = 0; k < 7; k++) {
+            c.fillStyle = cols[(r * 3 + k) % cols.length];
+            c.fillRect(s * (0.04 + k * 0.135), s * (0.05 + r * 0.32), s * 0.11, s * 0.22);
+            c.fillStyle = 'rgba(255,255,255,0.18)'; c.fillRect(s * (0.04 + k * 0.135), s * (0.05 + r * 0.32), s * 0.11, s * 0.03);
+          }
+          c.fillStyle = '#6b4a26'; c.fillRect(0, s * (0.27 + r * 0.32), s, s * 0.05);
+        }
+      } else if (kind === 'stoveF') {
+        c.fillStyle = '#c6cdd4'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#aab3bb'; c.fillRect(s * 0.06, s * 0.16, s * 0.4, s * 0.72); c.fillRect(s * 0.54, s * 0.16, s * 0.4, s * 0.72);
+        c.fillStyle = '#7d868e'; c.fillRect(s * 0.4, s * 0.44, s * 0.04, s * 0.2); c.fillRect(s * 0.56, s * 0.44, s * 0.04, s * 0.2);
+        c.fillStyle = '#e6ebef'; c.fillRect(0, 0, s, s * 0.12);
+      } else if (kind === 'stoveT') {
+        c.fillStyle = '#2f343a'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#4c545c';
+        [[0.28, 0.3], [0.72, 0.3], [0.28, 0.72], [0.72, 0.72]].forEach(([x, y]) => { c.beginPath(); c.arc(s * x, s * y, s * 0.13, 0, Math.PI * 2); c.fill(); });
+        c.fillStyle = '#8a939b'; c.fillRect(0, 0, s, s * 0.05);
+      } else if (kind === 'crate') {
+        c.fillStyle = wd; c.fillRect(0, 0, s, s);
+        c.strokeStyle = wdD; c.lineWidth = Math.max(1, s * 0.06);
+        c.strokeRect(s * 0.06, s * 0.06, s * 0.88, s * 0.88);
+        c.beginPath(); c.moveTo(s * 0.08, s * 0.08); c.lineTo(s * 0.92, s * 0.92);
+        c.moveTo(s * 0.92, s * 0.08); c.lineTo(s * 0.08, s * 0.92); c.stroke();
+      } else if (kind === 'barrel') {
+        c.fillStyle = wd; c.fillRect(0, 0, s, s);
+        c.fillStyle = wdD; for (let i = 0; i < 6; i++) c.fillRect(i * s / 6, 0, s * 0.02, s);
+        c.fillStyle = '#8d97a0'; c.fillRect(0, s * 0.16, s, s * 0.1); c.fillRect(0, s * 0.72, s, s * 0.1);
+      } else if (kind === 'bronze') {
+        c.fillStyle = '#8a6a34'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#6d5226'; for (let i = 0; i < 16; i++) c.fillRect((i * 41 + 7) % s, (i * 59 + 13) % s, 5, 4);
+        c.fillStyle = '#b89a52'; c.fillRect(s * 0.08, 0, s * 0.16, s);
+        c.fillStyle = 'rgba(255,255,255,0.14)'; c.fillRect(0, 0, s, s * 0.12);
+      } else if (kind === 'pot') {
+        c.fillStyle = '#a85e34'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#8a4622'; c.fillRect(0, 0, s, s * 0.18);
+        c.fillStyle = 'rgba(255,255,255,0.12)'; c.fillRect(s * 0.1, s * 0.2, s * 0.14, s * 0.8);
+      } else if (kind === 'soil') {
+        c.fillStyle = '#4a3520'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#5c4429'; for (let i = 0; i < 18; i++) c.fillRect((i * 37 + 5) % s, (i * 53 + 11) % s, 4, 3);
+      } else if (kind === 'barrelT') {
+        c.fillStyle = '#b4803f'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#5a3818';
+        for (let i = 0; i < 5; i++) c.fillRect(0, i * s / 5, s, s * 0.03);
+        c.fillStyle = '#8d97a0'; c.fillRect(0, s * 0.46, s, s * 0.08);
+      } else if (kind === 'screen') {
+        c.fillStyle = '#23272d'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#4be0d8'; c.fillRect(s * 0.08, s * 0.1, s * 0.84, s * 0.62);
+        c.fillStyle = '#1c8a86'; for (let i = 0; i < 5; i++) c.fillRect(s * 0.13, s * (0.16 + i * 0.1), s * (0.3 + (i % 3) * 0.2), s * 0.05);
+        c.fillStyle = '#7ce0b0'; c.fillRect(s * 0.1, s * 0.8, s * 0.1, s * 0.06);
+      } else if (kind === 'deskT') {
+        c.fillStyle = '#dfe5ea'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#c3ccd4'; c.fillRect(s * 0.1, s * 0.62, s * 0.5, s * 0.18);
+        c.fillStyle = '#9aa4ad'; c.fillRect(0, 0, s, s * 0.06);
+      } else if (kind === 'plantB') {
+        c.clearRect(0, 0, s, s);
+        c.fillStyle = '#2e7333';
+        const leaf = (x, y, rx, ry, rot) => { c.save(); c.translate(s * x, s * y); c.rotate(rot); c.beginPath(); c.ellipse(0, 0, s * rx, s * ry, 0, 0, Math.PI * 2); c.fill(); c.restore(); };
+        leaf(0.5, 0.42, 0.2, 0.34, 0); leaf(0.28, 0.5, 0.16, 0.26, -0.7); leaf(0.72, 0.5, 0.16, 0.26, 0.7);
+        leaf(0.36, 0.28, 0.12, 0.2, -0.5); leaf(0.64, 0.28, 0.12, 0.2, 0.5);
+        c.fillStyle = '#48a04c'; leaf(0.44, 0.38, 0.1, 0.18, -0.2); leaf(0.6, 0.44, 0.08, 0.15, 0.3);
+        c.fillStyle = '#1f5324'; c.fillRect(s * 0.47, s * 0.6, s * 0.06, s * 0.24);
+        c.fillStyle = '#a05a34'; c.beginPath();
+        c.moveTo(s * 0.32, s * 0.78); c.lineTo(s * 0.68, s * 0.78); c.lineTo(s * 0.62, s * 1.0); c.lineTo(s * 0.38, s * 1.0); c.closePath(); c.fill();
+        c.fillStyle = '#7c4222'; c.fillRect(s * 0.3, s * 0.76, s * 0.4, s * 0.07);
+      } else if (kind === 'signB') {
+        c.fillStyle = '#8a7448'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#bda87e'; c.fillRect(s * 0.03, s * 0.03, s * 0.94, s * 0.94);
+        c.fillStyle = '#f2e7c8'; c.fillRect(s * 0.09, s * 0.1, s * 0.82, s * 0.8);
+        c.fillStyle = sh(acc || '#a83428', -10); c.fillRect(s * 0.13, s * 0.15, s * 0.74, s * 0.14);
+        c.fillStyle = '#8a7c60';
+        for (let i = 0; i < 4; i++) c.fillRect(s * 0.15, s * (0.38 + i * 0.12), s * (0.66 - i * 0.12), s * 0.06);
+      }
+    });
+  },
+
+  // Kiste mit eigener Deckflaeche - Tischplatten, Thekenoberflaechen und Herdplatten
+  // brauchen eine andere Textur als die Seiten.
+  boxT(x0, y0, z0, x1, y1, z1, lSide, lTop, ru, rv) {
+    ru = ru || 1; rv = rv || 1;
+    this.wallSeg(x0, z1, x1, z1, y0, y1, [0, 0, 1], lSide, ru, rv);
+    this.wallSeg(x1, z0, x0, z0, y0, y1, [0, 0, -1], lSide, ru, rv);
+    this.wallSeg(x0, z0, x0, z1, y0, y1, [-1, 0, 0], lSide, ru, rv);
+    this.wallSeg(x1, z1, x1, z0, y0, y1, [1, 0, 0], lSide, ru, rv);
+    this.flat(x0, y1, z0, x1 - x0, z1 - z0, lTop, 0, ru, ru);
+  },
+
+  // Runde Koerper (Faesser, Toepfe, Lampenschirme) aus einem Achteck-Prisma.
+  cyl(cx, cz, r0, r1, y0, y1, lSide, lTop, seg) {
+    seg = seg || 8;
+    for (let i = 0; i < seg; i++) {
+      const a0 = i / seg * Math.PI * 2, a1 = (i + 1) / seg * Math.PI * 2;
+      const nx = Math.cos((a0 + a1) / 2), nz = Math.sin((a0 + a1) / 2);
+      this.poly4([
+        [cx + Math.cos(a0) * r0, y0, cz + Math.sin(a0) * r0],
+        [cx + Math.cos(a1) * r0, y0, cz + Math.sin(a1) * r0],
+        [cx + Math.cos(a1) * r1, y1, cz + Math.sin(a1) * r1],
+        [cx + Math.cos(a0) * r1, y1, cz + Math.sin(a0) * r1]],
+        [[0, 1], [1, 1], [1, 0], [0, 0]], [nx, 0.18, nz], lSide, 0);
+    }
+    for (let i = 0; i < seg; i++) {
+      const a0 = i / seg * Math.PI * 2, a1 = (i + 1) / seg * Math.PI * 2;
+      this.tri([[cx, y1, cz],
+        [cx + Math.cos(a0) * r1, y1, cz + Math.sin(a0) * r1],
+        [cx + Math.cos(a1) * r1, y1, cz + Math.sin(a1) * r1]],
+        [[0.5, 0.5], [0.5 + Math.cos(a0) * 0.5, 0.5 + Math.sin(a0) * 0.5], [0.5 + Math.cos(a1) * 0.5, 0.5 + Math.sin(a1) * 0.5]],
+        [0, 1, 0], lTop, 0);
+    }
+  },
+
+  furn(x, z, t, style, region) {
+    const st = BSTYLE[style] || BSTYLE.house, acc = st.roof;
+    const clean = st.wall === 'clinic' || st.wall === 'metal';
+    const FL = this.intLayer('fl', style, region);
+    this.flat(x, 0, z, 1, 1, FL);
+    const W = this.furnLayer('wood'), WT = this.furnLayer('woodT');
+    const MT = this.furnLayer('metal'), h = this.hash(x, z);
+
+    if (t === T.RUG) {
+      this.flat(x, 0.014, z, 1, 1, this.furnLayer('rug', acc));
+      // Die Borte wird nur an den echten Teppichkanten gezeichnet, sonst zerfaellt
+      // eine grosse Flaeche optisch in lauter Einzelmatten.
+      const m = G.s.map, isR = (xx, zz) => ((m[zz] || [])[xx] === T.RUG);
+      const B = this.furnLayer('rugB', acc), b = 0.12;
+      if (!isR(x, z - 1)) this.flat(x, 0.017, z, 1, b, B);
+      if (!isR(x, z + 1)) this.flat(x, 0.017, z + 1 - b, 1, b, B);
+      if (!isR(x - 1, z)) this.flat(x, 0.017, z, b, 1, B);
+      if (!isR(x + 1, z)) this.flat(x + 1 - b, 0.017, z, b, 1, B);
+    } else if (t === T.TABLE) {
+      const g = 0.09;
+      [[0.1, 0.1], [0.9 - g, 0.1], [0.1, 0.9 - g], [0.9 - g, 0.9 - g]].forEach(([ax, az]) =>
+        this.boxT(x + ax, 0, z + az, x + ax + g, 0.5, z + az + g, W, W));
+      this.boxT(x + 0.04, 0.5, z + 0.04, x + 0.96, 0.6, z + 0.96, W, WT);
+    } else if (t === T.CHAIR) {
+      const g = 0.08;
+      [[0.22, 0.22], [0.78 - g, 0.22], [0.22, 0.78 - g], [0.78 - g, 0.78 - g]].forEach(([ax, az]) =>
+        this.boxT(x + ax, 0, z + az, x + ax + g, 0.4, z + az + g, W, W));
+      this.boxT(x + 0.19, 0.4, z + 0.19, x + 0.81, 0.48, z + 0.81, W, WT);
+      this.boxT(x + 0.19, 0.48, z + 0.19, x + 0.81, 0.94, z + 0.28, W, W);
+    } else if (t === T.BED) {
+      this.boxT(x + 0.06, 0, z + 0.02, x + 0.94, 0.2, z + 0.98, W, W);
+      this.boxT(x + 0.08, 0.2, z + 0.04, x + 0.92, 0.38, z + 0.96, this.furnLayer('mat'), this.furnLayer('mat'));
+      const BK = this.furnLayer(clean ? 'blanketC' : 'blanket');
+      this.boxT(x + 0.05, 0.38, z + 0.34, x + 0.95, 0.45, z + 0.99, BK, BK);
+      const PW = this.furnLayer('pillow');
+      this.boxT(x + 0.18, 0.38, z + 0.08, x + 0.82, 0.5, z + 0.3, PW, PW);
+    } else if (t === T.SHELF) {
+      this.boxT(x + 0.03, 0, z + 0.03, x + 0.97, 1.18, z + 0.97, this.furnLayer('shelfF'), WT, 1, 1.2);
+    } else if (t === T.COUNTER || t === T.TILL) {
+      const CF = this.furnLayer('cfront', acc), CT = this.furnLayer('ctop');
+      this.boxT(x, 0, z, x + 1, 0.62, z + 1, CF, CT);
+      if (t === T.TILL) this.boxT(x + 0.24, 0.62, z + 0.26, x + 0.76, 0.92, z + 0.74, this.furnLayer('till'), this.furnLayer('tillT'));
+    } else if (t === T.PLANT) {
+      const PT = this.furnLayer('pot');
+      this.cyl(x + 0.5, z + 0.5, 0.16, 0.23, 0, 0.24, PT, this.furnLayer('soil'), 8);
+      this.billboard(x + 0.5, z + 0.5, 0.84, 1.0, 0.18, this.furnLayer('plantB'), 0);
+    } else if (t === T.BOOKS) {
+      this.boxT(x + 0.04, 0, z + 0.04, x + 0.96, 1.26, z + 0.96, this.furnLayer('books'), WT, 1, 1.3);
+    } else if (t === T.STOVE) {
+      this.boxT(x + 0.02, 0, z + 0.02, x + 0.98, 0.7, z + 0.98, this.furnLayer('stoveF'), this.furnLayer('stoveT'));
+    } else if (t === T.CRATE) {
+      const CR = this.furnLayer('crate');
+      this.boxT(x + 0.07, 0, z + 0.07, x + 0.93, 0.56, z + 0.93, CR, CR);
+      if (h % 2) this.boxT(x + 0.22, 0.56, z + 0.2, x + 0.78, 0.98, z + 0.76, CR, CR);
+    } else if (t === T.HEAL) {
+      this.boxT(x + 0.03, 0, z + 0.03, x + 0.97, 0.68, z + 0.97, this.furnLayer('cfront', acc), this.furnLayer('ctop'));
+      this.boxT(x + 0.1, 0.68, z + 0.14, x + 0.9, 1.14, z + 0.86, this.furnLayer('healF'), this.furnLayer('healT'));
+    } else if (t === T.LAMP) {
+      this.cyl(x + 0.5, z + 0.5, 0.19, 0.16, 0, 0.07, MT, MT, 8);
+      this.boxT(x + 0.46, 0.07, z + 0.46, x + 0.54, 0.8, z + 0.54, MT, MT);
+      this.cyl(x + 0.5, z + 0.5, 0.3, 0.19, 0.76, 1.14, this.furnLayer('lampS'), this.furnLayer('lampT'), 8);
+    } else if (t === T.STATUE) {
+      // Aus Kacheln gebaut statt als Billboard: die steile Innenkamera wuerde ein
+      // stehendes Bildschild bis zur Unkenntlichkeit stauchen.
+      const S = this.furnLayer('stone'), SD = this.furnLayer('stoneD'), BZ = this.furnLayer('bronze');
+      this.boxT(x + 0.15, 0, z + 0.15, x + 0.85, 0.26, z + 0.85, SD, S);
+      this.boxT(x + 0.19, 0.26, z + 0.19, x + 0.81, 0.34, z + 0.81, S, S);
+      this.boxT(x + 0.31, 0.34, z + 0.34, x + 0.69, 1.04, z + 0.66, BZ, BZ);
+      this.boxT(x + 0.2, 0.46, z + 0.38, x + 0.31, 0.98, z + 0.62, BZ, BZ);
+      this.boxT(x + 0.69, 0.46, z + 0.38, x + 0.8, 0.98, z + 0.62, BZ, BZ);
+      this.boxT(x + 0.37, 1.04, z + 0.37, x + 0.63, 1.3, z + 0.63, BZ, BZ);
+    } else if (t === T.ANVIL) {
+      this.boxT(x + 0.26, 0, z + 0.26, x + 0.74, 0.34, z + 0.74, W, W);
+      this.boxT(x + 0.14, 0.34, z + 0.3, x + 0.86, 0.56, z + 0.7, MT, MT);
+    } else if (t === T.SOFA) {
+      const SF = this.furnLayer('sofa', acc), SC = this.furnLayer('sofaT', acc);
+      this.boxT(x + 0.06, 0, z + 0.12, x + 0.94, 0.3, z + 0.96, SF, SC);
+      this.boxT(x + 0.06, 0.3, z + 0.12, x + 0.94, 0.78, z + 0.32, SF, SF);
+      this.boxT(x + 0.06, 0.3, z + 0.32, x + 0.21, 0.5, z + 0.96, SF, SF);
+      this.boxT(x + 0.79, 0.3, z + 0.32, x + 0.94, 0.5, z + 0.96, SF, SF);
+    } else if (t === T.PCDESK) {
+      this.boxT(x + 0.04, 0, z + 0.1, x + 0.96, 0.6, z + 0.9, MT, this.furnLayer('deskT'));
+      this.boxT(x + 0.2, 0.6, z + 0.34, x + 0.8, 1.0, z + 0.46, this.furnLayer('screen'), MT);
+    } else if (t === T.BARREL) {
+      this.cyl(x + 0.5, z + 0.5, 0.26, 0.26, 0, 0.62, this.furnLayer('barrel'), this.furnLayer('barrelT'), 10);
+    } else if (t === T.SIGNI) {
+      this.boxT(x + 0.42, 0, z + 0.46, x + 0.58, 0.46, z + 0.62, W, W);
+      // Die Tafel ist nach hinten geneigt, damit sie aus der Vogelperspektive lesbar bleibt.
+      const SL = this.furnLayer('signB', acc);
+      const bx0 = x + 0.1, bx1 = x + 0.9, zb = z + 0.72, zt = z + 0.3;
+      this.poly4([[bx0,0.42,zb],[bx1,0.42,zb],[bx1,1.02,zt],[bx0,1.02,zt]],
+        [[0,1],[1,1],[1,0],[0,0]], [0,0.58,0.81], SL, 0);
+      this.poly4([[bx1,0.42,zb],[bx0,0.42,zb],[bx0,1.02,zt],[bx1,1.02,zt]],
+        [[0,1],[1,1],[1,0],[0,0]], [0,-0.58,-0.81], W, 0);
+    }
+  },
+
   // ---- mesh primitives ------------------------------------------------------
   v(x, y, z, nx, ny, nz, u, vv, l, w) {
     const alpha = this.tgt === 1;
@@ -3445,13 +4125,16 @@ const R3 = {
         const h = this.hash(x, z);
 
         if (inHouse) {
-          const wh = (z === s.mh - 1) ? 0.8 : 1.38;
+          // Die vorderen Wandreihen sind niedriger, damit die Kamera in den Raum sieht.
+          const dz = s.mh - 1 - z;
+          const wh = dz === 0 ? 0.8 : dz === 1 ? 1.06 : 1.42;
           if (t === T.FLOOR) this.flat(x, 0, z, 1, 1, this.intLayer('fl', style, region));
           else if (t === T.IWALL) { this.flat(x, 0, z, 1, 1, this.intLayer('fl', style, region)); this.box(x, 0, z, x+1, wh, z+1, this.intLayer('iw', style, region), 1, wh); }
           else if (t === T.EXITDOOR) {
             this.flat(x, 0, z, 1, 1, this.intLayer('fl', style, region));
             this.wallSeg(x, z + 0.02, x + 1, z + 0.02, 0, wh, [0,0,1], this.terrainLayer(region, 'exit'), 1, 1);
           }
+          else if (isFurn(t)) this.furn(x, z, t, style, region);
           continue;
         }
 
@@ -3601,6 +4284,12 @@ const R3 = {
     });
   },
 
+  petTex(type, seed) {
+    return this.sprTex('pt:' + type + ':' + seed, 128, (c, s) => {
+      Sprites.drawCreature(c, s, type, 1, seed);
+    });
+  },
+
   monTex(mon) {
     return this.sprTex('mn:' + mon.id + ':' + mon.t + ':' + (mon.tier || 1), 256, (c, s) => {
       Sprites.drawCreature(c, s, mon.t, mon.tier || 1, Sprites.seedFromId(mon.id));
@@ -3663,6 +4352,7 @@ const R3 = {
     this.fwd = [-this.view[2], -this.view[6], -this.view[10]];
     const rx = this.view[0], rz = this.view[8], rl = Math.hypot(rx, rz) || 1;
     this.right = [rx/rl, 0, rz/rl];
+    this.camUp = [this.view[1], this.view[5], this.view[9]];
   },
 
   project(x, y, z) {
@@ -3771,12 +4461,33 @@ const R3 = {
 
     const inH = !!s.inHouse;
     const env = inH ? ENV3.in : (ENV3[s.region] || ENV3.r1);
-    const pitch = inH ? 1.05 : 0.63;
-    const dist = inH ? 8.4 : 11.4;
+    const pitch = inH ? 0.72 : 0.63;
     const fovy = this.fov(inH ? 54 : 58);
-    const far = inH ? 60 : 90;
+    const far = 90;
     const px = G.v3x, pz = G.v3z;
-    const cx = inH ? s.mw / 2 : px, cz = inH ? s.mh / 2 : pz;
+    let cx = px, cz = pz, dist = 11.4;
+    if (inH) {
+      // Passt der ganze Raum ins Bild, bleibt die Kamera mittig wie bei einem Diorama.
+      // Ist er dafuer zu gross (schmales Handy-Display), folgt sie der Figur und
+      // stoppt an den Raumkanten.
+      const th = Math.tan(fovy / 2), asp = this.aspect();
+      const sp = Math.sin(pitch), cp = Math.cos(pitch);
+      // Die vordere Raumkante liegt am naechsten an der Kamera und begrenzt damit
+      // den Abstand: sie muss noch unter den unteren Bildrand passen.
+      const HD = s.mh * 0.5 - 0.15, HW = s.mw * 0.5 + 0.35;
+      const needD = HD * (sp / th + cp);
+      const needW = HW / (th * asp) + HD * cp;
+      // Auf schmalen Hochkant-Displays wuerde die volle Raumbreite die Kamera so weit
+      // zuruecktreiben, dass der Raum als Briefmarke in der Bildmitte haengt. Dort wird
+      // lieber seitlich beschnitten - die Nachfuehrung unten holt den Rest.
+      dist = Math.min(26, Math.max(8.6, Math.max(needD, Math.min(needW, needD * 1.35))));
+      const visW = dist * th * asp;
+      const visD = th * dist / (sp + th * cp);
+      const slackX = Math.max(0, s.mw * 0.5 - visW);
+      const slackZ = Math.max(0, s.mh * 0.5 - visD);
+      cx = Math.min(s.mw / 2 + slackX, Math.max(s.mw / 2 - slackX, px));
+      cz = Math.min(s.mh / 2 + slackZ, Math.max(s.mh / 2 - slackZ, pz));
+    }
     this.setCam(cx, Math.sin(pitch)*dist + 0.5, cz + Math.cos(pitch)*dist, cx, inH ? 0.3 : 1.0, cz, fovy, far);
     const fogN = inH ? 40 : 21, fogF = inH ? 90 : 40;
 
@@ -3813,14 +4524,26 @@ const R3 = {
     for (const n of npcs) this.blob(n.x + 0.5, n.y + 0.5, 0.78, 0.8);
     this.blob(px, pz, 0.82, 0.9);
     gl.depthMask(true);
+    // Die steile Innenkamera staucht senkrechte Billboards. Statt sie zur Kamera zu
+    // kippen - dann wuerden Figuren an der Rueckwand in die Wand ragen - werden sie
+    // genau um die Verkuerzung hoeher gezeichnet und bleiben dabei senkrecht.
+    const vsc = inH ? (sx, sz) => {
+      const hd = Math.max(0.6, Math.hypot(sx - this.eye[0], sz - this.eye[2])), dy = this.eye[1] - 0.6;
+      return Math.min(2.2, Math.hypot(hd, dy) / hd);
+    } : () => 1;
     for (const n of npcs) {
-      this.sprite(this.folkTex(region, n.hair, n.shirt, 0), n.x + 0.5, -0.05, n.y + 0.5, 1.22, 1.22);
-      this.sprite(this.markTex(), n.x + 0.5, 1.32 + Math.sin(this.time * 2.4 + n.x) * 0.06, n.y + 0.5, 0.46, 0.46, {shade: [1,1,1]});
+      const k = vsc(n.x + 0.5, n.y + 0.5), hh = 1.22 * k;
+      this.sprite(this.folkTex(region, n.hair, n.shirt, 0), n.x + 0.5, -0.05, n.y + 0.5, 1.22, hh);
+      this.sprite(this.markTex(), n.x + 0.5, -0.05 + hh + (0.1 + Math.sin(this.time * 2.4 + n.x) * 0.06) * k,
+        n.y + 0.5, 0.46, 0.46 * k, {shade: [1,1,1]});
     }
+    if (inH && s.roomPets) for (const pt of s.roomPets)
+      this.sprite(this.petTex(pt.t, pt.seed), pt.x + 0.5, 0.42, pt.y + 0.7, 0.8, 0.8 * vsc(pt.x + 0.5, pt.y + 0.7));
     const hero = this.heroTex(s.char.hair, G.walkPhase | 0);
-    this.sprite(hero, px, -0.05, pz, 1.26, 1.26);
+    const hk = 1.26 * vsc(px, pz);
+    this.sprite(hero, px, -0.05, pz, 1.26, hk);
     gl.depthFunc(gl.GREATER); gl.depthMask(false);
-    this.sprite(hero, px, -0.05, pz, 1.26, 1.26, {alpha: 0.55, shade: [1.45, 1.55, 1.85]});
+    this.sprite(hero, px, -0.05, pz, 1.26, hk, {alpha: 0.55, shade: [1.45, 1.55, 1.85]});
     gl.depthFunc(gl.LESS); gl.depthMask(true);
     gl.disable(gl.BLEND);
     gl.bindVertexArray(null);
@@ -3998,6 +4721,13 @@ const G = {
     return Sprites.getTile('i_'+style+'_'+part+'_'+(region||'r1'),TILE,(c,sz)=>{
       if(part==='fl')Sprites.bFloor(c,sz,st,pal); else Sprites.bIWall(c,sz,st,pal);
     });
+  },
+
+  // Moebelkachel im Stil des aktuellen Gebaeudes.
+  fTile(t,region) {
+    const style=this.s.inHouseStyle||'house';
+    const st=BSTYLE[style]||BSTYLE.house, pal=BPAL[region]||BPAL.r1;
+    return Sprites.getTile('fu_'+t+'_'+style+'_'+(region||'r1'),TILE,(c,sz)=>Sprites.bFurn(c,sz,+t,st,pal));
   },
 
   precacheTiles() {
@@ -4600,6 +5330,8 @@ const G = {
         ctx.drawImage(this.s.inHouse?this.iTile('iw',region):tc.iwall,px,py);
       } else if(t===T.EXITDOOR){
         ctx.drawImage(tc.exitdoor,px,py);
+      } else if(this.s.inHouse&&isFurn(t)){
+        ctx.drawImage(this.fTile(t,region),px,py);
       }
 
       // Edge blending: darken edges near different terrain (outdoor terrain only)
@@ -4612,6 +5344,15 @@ const G = {
         }
       }
     }}
+
+    // Ruhende Pokemon auf den Liegen im Pokemon-Center
+    (this.s.roomPets||[]).forEach(pt=>{
+      const nvx=pt.x-cx,nvy=pt.y-cy;
+      if(nvx>=0&&nvx<vw&&nvy>=0&&nvy<vh){
+        const pc=Sprites.getTile('pet_'+pt.t+'_'+pt.seed,TILE,(c,sz)=>Sprites.drawCreature(c,sz,pt.t,1,pt.seed));
+        ctx.drawImage(pc,nvx*TILE+TILE*0.1,nvy*TILE-TILE*0.1,TILE*0.8,TILE*0.8);
+      }
+    });
 
     // Draw NPCs in view, with a small marker above their head so they stand out
     (this.s.currentNpcs||[]).forEach(n=>{
@@ -4754,17 +5495,30 @@ const G = {
   },
 
   // Houses & NPC interaction
+  // Der Grundriss kommt aus IROOMS: ein moeblierter Raum je Gebaeudestil, inklusive
+  // Standplaetzen fuer den Hausherrn ('1') und Nebenfiguren ('2'/'3').
   mkInterior(houseId) {
     const cfg=houseCfgFor(houseId);
-    const w=7,h=6;
-    const map=[];
+    const style=HOUSE_STYLE[houseId]||'house';
+    const plan=IROOMS[style]||IROOMS.house;
+    const h=plan.length,w=plan[0].length;
+    const map=[],spots={};
+    let entryX=Math.floor(w/2),entryY=h-2;
     for(let y=0;y<h;y++){map[y]=[];for(let x=0;x<w;x++){
-      if(y===0||x===0||x===w-1)map[y][x]=T.IWALL;
-      else if(y===h-1)map[y][x]=(x===3)?T.EXITDOOR:T.IWALL;
-      else map[y][x]=T.FLOOR;
+      const ch=plan[y][x];
+      const t=IFCH[ch];
+      map[y][x]=t!==undefined?t:T.FLOOR;
+      if(ch==='D'){entryX=x;entryY=y-1;}
+      else if(ch==='1'||ch==='2'||ch==='3')spots[ch]={x,y};
     }}
-    return {map,w,h,entryX:3,entryY:h-2,
-      npc:{x:3,y:2,name:cfg.npc.name,shirt:cfg.npc.shirt,hair:cfg.npc.hair,lines:cfg.npc.lines,onEnd:cfg.npc.onEnd}};
+    const host=spots['1']||{x:Math.floor(w/2),y:2};
+    const npcs=[{x:host.x,y:host.y,name:cfg.npc.name,shirt:cfg.npc.shirt,hair:cfg.npc.hair,
+      lines:cfg.npc.lines,onEnd:cfg.npc.onEnd,host:true}];
+    (IEXTRA[style]||[]).forEach((e,i)=>{
+      const sp=spots[String(i+2)];
+      if(sp)npcs.push({x:sp.x,y:sp.y,name:e.name,shirt:e.shirt,hair:e.hair,lines:e.lines});
+    });
+    return {map,w,h,entryX,entryY,npcs};
   },
 
   enterHouse(houseId) {
@@ -4774,18 +5528,34 @@ const G = {
     this.s.px=inter.entryX;this.s.py=inter.entryY;
     this.s.inHouse=houseId;
     this.s.inHouseStyle=HOUSE_STYLE[houseId]||'house';
-    this.s.currentNpcs=[inter.npc];
+    this.s.currentNpcs=inter.npcs;
+    this.s.roomPets=this.mkRoomPets(inter);
     this.s.facing={dx:0,dy:-1};
     this.mmC.style.display='none';
     Au.cl();
     this.renderWorld();this.updateHud();
   },
 
+  // Auf den Liegen im Pokemon-Center schlafen Pokemon - das macht die Station
+  // sofort als Ruhebereich lesbar.
+  mkRoomPets(inter) {
+    if((this.s.inHouseStyle||'')!=='center')return [];
+    const types=['grass','fire','water','electric','normal','psychic'];
+    const pets=[];
+    for(let y=0;y<inter.h;y++)for(let x=0;x<inter.w;x++){
+      if(inter.map[y][x]!==T.BED)continue;
+      if(pets.length>=3)break;
+      const k=(x*31+y*17+pets.length*7);
+      pets.push({x,y,t:types[k%types.length],seed:1000+k*13});
+    }
+    return pets;
+  },
+
   exitHouse() {
     const o=this.s.outdoorPos;
     this.s.map=o.map;this.s.mw=o.mw;this.s.mh=o.mh;this.s.px=o.px;this.s.py=o.py;
     this.s.inHouse=null;this.s.outdoorPos=null;
-    this.s.currentNpcs=this.s.worldNpcs;
+    this.s.currentNpcs=this.s.worldNpcs;this.s.roomPets=[];
     this.s.facing={dx:0,dy:1};
     this.mmC.style.display='block';
     this.renderWorld();this.updateHud();
@@ -4794,7 +5564,15 @@ const G = {
   interact() {
     if(!this.s||this.s.inBattle||this.s.dialogueOpen)return;
     const fx=this.s.px+this.s.facing.dx,fy=this.s.py+this.s.facing.dy;
-    const npc=(this.s.currentNpcs||[]).find(n=>n.x===fx&&n.y===fy);
+    let npc=(this.s.currentNpcs||[]).find(n=>n.x===fx&&n.y===fy);
+    if(!npc&&this.s.inHouse){
+      const row=this.s.map[fy], t=row?row[fx]:undefined, fu=furnAt(t);
+      if(fu){
+        // An Theke, Kasse und Heilstation wird man bedient statt beschrieben.
+        if(fu.svc)npc=(this.s.currentNpcs||[]).find(n=>n.host);
+        if(!npc){Au.cl();this.showDialogue(fu.nm,[fu.txt]);return;}
+      }
+    }
     if(!npc)return;
     Au.cl();
     const lines=typeof npc.lines==='function'?npc.lines(this.s):npc.lines;
