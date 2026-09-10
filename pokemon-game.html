@@ -307,6 +307,7 @@ body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
   <div class="overlay" id="ov-battle-item"><div class="ov-title">Heiltrank einsetzen</div><p id="battle-item-info" style="color:#889;margin-bottom:10px;font-size:0.85em;"></p><div class="ov-grid" id="battle-item-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeBattleItem()">Abbrechen</button></div></div>
   <div class="overlay" id="ov-quests"><div class="ov-title">Quests</div><div id="quest-list" style="width:100%;max-width:600px;"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeQuests()">Schliessen</button></div></div>
   <div class="overlay" id="ov-dex"><div class="ov-title">Pokedex</div><p id="dex-info" style="color:#889;margin-bottom:10px;font-size:0.9em;"></p><div class="ov-grid" id="dex-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeDex()">Schliessen</button></div></div>
+  <div class="overlay" id="ov-starter-pick" style="z-index:120;"><div class="ov-title">Wahle dein Starter-Pokemon</div><p style="color:#889;margin-bottom:12px;font-size:0.9em;">Dein erster Partner im Abenteuer</p><div class="ov-grid" id="ov-starter-grid"></div><div id="ov-starter-detail" style="margin-top:10px;font-size:0.85em;color:#bbc;"></div></div>
   <div class="overlay" id="ov-shop">
     <div class="ov-title">Pokemon-Laden</div>
     <p style="color:#889;margin-bottom:14px;font-size:0.9em;">Dein PokeCash: <span id="shop-cash" style="color:#ffd860;font-weight:700;"></span></p>
@@ -2581,6 +2582,10 @@ const HEROTXT={
 };
 
 function professorLines(s){
+  if(!s.flags.gotStarter) return ['Professor Eichenholz: Ah, da bist du ja! Ich habe dich schon erwartet.',
+    'Du bist hier, um dein erstes Pokemon abzuholen, nicht wahr?',
+    'Schau dir die Pokemon hier an - eines davon wird dein treuer Begleiter fur das ganze Abenteuer.',
+    'Wahle weise. Euer Schicksal liegt von nun an in euren gemeinsamen Handen.'];
   if(!s.flags.metProfessor) return ['Professor Eichenholz: Du hast es gespurt, nicht wahr? Vor einer Stunde.',
     'Der Boden hat gezittert, der Himmel ist aufgesprungen wie eine alte Naht - und dann war er wieder zu.',
     'Das war der Riss. Die Welt ist zerbrochen, und sie halt sich seither nur noch muhsam selbst zusammen.',
@@ -2871,6 +2876,7 @@ const HOUSES={
     onEnd:()=>{ G.healTeamFree(); }}},
   lab:{name:'Pokemon-Labor',npc:{name:'Professor Eichenholz',shirt:'#f0f0f0',hair:'#3a2a1a',lines:s=>professorLines(s),
     onEnd:()=>{ const s=G.s;
+      if(!s.flags.gotStarter){ setTimeout(()=>G.openStarterPick(),200); return; }
       if(!s.flags.metProfessor){ s.flags.metProfessor=true; s.potions+=2; startQuest('q1'); G.updateHud(); G.saveGame(); return; }
       if(questStatus('q1',s)==='ready') completeQuest('q1');
     }}},
@@ -6146,7 +6152,32 @@ const G = {
     const mv=this.getMoves(d.t,5);
     el.innerHTML=`<div class="d-spr">${d.spr}</div><div class="d-nm">${d.nm}</div><div class="tp t-${d.t}" style="display:inline-block;padding:2px 10px;border-radius:6px;font-size:0.8em;">${d.t}</div><div class="d-stats"><div class="d-stat"><div class="label">HP</div><div class="val">${d.hp}</div></div><div class="d-stat"><div class="label">ATK</div><div class="val">${d.atk}</div></div><div class="d-stat"><div class="label">DEF</div><div class="val">${d.def}</div></div><div class="d-stat"><div class="label">SPD</div><div class="val">${d.spd}</div></div></div><div style="margin-top:8px">${mv.map(m=>`<span class="d-move">${m.name} (${m.pow})</span>`).join('')}</div>${d.evo?`<div style="margin-top:8px;font-size:0.8em;color:#889;">Evo zu ${DB.find(x=>x.id===d.evo.to).nm} ab Lv.${d.evo.lv}</div>`:''}`;
   },
-  toStarterSelect(){Au.cl();this.showScreen('scr-starter');},
+  toStarterSelect(){Au.cl();this.startNewGame();},
+
+  openStarterPick(){
+    const g=document.getElementById('ov-starter-grid'); g.innerHTML='';
+    DB.filter(p=>p.tier===1&&['glumanda','schiggy','bisasam','pikachu'].includes(p.id)).forEach(d=>{
+      const c=document.createElement('div');c.className='sel-card';
+      c.innerHTML=`<div class="spr">${d.spr}</div><div class="nm">${d.nm}</div><div class="tp t-${d.t}">${d.t}</div><div class="starter-stats">HP:${d.hp} ATK:${d.atk} DEF:${d.def} SPD:${d.spd}</div>`;
+      c.onclick=()=>this.pickStarter(d);
+      g.appendChild(c);
+    });
+    document.getElementById('ov-starter-detail').textContent='';
+    document.getElementById('ov-starter-pick').classList.add('on');
+  },
+  pickStarter(d){
+    Au.cl();
+    const p=this.mkP(d,5);
+    this.s.team.push(p);
+    this.s.active=0;
+    this.s.dex[d.id]='caught';
+    this.s.flags.gotStarter=true;
+    document.getElementById('ov-starter-pick').classList.remove('on');
+    this.popup(`${d.spr} ${d.nm} wurde dein Partner!<div class="lvl-sub">Dein Abenteuer beginnt jetzt wirklich!</div>`,'caught-popup',3000);
+    Au.lv();
+    this.updateHud();
+    this.saveGame();
+  },
 
   // Pokemon
   st(b,l){return Math.floor((2*b*l/100)+l+10);},
@@ -6756,9 +6787,10 @@ const G = {
   // Pokemon-Center: restores the whole team at no cost.
   healTeamFree(){
     const s=this.s;
+    if(!s.team.length){ this.popup('Du hast noch kein Pokemon!<div class="lvl-sub">Gehe zuerst ins Labor zu Professor Eichenholz</div>','caught-popup',3000); return; }
     const hurt=s.team.filter(p=>p.hp<p.mhp).length;
     s.team.forEach(p=>{p.hp=p.mhp;});
-    if(s.team[s.active].hp<=0){const i=s.team.findIndex(p=>p.hp>0);if(i>=0)s.active=i;}
+    if(s.team[s.active]&&s.team[s.active].hp<=0){const i=s.team.findIndex(p=>p.hp>0);if(i>=0)s.active=i;}
     Au.lv();
     this.popup(hurt>0
       ? `Dein Team wurde vollstandig geheilt!<div class="lvl-sub">${hurt} Pokemon wiederhergestellt - kostenlos</div>`
@@ -6936,7 +6968,7 @@ const G = {
     this.startBattle();
   },
 
-  wildLv(){const a=this.s.team[this.s.active];return Math.max(1,Math.max(1,a.lv-3)+Math.floor(Math.random()*(6+Math.floor(this.s.battlesWon/4))));},
+  wildLv(){const a=this.s.team[this.s.active]||this.s.team[0];if(!a)return 3;return Math.max(1,Math.max(1,a.lv-3)+Math.floor(Math.random()*(6+Math.floor(this.s.battlesWon/4))));},
   wildTier(){const w=this.s.battlesWon,r=Math.random();let t;if(w<5)t=1;else if(w<12)t=r<.65?1:2;else if(w<25)t=r<.2?1:r<.75?2:3;else t=r<.3?2:3;
     if(this.s.region==='r2')t=Math.min(3,t+1); else if(this.s.region==='r3')t=Math.min(3,t+1); else if(this.s.region==='r4')t=3;
     return t;},
@@ -7058,6 +7090,7 @@ const G = {
   roamerAt(x,y){ return (this.s.roamers||[]).find(r=>r.gx===x&&r.gy===y); },
 
   startRoamBattle(r){
+    if(!this.s.team.length){this.popup('Du hast noch kein Pokemon!<div class="lvl-sub">Gehe ins Labor zu Professor Eichenholz</div>','caught-popup',3000);return;}
     const isLeg=!!r.legendary;
     this.s.roamers=this.s.roamers.filter(o=>o!==r);
     Au.enc(); this.s.inBattle=true; this.battleBusy=false; this.s.trainerBattle=false;
@@ -7073,13 +7106,13 @@ const G = {
   markSeen(mon){this.s.dex=this.s.dex||{};if(this.s.dex[mon.id]!=='caught')this.s.dex[mon.id]='seen';},
 
   // Battle
-  startBattle(){Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=false;this.s.enemy=this.spawnW();this.markSeen(this.s.enemy);
+  startBattle(){if(!this.s.team.length)return;Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=false;this.s.enemy=this.spawnW();this.markSeen(this.s.enemy);
     const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
     setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();Au.cry(this.s.enemy);this.bl(`Ein wildes ${this.s.enemy.nm} (Lv.${this.s.enemy.lv}) erscheint!`);this.rBA();},350);},400);},
 
-  startRivalBattle(){Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=true;this.s.trainerFlag=null;
+  startRivalBattle(){if(!this.s.team.length)return;Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=true;this.s.trainerFlag=null;
     const w=this.s.flags.rivalWins||0;
-    const lvl=Math.max(5,this.s.team[this.s.active].lv+w*2);
+    const lvl=Math.max(5,(this.s.team[this.s.active]||this.s.team[0]).lv+w*2);
     const pool=DB.filter(d=>d.tier===1||d.tier===2);
     this.s.enemy=this.mkP(pool[w%pool.length],lvl);this.markSeen(this.s.enemy);
     const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
@@ -7485,13 +7518,14 @@ const G = {
     this.s.currentNpcs=this.s.worldNpcs;
     return true;}catch(e){return false;}},
 
-  startNewGame(){Au.cl();this.s={clock:480,char:this._cc,team:[this.mkP(this._sc,5)],active:0,potions:5,cash:50,lastPD:new Date().toDateString(),battlesWon:0,caughtCount:0,region:'r1',regions:{},px:0,py:0,map:[],mw:0,mh:0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:{},quests:{q0:'active'},dex:{},randomTrainers:[],outposts:[],arenaGate:null,inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
-    this.s.dex[this._sc.id]='caught';
+  startNewGame(){Au.cl();this.s={clock:480,char:this._cc,team:[],active:0,potions:5,cash:50,lastPD:new Date().toDateString(),battlesWon:0,caughtCount:0,region:'r1',regions:{},px:0,py:0,map:[],mw:0,mh:0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:{},quests:{q0:'active'},dex:{},randomTrainers:[],outposts:[],arenaGate:null,inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
     this.genWorld('r1');
     this.playWorldCinematic({reverse:false,caption:'Eine neue Welt entsteht...'},()=>{
-      this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();this.saveGame();},350);
+      this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();this.saveGame();
+        setTimeout(()=>this.popup('Gehe ins Labor und hole dein Pokemon ab!<div class="lvl-sub">Das Labor befindet sich im Dorf</div>','caught-popup',4500),800);
+      },350);
     });},
-  resumeGame(){Au.cl();this.refreshPot();if(this.s.team[this.s.active].hp<=0){const i=this.s.team.findIndex(p=>p.hp>0);if(i>=0)this.s.active=i;}this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();},350);},
+  resumeGame(){Au.cl();this.refreshPot();if(this.s.team.length&&this.s.team[this.s.active]&&this.s.team[this.s.active].hp<=0){const i=this.s.team.findIndex(p=>p.hp>0);if(i>=0)this.s.active=i;}this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();},350);},
 };
 
 G.init();
