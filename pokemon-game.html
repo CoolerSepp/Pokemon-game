@@ -2339,6 +2339,116 @@ function completeQuest(qid){
   G.popup(`Quest abgeschlossen: ${q.name}!<div class="lvl-sub">${parts.join(', ')}</div>`,'caught-popup',2600);
 }
 
+// ===== Nach dem Sieg: die geflickte Welt =====
+// Sobald die Championin bezwungen ist, sind die Nahte zu und das Land heil. Ab da
+// spricht jeder den Spieler als Held bzw. Heldin an und erzahlt, was seither wieder
+// gut ist - kein Wort mehr uber Risse, Gefahr und Verluste. Wer noch eine Aufgabe zu
+// vergeben hat, fragt jetzt freundlich ('ask') statt duster.
+function isHero(s){ return !!(s&&s.flags&&s.flags.champion); }
+function heroName(){
+  const c=G.s&&G.s.char;
+  const t=/\u{1F469}|\u{1F467}/u.test((c&&c.spr)||'')?'Heldin':'Held';
+  return c&&c.nm?t+' '+c.nm:t;
+}
+function heroText(lines){ const n=heroName(); return lines.map(t=>t.split('{H}').join(n)); }
+function hero(id,kind){ const H=HEROTXT[id]; if(!H)return null; const l=H[kind||'say']||H.say; return l?heroText(l):null; }
+// Laufende Aufgaben bleiben nach dem Titel spielbar: Fortschritt und Belohnung
+// werden weiter angesagt, nur mit der Held-Begruessung davor.
+function heroSay(s,id,lines){ const h=isHero(s)&&hero(id); return h?[h[0]].concat(lines):lines; }
+const HEROTXT={
+  professor:{say:['Professor Eichenholz: {H}! Komm rein, der Tee ist frisch.',
+    'Der Himmel steht seit Wochen ganz und still. Meine Instrumente haben nichts mehr zu messen - das schonste Ergebnis meiner Laufbahn.',
+    'Die Arten, die fehlten, kommen zuruck. Eine nach der anderen.']},
+  rival:{say:['Rivale Gary: Da kommt {H} hochstpersonlich.',
+    'Ich erzahle inzwischen jedem, dass wir zusammen aufgewachsen sind. Funktioniert erstaunlich gut.',
+    'Und irgendwann gewinne ich. Irgendwann.']},
+  lisa:{done:['Anwohnerin Lisa: Drei Eintrage, {H}. Danke - und nimm das hier.','Wasser schlagt Feuer. Das galt immer und gilt weiter.'],
+    say:['Anwohnerin Lisa: {H}! Mein Buch ist voll, und diesmal mit guten Nachrichten.',
+      'Drei Arten, die jahrelang fehlten, sind wieder da. Ich habe sie heute Morgen selbst gesehen.'],
+    ask:['Anwohnerin Lisa: {H}, hast du kurz Zeit?',
+      'Ich fuhre wieder Buch, jetzt wo es sich lohnt. Fang mir drei wilde Pokemon, dann ist mein Eintrag komplett.']},
+  tom:{done:['Anwohner Tom: Level 15, {H}. Sauber gemacht.','Der Rat bleibt: Lauf nie mit nur einem Pokemon los. Nie.'],
+    say:['Anwohner Tom: {H}! Die Strasse nach Osten ist wieder eine Strasse und kein Abenteuer.',
+      'Meine Kinder durfen zum ersten Mal allein zum Fluss. Dafur danke ich dir.'],
+    ask:['Anwohner Tom: {H}, mach mir eine Freude.',
+      'Bring eines deiner Pokemon auf Level 15. Ich will sehen, wie Training aussieht, wenn niemand mehr um sein Leben trainiert.']},
+  mara:{say:['Wanderin Mara: {H}! Ich bin heute bis zum Horizont gelaufen, und er war den ganzen Weg da.',
+    'Fruher hat er einfach aufgehort. Jetzt geht er weiter, so weit ich schaue.']},
+  elana:{done:['Alteste Elana: Stark genug, {H}. Wie erwartet.','Nimm das hier - und geh, wohin du willst. Alles steht dir offen.'],
+    say:['Alteste Elana: {H}. Sieh dich um - das hier ist Mittag.',
+      'Die Kinder haben heute zum ersten Mal ihren eigenen Schatten gesehen. Sie haben gelacht wie verruckt.'],
+    ask:['Alteste Elana: {H}, unsere Region atmet wieder. Eine Bitte habe ich trotzdem.',
+      'Fang ein Pokemon der Stufe 3 oder hoher - ich will wissen, was hier im neuen Licht heranwachst.']},
+  kilian:{done:['Reisender Kilian: 25 Siege, {H}. Verdient.','Am alten Rand steht heute Gras. Ich war da, ich habe es angefasst.'],
+    say:['Reisender Kilian: {H}! Ich war am alten Rand. Da ist kein Rand mehr.',
+      'Zwei Regionen sind zuruck. Ich kartiere Strassen, die es letzte Woche noch nicht gab.'],
+    ask:['Reisender Kilian: {H}, mir fehlen Notizen fur die neue Karte.',
+      'Gewinne 25 Kampfe unterwegs, dann trage ich deine Route mit ein.']},
+  toni:{done:['Krauterfrau Toni: Level 25, {H}. Das schafft kaum jemand.','Hier - mein bestes Rezept. Viel Freude damit.'],
+    say:['Krauterfrau Toni: {H}! Meine Wurzeln wachsen wieder nach unten. Alle.',
+      'Das Futter schmeckt seither besser. Frag nicht warum, ich weiss es auch nicht.'],
+    ask:['Krauterfrau Toni: {H}, hilf mir bei einem Versuch.',
+      'Bring ein Pokemon auf Level 25 - ich will wissen, wie weit man kommt, wenn einen nichts mehr aufhalt.']},
+  silas:{say:['Handler Silas: {H}. Bar zahlen, keine Fragen - aber dein Name steht inzwischen in meinen Buchern.',
+    'Mein Sortiment wachst zum ersten Mal seit Jahren. Schau es dir an.']},
+  vala:{say:['Geisterseherin Vala: Der Stuhl links ist frei, {H}. Sie sind alle gegangen.',
+    'Ganz ruhig, ohne Groll. Sie haben nur auf die offene Tur gewartet - du hast sie aufgemacht.']},
+  boris:{say:['Schmied Boris: {H}! Die Esse brennt Tag und Nacht, wie bei meinem Grossvater.',
+    'Ich schmiede wieder fur Reisende statt fur Uberlebende. Das ist ein Unterschied.']},
+  aldric:{done:['Schaffner Aldric: Zehn Siege, {H}. Hier ist deine Karte.','Und komm zuruck. Ich mag es, wenn die Zahlen stimmen.'],
+    say:['Schaffner Aldric: {H} fahrt bei mir umsonst. Das ist keine Diskussion.',
+      'Die Zahlen stimmen zum ersten Mal: genauso viele Ruckkehrer wie Abfahrten.'],
+    ask:['Schaffner Aldric: {H}, Vorschrift bleibt Vorschrift - aber ich mach es kurz.',
+      'Zehn gewonnene Kampfe, dann ist deine Karte ausgestellt.']},
+  elrik:{say:['Schaffner Elrik: {H} an Bord! Der Zug ins Heimatdorf steht bereit. Einsteigen?']},
+  yara:{say:['Schaffnerin Yara: {H}! Die Strecke ist offen, glatt und langweilig. Herrlich.',
+    'Weiter in die Frostregion?']},
+  juno:{say:['Schaffner Juno: Schon dich zu sehen, {H}. Zuruck in die Schattenregion?']},
+  frigga:{done:['Hueterin Frigga: 35 Siege, {H}. Du gehorst hierher, ob du willst oder nicht.','Hier, nimm das.'],
+    say:['Hueterin Frigga: {H}! Der Rauch uber dem See zieht. Nach Osten, seit heute Morgen.',
+      'Ich habe vierzig Jahre auf diesen Anblick gewartet.'],
+    ask:['Hueterin Frigga: {H}, eine Bitte habe ich noch.',
+      '35 gewonnene Kampfe - dann gehorst du auch offiziell hierher.']},
+  finn:{done:['Kristallschurfer Finn: Level 30, {H}. Der Fund gehort dir.','Halt ihn ins Licht - der Kristall ist klar geworden.'],
+    say:['Kristallschurfer Finn: {H}! Das Eis taut, und darunter liegt alles Mogliche.',
+      'Heute war ein Blatt dabei. Frisch. Diesmal aus diesem Fruhling.'],
+    ask:['Kristallschurfer Finn: {H}, komm mit runter in den Stollen.',
+      'Bring ein Pokemon auf Level 30 mit, dann zeig ich dir meinen besten Fund.']},
+  runa:{done:['Schneejagerin Runa: Ein Stufe-4-Pokemon, {H}. Freiwillig an deiner Seite.','Dann stimmt alles, was sie uber dich erzahlen. Nimm das hier.'],
+    say:['Schneejagerin Runa: {H}. Ich zahle immer noch - aber jetzt zahle ich Neugeborene.',
+      'Die Stufe-4-Pokemon bleiben. Sie gehoren einfach dazu.'],
+    ask:['Schneejagerin Runa: {H}, tu mir den Gefallen.',
+      'Fang ein Stufe-4-Pokemon. Ich will endlich eines in Ruhe zeichnen.']},
+  bjorn:{say:['Alter Fischer Bjorn: {H}! Es beisst wieder. Seit heute fruh, ohne Unterbrechung.',
+    'Vierzig Jahre gewartet - und dann kommt so ein junger Mensch daher und macht es einfach.']},
+  nieve:{say:['Handlerin Nieve: {H}! Es ist immer noch kalt, aber es ist ein normaler Winter.',
+    'Und normale Winter gehen vorbei. Was darf es sein?']},
+  nora:{say:['Schaffnerin Nora: {H}. Ich fahre die Strecke inzwischen mit offenen Augen.',
+    'Zur Liga? Steig ein.']},
+  otto:{say:['Schaffner Otto: {H} an Bord. Zuruck in die Frostregion?']},
+  arena1:{say:['Meister Boreas: {H}. Elf Generationen haben diesen Stein gehutet - und du hast ihn gebraucht.',
+    'Komm jederzeit wieder. Die Halle steht dir offen.']},
+  arena2:{say:['Meister Voss: {H}. Du warst der Funfzehnte, und du warst der Erste.',
+    'Es ist hell hier drin. Ich muss mich noch daran gewohnen.']},
+  arena3:{say:['Meisterin Elsa: {H}. Wir sind alle auf einmal alter geworden, wie abgestimmt.',
+    'Es war jede Falte wert. Der Schnee schmilzt.']},
+  gateR1:{say:['Torwache Brunn: {H}! Das Tor steht offen, das Labyrinth ist nur noch ein Garten.',
+    'Ich fuhre jetzt Besucher hindurch. Verlaufen tue ich mich immer noch.']},
+  gateR2:{say:['Torwache Skarn: {H}. Ich sehe das Gelande zum ersten Mal richtig.',
+    'Es ist kleiner, als ich dachte. Viel kleiner.']},
+  gateR3:{say:['Torwache Eisla: {H}. Der Wind schneidet nicht mehr, er weht nur noch.',
+    'Geh ruhig langsam durch. Es holt dich nichts mehr ein.']},
+  aldo:{say:['Chronist Aldo: {H}! Die Seite ist gefullt. Ich habe sie zwolf Jahre freigehalten.',
+    'Dein Name steht jetzt ganz oben - und darunter ist wieder Platz fur andere.']},
+  perle:{say:['Handlerin Perle: {H}! Die Handelskette endet nicht mehr hier, sie geht weiter.',
+    'Ich bekomme Nachschub aus Regionen, die es letztes Jahr nicht gab.']},
+  mia:{say:['Handlerin Mia: {H}! Fur dich immer der beste Preis.',
+    'Seit die Strassen wieder halten, kommt jede Woche Ware an. Schau dich um!']},
+  kevin:{say:['Trainer Kevin: {H}! Gegen dich verloren zu haben ist inzwischen eine Auszeichnung.']},
+  julia:{say:['Trainerin Julia: {H}! Ich erzahle die Sache mit unserem Kampf immer noch jedem.']},
+  joy:{say:['Schwester Joy: {H}! Schon, dass du vorbeischaust.']},
+};
+
 function professorLines(s){
   if(!s.flags.metProfessor) return ['Professor Eichenholz: Du hast es gespurt, nicht wahr? Vor einer Stunde.',
     'Der Boden hat gezittert, der Himmel ist aufgesprungen wie eine alte Naht - und dann war er wieder zu.',
@@ -2350,7 +2460,7 @@ function professorLines(s){
   if(st==='ready') return ['Professor Eichenholz: Drei Siege. Gut.','Ich habe die Messwerte verglichen: Wo du kampfst, wird die Naht ruhiger. Das ist kein Zufall.','Hier, nimm das - und geh weiter.'];
   if(st==='active') return [`Professor Eichenholz: Fortschritt: ${QUESTS.q1.progress(s)}.`,'Die Nahte warten nicht auf dich. Aber sie reissen auch nicht schneller, wenn du hetzt.'];
   const b=(s.flags.badgeR1?1:0)+(s.flags.badgeR2?1:0)+(s.flags.badgeR3?1:0);
-  if(s.flags.champion) return ['Professor Eichenholz: Der Himmel ist wieder ganz. Ich habe dreissig Jahre geforscht und nie damit gerechnet, das zu sehen.','Danke. Von uns allen.'];
+  if(isHero(s)) return hero('professor');
   if(b===3) return ['Professor Eichenholz: Alle drei Anker folgen dir. Damit hat noch nie jemand die Liga betreten.','Die letzte Naht liegt dort. Sie ist die grosste. Sei vorsichtig.'];
   if(b===2) return ['Professor Eichenholz: Zwei Anker. Die Erschutterungen werden seltener - man merkt es an den Instrumenten.','Einer fehlt noch. Der schwerste, naturlich.'];
   if(b===1) return ['Professor Eichenholz: Ein Anker folgt dir bereits. Die Naht uber unserem Dorf hat sich messbar beruhigt.','Zwei fehlen. Weiter im Osten wartet mehr.'];
@@ -2359,127 +2469,163 @@ function professorLines(s){
 }
 function rivalLines(s){
   const w=s.flags.rivalWins||0;
+  if(isHero(s)&&!s.flags.metRival) return hero('rival');
   if(!s.flags.metRival) return ['Rivale Gary: Da bist du ja. Ich hab die ganze Nacht nicht geschlafen.',
     'Als es passierte, stand ich am Fenster. Unser Schuppen war danach einfach nicht mehr da. Nicht kaputt - weg.',
     'Alle reden davon, dass jemand das richten soll. Warum nicht ich? Warum nicht du?',
     'Also machen wir es zum Wettkampf. Besiege die beiden Trainer im Dorf, dann zeig ich dir, wo ich stehe.'];
   const st=questStatus('q4',s);
   if(st==='ready') return ['Rivale Gary: Beide? Wirklich beide?','Gut. Ich hasse es, aber gut. Hier, das gehort jetzt dir.','Und jetzt zu uns beiden.'];
-  if(s.flags.champion) return [`Rivale Gary: Du hast die Welt zusammengeflickt und ich hab dabei zugesehen.`,'Weisst du was? Damit komm ich klar. Aber revanchieren will ich mich trotzdem.'];
+  if(isHero(s)) return hero('rival');
   if(w===0) return ['Rivale Gary: Diesmal gewinne ich. Ich hab trainiert, bis mir schlecht wurde.'];
   if(w>=3) return [`Rivale Gary: ${w} Niederlagen. Ich zahle mit.`,'Und ich hore trotzdem nicht auf. Das ist der ganze Punkt.'];
   return [`Rivale Gary: Du hast mich schon ${w}x besiegt. Das andert heute gar nichts an meinem Plan.`];
 }
 function villagerLines1(s){
   const st=questStatus('q2',s);
+  if(isHero(s)&&st==='none') return hero('lisa','ask');
   if(st==='none') return ['Anwohnerin Lisa: Meine Grossmutter hat immer gesagt, man erkennt eine gesunde Welt an ihren Tieren.',
     'Seit dem Riss sind manche Arten einfach verschwunden. Andere sind aufgetaucht, die es hier nie gab.',
     'Ich fuhre Buch daruber. Fang drei wilde Pokemon und berichte mir - dann weiss ich mehr.'];
+  if(isHero(s)&&st==='ready') return hero('lisa','done');
   if(st==='ready') return ['Anwohnerin Lisa: Drei Eintrage. Danke, das hilft wirklich.','Und - Wasser schlagt Feuer. Das galt vor dem Riss und gilt noch immer. Wenigstens etwas.'];
-  if(st==='active') return [`Anwohnerin Lisa: Fortschritt: ${QUESTS.q2.progress(s)}.`];
+  if(st==='active') return heroSay(s,'lisa',[`Anwohnerin Lisa: Fortschritt: ${QUESTS.q2.progress(s)}.`]);
+  if(isHero(s)) return hero('lisa');
   return ['Anwohnerin Lisa: Die Heiltranke erneuern sich jeden Tag. Im Center kostet die Heilung gar nichts - geh ruhig hin.'];
 }
 function villagerLines2(s){
   const st=questStatus('q3',s);
+  if(isHero(s)&&st==='none') return hero('tom','ask');
   if(st==='none') return ['Anwohner Tom: Im hohen Gras trifft man auf wilde Pokemon. Das war schon immer so.',
     'Neu ist, dass sie starker sind als fruher. Deutlich starker.',
     'Bring eines deiner Pokemon auf Level 15, dann hab ich was fur dich - und einen guten Rat dazu.'];
+  if(isHero(s)&&st==='ready') return hero('tom','done');
   if(st==='ready') return ['Anwohner Tom: Level 15. Damit uberlebst du die Strasse nach Osten.','Der Rat: Lauf nie mit nur einem Pokemon los. Nie.'];
-  if(st==='active') return [`Anwohner Tom: Fortschritt: ${QUESTS.q3.progress(s)}.`];
+  if(st==='active') return heroSay(s,'tom',[`Anwohner Tom: Fortschritt: ${QUESTS.q3.progress(s)}.`]);
+  if(isHero(s)) return hero('tom');
   return ['Anwohner Tom: Ausserhalb des Dorfes stehen Hofe und Hutten. Die Leute dort sehen mehr als wir - sprich mit ihnen.'];
 }
 function wandererLines(s){
-  if(s&&s.flags&&s.flags.champion) return ['Wanderin Mara: Ich bin heute Morgen bis zum Horizont gelaufen. Er war wieder da.','Vorher hat er einfach... aufgehort. Du hast das gemacht.'];
+  if(isHero(s)) return hero('mara');
   return ['Wanderin Mara: Sehr effektive Treffer verursachen doppelten Schaden - merk dir das, es rettet Leben.',
     'Und geh raus aus dem Dorf. Uberall im Land stehen Hauser, und jeder darin hat eine Aufgabe fur dich.'];
 }
 function elder2Lines(s){
   const st=questStatus('q6',s);
+  if(isHero(s)&&st==='none') return hero('elana','ask');
   if(st==='none') return ['Alteste Elana: Willkommen in der Schattenregion. Sag nicht, man hatte dich nicht gewarnt.',
     'Was du hier fur Dunkelheit haltst, ist keine. Es ist das Fehlen von Licht - es lauft aus der Naht heraus, Tag fur Tag.',
     'Wir leben damit, seit der Riss geschah. Manche Kinder hier haben nie einen Mittag gesehen.',
     'Wer hier bestehen will, braucht ein Pokemon der Stufe 3 oder hoher. Bring mir eines.'];
+  if(isHero(s)&&st==='ready') return hero('elana','done');
   if(st==='ready') return ['Alteste Elana: Stark genug. Gut.','Der Anker unserer Region liegt in der Schattenarena. Meister Voss hutet ihn - und er gibt ihn nicht leicht her.'];
-  if(st==='active') return [`Alteste Elana: Fortschritt: ${QUESTS.q6.progress(s)}.`];
+  if(st==='active') return heroSay(s,'elana',[`Alteste Elana: Fortschritt: ${QUESTS.q6.progress(s)}.`]);
+  if(isHero(s)) return hero('elana');
   return ['Alteste Elana: Wenn du den Anker gewinnst, wird es hier wieder hell. Nicht sofort. Aber wieder.'];
 }
 function v3Lines(s){
   const st=questStatus('q7',s);
+  if(isHero(s)&&st==='none') return hero('kilian','ask');
   if(st==='none') return ['Reisender Kilian: Ich war in allen vier Regionen. Vor dem Riss waren es sechs.',
     'Zwei sind weg. Nicht zerstort - herausgeschnitten. Die Strassen dorthin enden mitten im Nichts.',
     'Gewinne 25 Kampfe, dann erzahle ich dir, was ich am Rand gesehen habe.'];
+  if(isHero(s)&&st==='ready') return hero('kilian','done');
   if(st==='ready') return ['Reisender Kilian: 25 Siege. Also gut, du hast es dir verdient:',
     'Am Rand steht eine Wand aus nichts. Und dahinter - ich schwore es - bewegt sich etwas.'];
-  if(st==='active') return [`Reisender Kilian: Fortschritt: ${QUESTS.q7.progress(s)}.`];
+  if(st==='active') return heroSay(s,'kilian',[`Reisender Kilian: Fortschritt: ${QUESTS.q7.progress(s)}.`]);
+  if(isHero(s)) return hero('kilian');
   return ['Reisender Kilian: Die starksten Pokemon findest du weit weg von jedem Dorf. Das war schon immer der Preis.'];
 }
 function v4Lines(s){
   const st=questStatus('q8',s);
+  if(isHero(s)&&st==='none') return hero('toni','ask');
   if(st==='none') return ['Krauterfrau Toni: Ich mische Futter, das Pokemon durch diese Region bringt.',
     'Die Krauter hier wachsen falschherum, seit dem Riss. Wurzeln nach oben. Man gewohnt sich an alles.',
     'Bring ein Pokemon auf Level 25, dann bekommst du mein bestes Rezept.'];
+  if(isHero(s)&&st==='ready') return hero('toni','done');
   if(st==='ready') return ['Krauterfrau Toni: Level 25 in dieser Gegend. Das schafft kaum jemand.','Hier - und pass auf dich auf.'];
-  if(st==='active') return [`Krauterfrau Toni: Fortschritt: ${QUESTS.q8.progress(s)}.`];
+  if(st==='active') return heroSay(s,'toni',[`Krauterfrau Toni: Fortschritt: ${QUESTS.q8.progress(s)}.`]);
+  if(isHero(s)) return hero('toni');
   return ['Krauterfrau Toni: Futter aus dem Laden hilft beim Trainieren. Und im Center heilen sie dich umsonst.'];
 }
-function silasLines(){ return ['Handler Silas: Willkommen. Bar zahlen, keine Fragen, keine Namen.',
+function silasLines(s){ if(isHero(s)) return hero('silas');
+  return ['Handler Silas: Willkommen. Bar zahlen, keine Fragen, keine Namen.',
   'Ich handle seit dem Riss mit allem, was noch existiert. Das Sortiment wird jedes Jahr kleiner.',
   'Heiltranke und Futter hab ich. Schau es dir an.']; }
-function v5Lines(){ return ['Geisterseherin Vala: Setz dich nicht auf den Stuhl links. Der ist besetzt.',
+function v5Lines(s){ if(isHero(s)) return hero('vala');
+  return ['Geisterseherin Vala: Setz dich nicht auf den Stuhl links. Der ist besetzt.',
   'Seit der Riss geschah, sind die Toten dieser Region nicht weitergegangen. Sie stehen an der Naht und warten.',
   'Wenn du sie schliesst, konnen sie endlich gehen. Vergiss das nicht, wenn es hart wird.']; }
-function v6Lines(){ return ['Schmied Boris: Meine Esse ist in jener Nacht ausgegangen. Zum ersten Mal seit vier Generationen.',
+function v6Lines(s){ if(isHero(s)) return hero('boris');
+  return ['Schmied Boris: Meine Esse ist in jener Nacht ausgegangen. Zum ersten Mal seit vier Generationen.',
   'Ich hab sie wieder angezundet. Was soll man sonst tun.',
   'Die Pokemon hier sind nicht zu unterschatzen - rust dich aus, bevor du in die Arena gehst.']; }
 function conductorLines(s){
   const st=questStatus('q5',s);
+  if(isHero(s)&&st==='none') return hero('aldric','ask');
   if(st==='none') return ['Schaffner Aldric: Halt. Ohne Fahrkarte kein Bahnsteig.',
     'Die Strecke nach Osten fuhrt durch eine Naht. Wer da schwach einsteigt, steigt gar nicht mehr aus.',
     'Gewinne 10 Kampfe. Dann - und nur dann - bekommst du deine Karte.'];
   if(st==='active') return [`Schaffner Aldric: Fortschritt: ${QUESTS.q5.progress(s)}.`,'Ich mach die Regeln nicht. Ich zahle nur die Ruckkehrer.'];
+  if(isHero(s)&&st==='ready') return hero('aldric','done');
   if(st==='ready') return ['Schaffner Aldric: Zehn Siege. Hier ist deine Fahrkarte zur Schattenregion.','Und - komm zuruck. Ich mag es, wenn die Zahlen stimmen.'];
+  if(isHero(s)) return hero('aldric');
   return ['Schaffner Aldric: Der Zug zur Schattenregion steht bereit. Einsteigen?'];
 }
-function returnConductorLines(){ return ['Schaffner Elrik: Der Zug zuruck ins Heimatdorf steht bereit. Einsteigen?']; }
+function returnConductorLines(s){ if(isHero(s)) return hero('elrik');
+  return ['Schaffner Elrik: Der Zug zuruck ins Heimatdorf steht bereit. Einsteigen?']; }
 function yaraLines(s){
+  if(isHero(s)) return hero('yara');
   if(!s.flags.badgeR2) return ['Schaffnerin Yara: Dahinter liegt die Frostregion. Die Strecke ist gesperrt.',
     'Nicht aus Bosheit - der Zug fahrt durch eine offene Naht. Ohne den Anker dieser Region zerreisst es dich unterwegs.',
     'Bezwinge Meister Voss in der Schattenarena. Dann offne ich das Gleis.'];
   return ['Schaffnerin Yara: Der Anker folgt dir. Damit halt der Zug die Strecke aus.','Bereit fur die Frostregion?'];
 }
-function junoLines(){ return ['Schaffner Juno: Der Zug zuruck in die Schattenregion steht bereit. Einsteigen?']; }
+function junoLines(s){ if(isHero(s)) return hero('juno');
+  return ['Schaffner Juno: Der Zug zuruck in die Schattenregion steht bereit. Einsteigen?']; }
 function friggaLines(s){
   const st=questStatus('q9',s);
+  if(isHero(s)&&st==='none') return hero('frigga','ask');
   if(st==='none') return ['Hueterin Frigga: Willkommen in der Frostregion. Zieh die Kapuze hoch.',
     'Hier ist nicht einfach Winter. Hier ist der Moment des Risses eingefroren - die Zeit selbst ist stehengeblieben.',
     'Siehst du den Rauch uber dem See? Der steht dort seit jener Nacht. Unverandert.',
     'Wer hier bestehen will, muss 35 Kampfe gewonnen haben. Komm wieder, wenn du soweit bist.'];
+  if(isHero(s)&&st==='ready') return hero('frigga','done');
   if(st==='ready') return ['Hueterin Frigga: 35 Siege bei dieser Kalte. Du gehorst hierher, ob du willst oder nicht.','Hier, nimm das.'];
-  if(st==='active') return [`Hueterin Frigga: Fortschritt: ${QUESTS.q9.progress(s)}.`];
+  if(st==='active') return heroSay(s,'frigga',[`Hueterin Frigga: Fortschritt: ${QUESTS.q9.progress(s)}.`]);
+  if(isHero(s)) return hero('frigga');
   return ['Hueterin Frigga: Wenn du den letzten Anker gewinnst, lauft die Zeit hier weiter. Der Rauch wird ziehen.','Ich mochte das noch erleben.'];
 }
 function finnLines(s){
   const st=questStatus('q10',s);
+  if(isHero(s)&&st==='none') return hero('finn','ask');
   if(st==='none') return ['Kristallschurfer Finn: Ich schurfe hier seit Jahren. Das Eis gibt Kristalle her, die es nicht geben durfte.',
     'In einem steckte ein Blatt. Grun, frisch, mitten im Eis - und alter als mein Urgrossvater.',
     'Bring ein Pokemon auf Level 30, dann zeig ich dir meinen besten Fund.'];
+  if(isHero(s)&&st==='ready') return hero('finn','done');
   if(st==='ready') return ['Kristallschurfer Finn: Level 30. Da - der Fund gehort dir.','Halt ihn ins Licht. Man sieht die Naht darin.'];
-  if(st==='active') return [`Kristallschurfer Finn: Fortschritt: ${QUESTS.q10.progress(s)}.`];
+  if(st==='active') return heroSay(s,'finn',[`Kristallschurfer Finn: Fortschritt: ${QUESTS.q10.progress(s)}.`]);
+  if(isHero(s)) return hero('finn');
   return ['Kristallschurfer Finn: Die tiefsten Hohlen bergen die wertvollsten Kristalle. Und die kaltesten Uberraschungen.'];
 }
 function runaLines(s){
   const st=questStatus('q11',s);
+  if(isHero(s)&&st==='none') return hero('runa','ask');
   if(st==='none') return ['Schneejagerin Runa: Ich jage die seltenen. Nicht zum Toten - zum Zahlen.',
     'Die Stufe-4-Pokemon sind erst nach dem Riss aufgetaucht. Als hatte die Welt in Panik etwas Grosses erschaffen.',
     'Fang eines. Dann weiss ich, dass du bereit bist fur das, was in der Liga wartet.'];
+  if(isHero(s)&&st==='ready') return hero('runa','done');
   if(st==='ready') return ['Schneejagerin Runa: Ein Stufe-4-Pokemon. An deiner Seite, freiwillig.','Dann stimmt es also, was sie uber dich erzahlen. Nimm das hier.'];
-  if(st==='active') return [`Schneejagerin Runa: Fortschritt: ${QUESTS.q11.progress(s)}.`];
+  if(st==='active') return heroSay(s,'runa',[`Schneejagerin Runa: Fortschritt: ${QUESTS.q11.progress(s)}.`]);
+  if(isHero(s)) return hero('runa');
   return ['Schneejagerin Runa: Die machtigsten Pokemon verstecken sich weit draussen im Schnee. Geh nicht ohne Heiltranke.'];
 }
-function bjornLines(){ return ['Alter Fischer Bjorn: Ich sitze seit vierzig Jahren an diesem See. Seit dem Riss beisst nichts mehr.',
+function bjornLines(s){ if(isHero(s)) return hero('bjorn');
+  return ['Alter Fischer Bjorn: Ich sitze seit vierzig Jahren an diesem See. Seit dem Riss beisst nichts mehr.',
   'Aber ich sitze weiter. Irgendwann lauft die Zeit hier wieder, und dann will ich als Erster die Angel im Wasser haben.',
   'Im Basar gibt es Vorrate. Und im Center heilen sie umsonst - nutz das.']; }
-function nieveLines(){ return ['Handlerin Nieve: Willkommen! Ja, es ist kalt. Nein, daran gewohnt man sich nicht.',
+function nieveLines(s){ if(isHero(s)) return hero('nieve');
+  return ['Handlerin Nieve: Willkommen! Ja, es ist kalt. Nein, daran gewohnt man sich nicht.',
   'Selbst hier am Ende der Welt gibt es Heiltranke und starkendes Futter. Das Geschaft halt die Leute bei Verstand.']; }
 // The arena gate: a keeper bars the only way in and only yields to someone who has
 // already proved themselves in the field, and then only after a fight.
@@ -2516,12 +2662,14 @@ const GATES={
 };
 function gateLines(region,s){
   const g=GATES[region]; if(!g)return ['...'];
+  if(isHero(s)&&s.flags[g.flag]) return hero(g.flag);
   if(s.flags[g.flag])return g.done;
   if(!s.flags['met'+g.flag])return g.intro;
   if(s.battlesWon<g.need)return g.demand(g.need);
   return g.ready;
 }
 function arena1Lines(s){
+  if(isHero(s)) return hero('arena1');
   if(s.flags.badgeR1) return ['Meister Boreas: Der Anker folgt dir, und das Dorf schlaft wieder ruhiger.','Geh nach Osten. Voss wird es dir schwerer machen als ich.'];
   return ['Meister Boreas: Willkommen. Du kommst wegen des Ankersteins, nicht wegen mir.',
     'Er liegt unter dieser Halle, seit meine Familie ihn hutet - elf Generationen.',
@@ -2529,6 +2677,7 @@ function arena1Lines(s){
     'Also zeig mir deine. Jetzt.'];
 }
 function arena2Lines(s){
+  if(isHero(s)) return hero('arena2');
   if(s.flags.badgeR2) return ['Meister Voss: Zwei Anker. Du bist weiter gekommen als alle vor dir.','Elsa im Frost gibt ihren nicht her, ohne dich bluten zu lassen. Sei bereit.'];
   return ['Meister Voss: Leise. Der Anker hier hasst Larm.',
     'Seit der Riss geschah, saugt die Naht das Licht aus dieser Region. Mein Stein bremst es. Mehr kann er nicht.',
@@ -2536,6 +2685,7 @@ function arena2Lines(s){
     'Zeig mir, dass du der Funfzehnte bist - oder geh nach Hause.'];
 }
 function arena3Lines(s){
+  if(isHero(s)) return hero('arena3');
   if(s.flags.badgeR3) return ['Meisterin Elsa: Alle drei Anker folgen dir. Das hat es noch nie gegeben.','Geh zur Liga. Seraphina wartet seit dem Riss auf jemanden wie dich - im Wortsinn.'];
   return ['Meisterin Elsa: Du zitterst. Gut, das heisst du lebst noch.',
     'Mein Anker halt die Zeit hier an. Ohne ihn ware diese Region in jener Nacht einfach ausgeloscht worden.',
@@ -2544,17 +2694,20 @@ function arena3Lines(s){
     'Also nimm ihn dir. Wenn du kannst.'];
 }
 function noraLines(s){
+  if(isHero(s)) return hero('nora');
   const ready=!!(s.flags.badgeR1&&s.flags.badgeR2&&s.flags.badgeR3);
   if(!ready) return ['Schaffnerin Nora: Die Liga liegt am Ursprung. Dort, wo der Riss anfing.',
     'Der Zug fahrt direkt in die grosse Naht hinein. Ohne alle drei Anker ist das kein Reisen, das ist Selbstmord.',
     'Komm wieder, wenn du sie hast.'];
   return ['Schaffnerin Nora: Alle drei. Ich hab das nie fur moglich gehalten.','Der Zug steht bereit. Einsteigen?'];
 }
-function returnLigaLines(){ return ['Schaffner Otto: Der Zug zuruck in die Frostregion steht bereit. Einsteigen?']; }
+function returnLigaLines(s){ if(isHero(s)) return hero('otto');
+  return ['Schaffner Otto: Der Zug zuruck in die Frostregion steht bereit. Einsteigen?']; }
 function ligaLines(s){
-  if(s.flags.champion) return ['Champion Seraphina: Sieh dir den Himmel an. Ganz. Einfach ganz.',
-    'Ich habe hier gestanden und gehalten, was zu halten war, seit jener Nacht. Du hast es beendet.',
-    'Du bist und bleibst Pokemon-Meister/in. Und ich - ich glaube, ich gehe jetzt einfach mal spazieren.'];
+  if(isHero(s)) return heroText(['Champion Seraphina: Sieh dir den Himmel an, {H}. Ganz. Einfach ganz.',
+    'Ich habe hier gestanden und gehalten, was zu halten war. Du hast es beendet.',
+    'Der Titel gehort dir, und der Name auch: So nennt dich das ganze Land inzwischen.',
+    'Und ich - ich glaube, ich gehe jetzt einfach mal spazieren.']);
   return ['Champion Seraphina: Du kommst mit allen drei Ankern. Ich habe darauf gewartet.',
     'Hinter mir liegt die erste Naht - die, aus der alle anderen entstanden sind.',
     'Ich halte sie zu, seit der Riss geschah. Ich kann sie nicht schliessen, nur halten. Dafur ist ein Anker zu wenig und ich bin nur eine Person.',
@@ -2562,21 +2715,23 @@ function ligaLines(s){
     'Also musst du starker sein als ich. Sonst gebe ich dich nicht frei - und die Welt bleibt, wie sie ist.',
     'Letzter Kampf. Enttausch mich nicht.'];
 }
-function lloreLines(){ return ['Chronist Aldo: Willkommen in der Ruhmeshalle. Die meisten Namen hier sind alter als der Riss.',
+function lloreLines(s){ if(isHero(s)) return hero('aldo');
+  return ['Chronist Aldo: Willkommen in der Ruhmeshalle. Die meisten Namen hier sind alter als der Riss.',
   'Danach hat niemand mehr etwas eingetragen. Es gab nichts einzutragen.',
   'Ich halte eine Seite frei. Seit Jahren. Die Tinte ist langst eingetrocknet, aber ich ruhre sie jeden Morgen neu an.',
   'Ich hoffe sehr, dass du sie mir fullst.']; }
-function lshopLines(){ return ['Handlerin Perle: Willkommen im Liga-Shop. Hier endet die Handelskette der ganzen Welt.',
+function lshopLines(s){ if(isHero(s)) return hero('perle');
+  return ['Handlerin Perle: Willkommen im Liga-Shop. Hier endet die Handelskette der ganzen Welt.',
   'Was ich hier habe, ist das Beste, was noch existiert. Der Preis spiegelt das leider wider.',
   'Kauf gut ein. Danach gibt es keinen Laden mehr - nur noch Seraphina.']; }
-function lloreLines(){ return ['Nur die Besten der Besten erreichen je die Pokemon-Liga.','Die Halle der Champions hat schon viele Legenden kommen und gehen sehen.']; }
 
 function centerLines(s){
   const hurt=s.team.filter(p=>p.hp<p.mhp).length;
-  const base=['Schwester Joy: Willkommen im Pokemon-Center!'];
+  const base=isHero(s)?hero('joy'):['Schwester Joy: Willkommen im Pokemon-Center!'];
   if(hurt===0) return base.concat(['Dein Team ist bei bester Gesundheit.','Trotzdem: ich sehe einmal nach. Das Haus zahlt - hier wird nie abgerechnet.']);
   return base.concat([`Ich sehe ${hurt===1?'ein verletztes Pokemon':hurt+' verletzte Pokemon'}. Gib sie mir.`,
-    'Die Heilung ist kostenlos. Seit dem Riss ist das keine Wohltatigkeit mehr, sondern Pflicht.']);
+    isHero(s)?'Die Heilung ist wie immer kostenlos. Bei dir sowieso.'
+             :'Die Heilung ist kostenlos. Seit dem Riss ist das keine Wohltatigkeit mehr, sondern Pflicht.']);
 }
 const HOUSES={
   center:{name:'Pokemon-Center',npc:{name:'Schwester Joy',shirt:'#f4f4f6',hair:'#e0506a',lines:s=>centerLines(s),
@@ -2597,7 +2752,7 @@ const HOUSES={
   v2:{name:'Wohnhaus',npc:{name:'Anwohner Tom',shirt:'#a06020',hair:'#1a1a1a',lines:s=>villagerLines2(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q3',s); if(st==='none')startQuest('q3'); else if(st==='ready')completeQuest('q3'); }}},
   shop:{name:'Pokemon-Laden',npc:{name:'Handlerin Mia',shirt:'#e0a030',hair:'#601010',
-    lines:()=>['Willkommen in meinem Laden!','Ich habe Heiltranke und starkendes Pokemon-Futter im Angebot - schau es dir an!'],
+    lines:s=>isHero(s)?hero('mia'):['Willkommen in meinem Laden!','Ich habe Heiltranke und starkendes Pokemon-Futter im Angebot - schau es dir an!'],
     onEnd:()=>{ G.openShop(); }}},
   elder2:{name:'Haus der Altesten',npc:{name:'Alteste Elana',shirt:'#7030a0',hair:'#d0d0d0',lines:s=>elder2Lines(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q6',s); if(st==='none')startQuest('q6'); else if(st==='ready')completeQuest('q6'); }}},
@@ -2606,10 +2761,10 @@ const HOUSES={
   v4:{name:'Wohnhaus',npc:{name:'Krauterfrau Toni',shirt:'#508030',hair:'#603010',lines:s=>v4Lines(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q8',s); if(st==='none')startQuest('q8'); else if(st==='ready')completeQuest('q8'); }}},
   shop2:{name:'Basar der Schattenregion',npc:{name:'Handler Silas',shirt:'#902020',hair:'#101010',
-    lines:()=>silasLines(),
+    lines:s=>silasLines(s),
     onEnd:()=>{ G.openShop(); }}},
-  v5:{name:'Wohnhaus',npc:{name:'Geisterseherin Vala',shirt:'#5030a0',hair:'#e0e0f0',lines:()=>v5Lines()}},
-  v6:{name:'Schmiede',npc:{name:'Schmied Boris',shirt:'#704020',hair:'#302010',lines:()=>v6Lines()}},
+  v5:{name:'Wohnhaus',npc:{name:'Geisterseherin Vala',shirt:'#5030a0',hair:'#e0e0f0',lines:s=>v5Lines(s)}},
+  v6:{name:'Schmiede',npc:{name:'Schmied Boris',shirt:'#704020',hair:'#302010',lines:s=>v6Lines(s)}},
   arena1:{name:'Arena',npc:{name:'Meister Boreas',shirt:'#c04020',hair:'#202020',lines:s=>arena1Lines(s),
     onEnd:()=>{ if(!G.s.flags.badgeR1) setTimeout(()=>G.startGymBattle('badgeR1','Meister Boreas',3,5),200); }}},
   arena2:{name:'Schattenarena',npc:{name:'Meister Voss',shirt:'#3a1a50',hair:'#101010',lines:s=>arena2Lines(s),
@@ -2618,18 +2773,18 @@ const HOUSES={
     onEnd:()=>{ if(!G.s.flags.badgeR3) setTimeout(()=>G.startGymBattle('badgeR3','Meisterin Elsa',4,10),200); }}},
   f1:{name:'Haus der Huterin',npc:{name:'Hueterin Frigga',shirt:'#3070b0',hair:'#e0f0ff',lines:s=>friggaLines(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q9',s); if(st==='none')startQuest('q9'); else if(st==='ready')completeQuest('q9'); }}},
-  f2:{name:'Frost-Basar',npc:{name:'Handlerin Nieve',shirt:'#80c0e0',hair:'#f0f4f8',lines:()=>nieveLines(),
+  f2:{name:'Frost-Basar',npc:{name:'Handlerin Nieve',shirt:'#80c0e0',hair:'#f0f4f8',lines:s=>nieveLines(s),
     onEnd:()=>{ G.openShop(); }}},
   f3:{name:'Wohnhaus',npc:{name:'Kristallschurfer Finn',shirt:'#508090',hair:'#302010',lines:s=>finnLines(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q10',s); if(st==='none')startQuest('q10'); else if(st==='ready')completeQuest('q10'); }}},
   f4:{name:'Wohnhaus',npc:{name:'Schneejagerin Runa',shirt:'#204868',hair:'#d0d8e0',lines:s=>runaLines(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q11',s); if(st==='none')startQuest('q11'); else if(st==='ready')completeQuest('q11'); }}},
-  f5:{name:'Hutte',npc:{name:'Alter Fischer Bjorn',shirt:'#405860',hair:'#c0c0c0',lines:()=>bjornLines()}},
+  f5:{name:'Hutte',npc:{name:'Alter Fischer Bjorn',shirt:'#405860',hair:'#c0c0c0',lines:s=>bjornLines(s)}},
   liga:{name:'Halle der Champions',npc:{name:'Champion Seraphina',shirt:'#902030',hair:'#3a2a1a',lines:s=>ligaLines(s),
     onEnd:()=>{ if(!G.s.flags.champion) setTimeout(()=>G.startChampionBattle(),200); }}},
-  lshop:{name:'Liga-Shop',npc:{name:'Handlerin Perle',shirt:'#c09020',hair:'#e0d0a0',lines:()=>lshopLines(),
+  lshop:{name:'Liga-Shop',npc:{name:'Handlerin Perle',shirt:'#c09020',hair:'#e0d0a0',lines:s=>lshopLines(s),
     onEnd:()=>{ G.openShop(); }}},
-  llore:{name:'Ruhmeshalle',npc:{name:'Chronist Aldo',shirt:'#706040',hair:'#302010',lines:()=>lloreLines()}},
+  llore:{name:'Ruhmeshalle',npc:{name:'Chronist Aldo',shirt:'#706040',hair:'#302010',lines:s=>lloreLines(s)}},
 };
 
 // ===== Outlying homesteads: residents scattered over the map who hand out work =====
@@ -2649,48 +2804,64 @@ const OUTPOST_DEFS=[
    intro:['Einsiedler Ansgar: Selten kommt jemand so weit hinaus.','In der Nacht, als der Himmel zerriss, stand ich genau hier.','Die Baume bogen sich nach innen - als wollte die Welt sich selbst verschlucken.','Wenn du sie wirklich heilen willst, musst du stark genug sein. Beweise es mir.'],
    wait:['Einsiedler Ansgar: Die Wildnis lugt nicht. Kampfe weiter.'],
    done:['Einsiedler Ansgar: Du hast das Mark eines Wachters. Nimm das hier - du wirst es brauchen.'],
+   hero:['Einsiedler Ansgar: {H}. Der Wald steht still und atmet ruhig.','Selten kommt jemand so weit hinaus. Bei dir freue ich mich darueber.'],
+   heroAsk:['Einsiedler Ansgar: {H}, setz dich einen Moment.','Gewinne mir sieben Kampfe da draussen - ich will wissen, wie stark die Wildnis heute noch ist.'],
    after:['Einsiedler Ansgar: Der Riss hat den Wald verandert. Hor genau hin, dann horst du ihn atmen.']},
   {nm:'Fischerkate',npc:'Fischerin Marla',shirt:'#2a6a8a',hair:'#7a5a30',goal:'fangen',amt:5,rp:2,rc:80,
    qn:'Was das Wasser hergibt',
    intro:['Fischerin Marla: Vorsicht, die Netze liegen aus.','Seit der Zersplitterung steigen Pokemon aus Tiefen auf, die es fruher gar nicht gab.','Ich kann sie nicht alle katalogisieren. Fang du sie - fur die Aufzeichnungen.'],
    wait:['Fischerin Marla: Noch nicht genug. Das Wasser ist geduldig, ich weniger.'],
    done:['Fischerin Marla: Beeindruckend. Die Aufzeichnungen werden dich uberdauern.'],
+   hero:['Fischerin Marla: {H}! Die Netze sind voll und das Meer rauscht wieder vorwarts.','Meine Aufzeichnungen sind das erste Mal seit Jahren einfach nur langweilig. Wunderbar.'],
+   heroAsk:['Fischerin Marla: {H}, hilf mir beim Katalog.','Fang fuenf Pokemon - jetzt, wo man sie in Ruhe zaehlen kann.'],
    after:['Fischerin Marla: Manche Nachte hore ich das Meer ruckwarts rauschen. Frag nicht.']},
   {nm:'Bergwacht',npc:'Bergwachterin Sina',shirt:'#8a4a2a',hair:'#2a2a2a',goal:'level',amt:14,rp:3,rc:110,
    qn:'Der harte Aufstieg',
    intro:['Bergwachterin Sina: Von hier oben sieht man, wie falsch alles steht.','Die Bergkette bricht mitten in der Luft ab. Dahinter: nichts. Nur Naht.','Ein schwaches Pokemon uberlebt da oben keinen Tag. Zieh eines gross, dann reden wir.'],
    wait:['Bergwachterin Sina: Noch zu grun. Der Berg vergibt keine Eile.'],
    done:['Bergwachterin Sina: Jetzt hast du eines, das den Grat halt. Respekt.'],
+   hero:['Bergwachterin Sina: {H}. Von hier oben steht wieder alles richtig.','Die Bergkette laeuft bis zum Horizont durch. Ich habe sie gestern drei Stunden lang angeschaut.'],
+   heroAsk:['Bergwachterin Sina: {H}, ich brauche jemanden fuer den Grat.','Zieh ein Pokemon auf Level 14 gross, dann gehen wir zusammen hoch.'],
    after:['Bergwachterin Sina: Die Naht am Horizont wird schmaler, seit du unterwegs bist.']},
   {nm:'Sternwarte',npc:'Sternenkundler Ove',shirt:'#30306a',hair:'#d8d8e8',goal:'dex',amt:8,rp:3,rc:120,
    qn:'Karte der Arten',
    intro:['Sternenkundler Ove: Still! Ich zahle.','Achtzehn Sternbilder fehlen seit jener Nacht. Achtzehn.','Die Pokemon sind das letzte verlassliche Register dieser Welt.','Trage mir Arten in deinen Dex ein - jede einzelne ist ein Fixpunkt.'],
    wait:['Sternenkundler Ove: Zu wenige Fixpunkte. Die Karte wackelt noch.'],
    done:['Sternenkundler Ove: Ja! Die Rechnung geht wieder auf. Du ahnst nicht, was das bedeutet.'],
+   hero:['Sternenkundler Ove: {H}! Achtzehn Sternbilder sind zurueck. Achtzehn!','Ich habe die halbe Nacht gezaehlt und zweimal von vorn angefangen, weil ich es nicht glauben wollte.'],
+   heroAsk:['Sternenkundler Ove: {H}, ich stelle das Register neu auf.','Trage mir acht Arten in deinen Dex ein - diesmal aus reiner Neugier.'],
    after:['Sternenkundler Ove: Ein Orden ist kein Schmuck. Es ist eine Klammer. Sammle sie.']},
   {nm:'Gehoft',npc:'Bauerin Hedda',shirt:'#7a8a30',hair:'#a08040',goal:'team',amt:3,rp:3,rc:90,
    qn:'Niemand schafft es allein',
    intro:['Bauerin Hedda: Setz dich, du siehst durchgefroren aus.','Mein Hof stand fruher zwei Taler weiter. Dann verschob sich der Boden - einfach so.','Weisst du, was uns gerettet hat? Dass wir zu viert waren.','Geh nicht allein da raus. Bau dir ein Team auf.'],
    wait:['Bauerin Hedda: Ein Pokemon ist ein Freund. Zwei sind ein Anfang. Du brauchst mehr.'],
    done:['Bauerin Hedda: So gefallst du mir. Das halt zusammen, was sonst zerbricht.'],
+   hero:['Bauerin Hedda: {H}! Setz dich, es gibt Eintopf.','Mein Hof steht, wo er stehen soll, und er bleibt auch dort. Iss was.'],
+   heroAsk:['Bauerin Hedda: {H}, einen Rat gebe ich trotzdem noch.','Bau dir ein Team aus drei Pokemon auf. Zu dritt macht der Weg mehr Spass.'],
    after:['Bauerin Hedda: Iss was, bevor du gehst. Die Welt lauft dir nicht davon. Hoffentlich.']},
   {nm:'Ruinenlager',npc:'Ausgraberin Perel',shirt:'#6a5a8a',hair:'#402a1a',goal:'battles',amt:16,rp:4,rc:160,
    qn:'Was unter dem Staub liegt',
    intro:['Ausgraberin Perel: Fass nichts an, das alter aussieht als du.','Unter diesem Lager liegt eine Halle. Ihre Wande zeigen den Riss - gemalt vor tausend Jahren.','Sie wussten, dass es passieren wurde. Und sie wussten, wer es richten kann.','Die Wandbilder zeigen jemanden mit drei Orden. Also: kampfe dich frei.'],
    wait:['Ausgraberin Perel: Die Halle offnet sich nur Leuten mit Geschichte. Sammle welche.'],
    done:['Ausgraberin Perel: Da - genau dein Umriss auf der Wand. Ich sage nur ungern "Schicksal", aber.'],
+   hero:['Ausgraberin Perel: {H}! Die letzte Kammer zeigt jetzt eine ganze Welt.','Die leere Wand dahinter ist bemalt worden. Von wem, weiss keiner.'],
+   heroAsk:['Ausgraberin Perel: {H}, grab mit mir weiter.','Ich brauche jemanden mit Erfahrung an meiner Seite - sammle unterwegs Siege.'],
    after:['Ausgraberin Perel: Die letzte Kammer zeigt die Liga. Und danach: leere Wand. Kein gutes Zeichen.']},
   {nm:'Leuchtturm',npc:'Warterin Isolde',shirt:'#204a6a',hair:'#e8e0c0',goal:'fangen',amt:9,rp:4,rc:170,
    qn:'Licht gegen die Leere',
    intro:['Warterin Isolde: Der Turm brennt seit dreihundert Jahren ohne Unterbrechung.','In der Nacht des Risses ging er aus. Vier Sekunden. Ich habe sie gezahlt.','Was in diesen vier Sekunden hereinkam, streift noch immer durchs Land.','Fang es ein. Fang alles ein, was du findest. Es ist sicherer bei dir.'],
    wait:['Warterin Isolde: Noch zu viele draussen. Ich sehe sie im Lichtkegel.'],
    done:['Warterin Isolde: Der Kegel ist ruhig heute Nacht. Das war lange nicht so.'],
+   hero:['Warterin Isolde: {H}. Ich habe in die Naht geschaut, wie du siehst.','Da war nichts mehr. Nur Himmel. Danke, dass ich das noch erleben durfte.'],
+   heroAsk:['Warterin Isolde: {H}, eine letzte Wache halte ich noch.','Leiste mir Gesellschaft, indem du dich draussen bewaehrst.'],
    after:['Warterin Isolde: Wenn du die Liga erreichst - schau nicht in die Naht. Versprich es mir.']},
   {nm:'Grenzposten',npc:'Grenzerin Vike',shirt:'#5a2a2a',hair:'#101010',goal:'level',amt:22,rp:5,rc:220,
    qn:'Bis hierher und weiter',
    intro:['Grenzerin Vike: Halt. Dahinter faltet sich das Land.','Ich lasse niemanden durch, der nicht bestehen wurde. Das ist keine Schikane, das ist Statistik.','Bring mir ein Pokemon, das dieser Gegend gewachsen ist, dann offne ich den Weg.'],
    wait:['Grenzerin Vike: Nicht stark genug. Ich habe zu viele begraben, die es trotzdem versucht haben.'],
    done:['Grenzerin Vike: Durchgelassen. Und - komm zuruck. Das sage ich sonst nie.'],
+   hero:['Grenzerin Vike: {H}! Die Faltung ist weg. Die Grenze ist wieder eine Linie im Gras.','Ich patrouilliere aus Gewohnheit. Es ist der schoenste Dienst meines Lebens.'],
+   heroAsk:['Grenzerin Vike: {H}, lauf die Grenze mit mir ab.','Zeig mir unterwegs, was du kannst - dann trage ich dich als Grenzgaengerin ein.'],
    after:['Grenzerin Vike: Die Faltung wandert. Jeden Tag ein Stuck naher. Beeil dich.']},
 ];
 function outQuestId(region,idx){ return 'o_'+(region||'r1')+'_'+idx; }
@@ -2716,6 +2887,7 @@ function registerAllOutpostQuests(s){
 }
 function outpostLines(def,qid,s){
   const st=questStatus(qid,s);
+  if(isHero(s)&&def.hero) return heroText(st==='none'&&def.heroAsk?def.heroAsk:def.hero);
   if(st==='none')return def.intro;
   if(st==='active')return def.wait;
   if(st==='ready')return def.done;
@@ -2744,7 +2916,11 @@ const RANDOM_SHIRTS=['#2050a0','#c04070','#40a040','#a0a020','#8040a0','#c07020'
 function buildRandomTrainerNpc(rt){
   const flagId='rt'+rt.idx+'Beaten';
   return {x:rt.x,y:rt.y,name:rt.name,shirt:rt.shirt,hair:'#202020',
-    lines:s=>s.flags[flagId]?[`${rt.name}: Gut gekampft!`]:[`${rt.name}: Ich fordere dich zu einem Kampf heraus!`],
+    lines:s=>isHero(s)
+      ? heroText(s.flags[flagId]
+          ? [`${rt.name}: {H}! Von dir besiegt worden zu sein erzahle ich noch meinen Enkeln.`]
+          : [`${rt.name}: {H}? Wirklich? Einmal gegen dich kampfen - bitte!`])
+      : (s.flags[flagId]?[`${rt.name}: Gut gekampft!`]:[`${rt.name}: Ich fordere dich zu einem Kampf heraus!`]),
     onEnd:()=>{ if(!G.s.flags[flagId]) setTimeout(()=>G.startTrainerBattle(flagId,rt.name,rt.tier,rt.tier*2),200); }};
 }
 
@@ -2982,27 +3158,40 @@ const IROOMS={
 // Nebenfiguren geben den Raeumen Leben, ohne in die Questlogik einzugreifen.
 const IEXTRA={
   house:[{name:'Kind Nele',shirt:'#e07090',hair:'#f0d060',
+    hero:['Kind Nele: {H}! Wirklich {H}, hier bei uns!','Mama laesst mich jetzt ins hohe Gras. Ich werde auch Champion. Ganz sicher.'],
     lines:['Kind Nele: Mama sagt, ich darf noch nicht ins hohe Gras.','Wenn ich gross bin, werde ich Champion. Ganz sicher!']}],
   house2:[{name:'Grossvater Ewald',shirt:'#7a6a50',hair:'#d8d8d0',
+    hero:['Grossvater Ewald: Setz dich, {H}, das Sofa haelt noch.','Der Fluss ist zurueck an seinem alten Platz. Ich hoere ihn nachts wieder. Schoen ist das.'],
     lines:['Grossvater Ewald: Setz dich ruhig, das Sofa haelt noch.','Frueher lief hier ein Fluss vorbei. Heute liegt er zwei Taler weiter. Merkwuerdige Zeiten.']}],
   home:[{name:'Mutter Ida',shirt:'#c06090',hair:'#8a5a30',
+    hero:['Mutter Ida: {H}! Hast du auch genug gegessen?','Das Haus bleibt stehen, wo es steht. Das sage ich jetzt ohne Zusatz.'],
     lines:['Mutter Ida: Hast du auch genug gegessen?','Nimm dir Zeit fuer die Reise. Das Haus bleibt stehen, wo es steht. Hoffentlich.']}],
   shop:[{name:'Kundin Berit',shirt:'#40a0a0',hair:'#503020',
+    hero:['Kundin Berit: {H} steht neben mir an der Kasse. Das glaubt mir daheim keiner.','Die Preise sind gefallen, seit die Lieferungen wieder durchkommen.'],
     lines:['Kundin Berit: Die Traenke sind hier guenstiger als im Basar.','Stell dich einfach an die Kasse, dann bedient sie dich.']}],
   center:[{name:'Trainer Kalle',shirt:'#3060c0',hair:'#202020',
+    hero:['Trainer Kalle: {H}! Mein Team ist in einer Viertelstunde wieder fit.','Frueher hat das Tage gedauert. Man merkt richtig, dass die Welt wieder mitspielt.'],
     lines:['Trainer Kalle: Mein Team liegt seit einer Stunde auf den Liegen.','Schwester Joy heilt kostenlos - stell dich einfach an die Theke.']}],
   arena:[{name:'Schiedsrichter Mirko',shirt:'#f0f0f0',hair:'#303030',
+    hero:['Schiedsrichter Mirko: {H}! Deinen Kampf hier zaehle ich bis heute nach.','Regeln sind Regeln - aber fuer dich mache ich das Tor jederzeit auf.'],
     lines:['Schiedsrichter Mirko: Regeln sind Regeln: ein Kampf, keine Ausreden.','Der Meister wartet vorne. Viel Glueck.']}],
   lab:[{name:'Assistentin Mira',shirt:'#e8e8f0',hair:'#603020',
+    hero:['Assistentin Mira: {H}! Die Terminals rechnen wieder normale Werte.','Der Professor redet immer noch lang. Aber jetzt redet er froehlich.'],
     lines:['Assistentin Mira: Nicht an die Terminals kommen, die rechnen noch.','Der Professor redet gern lange. Bring Zeit mit.']}],
   liga:[{name:'Ordner Damian',shirt:'#c0a040',hair:'#302020',
+    hero:['Ordner Damian: {H}! Der Teppich gehoert praktisch dir.','Ich zeige Besuchern die Halle und erzaehle jedes Mal deine Geschichte.'],
     lines:['Ordner Damian: Ohne alle Orden kommst du hier nicht weit.','Der Teppich fuehrt direkt zur Championin. Geh ihn zu Ende.']}],
   forge:[{name:'Lehrling Kuno',shirt:'#8a5a30',hair:'#402010',
+    hero:['Lehrling Kuno: {H}! Der Meister schmiedet wieder bei Tageslicht.','Vorsicht trotzdem, der Amboss ist warm. Daran hat sich nichts geaendert.'],
     lines:['Lehrling Kuno: Vorsicht, der Amboss ist noch warm.','Der Meister schmiedet seit dem Riss nur noch nachts. Fragt mich nicht warum.']}],
   out:[{name:'Gast Silva',shirt:'#60805a',hair:'#503820',
+    hero:['Gast Silva: {H}. Wer so weit rausgeht, hat Mut - das wusste ich gleich.','Heute geht man hier raus, weil es schoen ist. Nicht mehr, weil man muss.'],
     lines:['Gast Silva: Wer so weit rausgeht, hat entweder Mut oder einen Auftrag.','Bei dir ist es wohl beides.']}],
 };
 
+// Zugziele: die Ansage im Uebergang nennt die Region, in die der Zug wirklich faehrt.
+const REGION_ORDER=['r1','r2','r3','r4'];
+const TRAIN_DEST={r1:'ins Heimatdorf',r2:'in die Schattenregion',r3:'in die Frostregion',r4:'zur Pokemon-Liga'};
 const TILE=32;
 function villRFor(region){ return region==='r2'?18:(region==='r3'?13:(region==='r4'?8:9)); }
 
@@ -4992,14 +5181,14 @@ const G = {
           lines:s=>yaraLines(s),
           onEnd:()=>{ if(G.s.flags.badgeR2) G.startTrainJourney('r3'); }},
         {x:sx,y:sy-2,name:'Schaffner Elrik',shirt:'#402040',hair:'#d0c0a0',
-          lines:()=>returnConductorLines(),
+          lines:s=>returnConductorLines(s),
           onEnd:()=>{ G.startTrainJourney('r1'); }},
       ];
     }
     if(region==='r3'){
       return [
         {x:sx,y:sy-2,name:'Schaffner Juno',shirt:'#5090c0',hair:'#e0f0ff',
-          lines:()=>junoLines(),
+          lines:s=>junoLines(s),
           onEnd:()=>{ G.startTrainJourney('r2'); }},
         {x:mw-12,y:sy,name:'Schaffnerin Nora',shirt:'#5090c0',hair:'#e0f0ff',
           lines:s=>noraLines(s),
@@ -5009,17 +5198,17 @@ const G = {
     if(region==='r4'){
       return [
         {x:sx,y:sy-2,name:'Schaffner Otto',shirt:'#902030',hair:'#f0c840',
-          lines:()=>returnLigaLines(),
+          lines:s=>returnLigaLines(s),
           onEnd:()=>{ G.startTrainJourney('r3'); }},
       ];
     }
     return [
       {x:sx,y:sy-2,name:'Wanderin Mara',shirt:'#c0a020',hair:'#5a4020',lines:s=>wandererLines(s)},
       {x:sx-8,y:sy,name:'Trainer Kevin',shirt:'#2050a0',hair:'#202020',
-        lines:s=>s.flags.t1Beaten?['Gut gekampft! Du bist wirklich stark geworden.']:['Na, hast du Mut fur einen Kampf?'],
+        lines:s=>isHero(s)?hero('kevin'):(s.flags.t1Beaten?['Gut gekampft! Du bist wirklich stark geworden.']:['Na, hast du Mut fur einen Kampf?']),
         onEnd:()=>{ if(!G.s.flags.t1Beaten) setTimeout(()=>G.startTrainerBattle('t1Beaten','Trainer Kevin',1,0),200); }},
       {x:sx+8,y:sy,name:'Trainerin Julia',shirt:'#c04070',hair:'#804020',
-        lines:s=>s.flags.t2Beaten?['Respekt, du hast mich fair besiegt!']:['Ich fordere dich zu einem Kampf heraus!'],
+        lines:s=>isHero(s)?hero('julia'):(s.flags.t2Beaten?['Respekt, du hast mich fair besiegt!']:['Ich fordere dich zu einem Kampf heraus!']),
         onEnd:()=>{ if(!G.s.flags.t2Beaten) setTimeout(()=>G.startTrainerBattle('t2Beaten','Trainerin Julia',2,2),200); }},
       {x:mw-12,y:sy,name:'Schaffner Aldric',shirt:'#204040',hair:'#e0d0a0',
         lines:s=>conductorLines(s),
@@ -5036,7 +5225,8 @@ const G = {
     this.s.trainBusy=true;
     const el=document.getElementById('train-transition');
     const cap=document.getElementById('train-caption');
-    cap.textContent=target==='r2'?'Zug fahrt in die Schattenregion...':'Zug fahrt zuruck ins Heimatdorf...';
+    cap.textContent='Zug fahrt '+(REGION_ORDER.indexOf(target)<REGION_ORDER.indexOf(this.s.region)?'zuruck ':'')
+      +(TRAIN_DEST[target]||'weiter')+'...';
     const train=el.querySelector('.train');
     train.style.animation='none';
     void train.offsetWidth;
@@ -5524,7 +5714,8 @@ const G = {
       lines:cfg.npc.lines,onEnd:cfg.npc.onEnd,host:true}];
     (IEXTRA[style]||[]).forEach((e,i)=>{
       const sp=spots[String(i+2)];
-      if(sp)npcs.push({x:sp.x,y:sp.y,name:e.name,shirt:e.shirt,hair:e.hair,lines:e.lines});
+      if(sp)npcs.push({x:sp.x,y:sp.y,name:e.name,shirt:e.shirt,hair:e.hair,
+        lines:st=>(isHero(st)&&e.hero)?heroText(e.hero):e.lines});
     });
     return {map,w,h,entryX,entryY,npcs};
   },
