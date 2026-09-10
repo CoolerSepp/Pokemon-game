@@ -84,6 +84,8 @@ body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
 #minimap { position: fixed; bottom: 60px; right: max(10px, env(safe-area-inset-right)); width: 140px; height: 140px; border: 2px solid #2a3a5a; border-radius: 8px; z-index: 20; background: #0a0a1a; opacity: 0.85; display: none; }
 #scr-world.on ~ #minimap { display: block; }
 @media (pointer: coarse) { #minimap { bottom: max(96px, calc(96px + env(safe-area-inset-bottom))); width: 104px; height: 104px; opacity: 0.75; } }
+#tracker-label { position: fixed; bottom: 202px; right: max(10px, env(safe-area-inset-right)); width: 140px; text-align: center; font-size: 0.68em; color: #f0a0ff; text-shadow: 0 0 6px rgba(220,90,255,0.7); z-index: 20; display: none; pointer-events: none; }
+@media (pointer: coarse) { #tracker-label { bottom: max(238px, calc(238px + env(safe-area-inset-bottom))); width: 104px; } }
 
 #scr-battle { background: linear-gradient(180deg, #5a9ad0 0%, #3a7a40 55%, #2a5a20 100%); position: relative; overflow: hidden; }
 .battle-bg-clouds { position: absolute; top: 0; left: 0; width: 200%; height: 40%; background: repeating-linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 10%, transparent 20%); animation: cl 30s linear infinite; }
@@ -317,9 +319,19 @@ body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
         <div><div style="font-weight:700;">Pokemon-Futter</div><div style="font-size:0.75em;color:#889;">Gibt einem Pokemon deiner Wahl 40 EP</div></div>
         <button class="btn btn-green" style="min-width:auto;padding:8px 14px;" onclick="G.buyFood()">80 &#128176;</button>
       </div>
+      <div style="background:#0e1520;border:1px solid #3a2a4a;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+        <div><div style="font-weight:700;">Neuer Look</div><div style="font-size:0.75em;color:#889;">Wechsle dein Aussehen</div></div>
+        <button class="btn btn-blue" style="min-width:auto;padding:8px 14px;" onclick="G.openSkin()">Ansehen</button>
+      </div>
     </div>
     <div id="shop-food-select" style="width:100%;max-width:600px;display:none;"></div>
     <div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeShop()">Schliessen</button></div>
+  </div>
+  <div class="overlay" id="ov-skin">
+    <div class="ov-title">Neuer Look</div>
+    <p style="color:#889;margin-bottom:14px;font-size:0.9em;">Dein PokeCash: <span id="skin-cash" style="color:#ffd860;font-weight:700;"></span> - ein Wechsel kostet <span style="color:#ffd860;font-weight:700;">120 &#128176;</span></p>
+    <div class="ov-grid" id="skin-grid"></div>
+    <div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeSkin()">Schliessen</button></div>
   </div>
   <div class="overlay" id="ov-dialogue" style="align-items:center;justify-content:flex-end;padding-bottom:6vh;" onclick="G.advanceDialogue()">
     <div class="dialogue-box"><div class="dlg-name" id="dlg-name"></div><div class="dlg-text" id="dlg-text"></div><div class="dlg-next">&#9660; weiter</div></div>
@@ -333,6 +345,7 @@ body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
     <div class="mob-btns"><button class="mob-ab a-btn" onclick="G.openTeam()">Team</button><button class="mob-ab b-btn" onclick="G.openPotions()">Heal</button><button class="mob-ab" style="background:rgba(100,150,220,0.15);color:#6ac;" onclick="G.interact()">Reden</button></div>
   </div>
   <canvas id="minimap" width="140" height="140"></canvas>
+  <div id="tracker-label"></div>
 </div>
 
 <script>
@@ -2233,6 +2246,114 @@ const Au = {
   },
 };
 
+// ===================== MUSIK (prozedural) =====================
+// Kein Audio-Loader noetig: jeder Track ist eine kleine generative Partitur aus
+// Bass, Akkordflaeche und Lead, die aus denselben Bausteinen entsteht, aber je
+// nach Tonleiter/Tempo/Klangfarbe fuer Region, Haus oder Kampfart ganz anders
+// klingt - so hat wirklich jeder Ort und jede Kampfsituation eigene Musik.
+const SCALES={maj:[0,2,4,5,7,9,11],min:[0,2,3,5,7,8,10],dor:[0,2,3,5,7,9,10],phryg:[0,1,3,5,7,8,10],lyd:[0,2,4,6,7,9,11],majPent:[0,2,4,7,9]};
+function scaleDeg(scale,n){const sc=SCALES[scale]||SCALES.maj,len=sc.length,oct=Math.floor(n/len),idx=((n%len)+len)%len;return sc[idx]+12*oct;}
+function buildTrack(o){
+  const prog=o.prog,chordSteps=o.chordSteps||4,chord=prog.map(d=>[d,d+2,d+4]);
+  const totalSteps=chord.length*chordSteps;
+  const leadPat=o.leadShape==='arp'?[0,2,4,2]:o.leadShape==='sparse'?[0,null,null,4]:[4,null,2,0];
+  const bass=[],lead=[];
+  for(let i=0;i<totalSteps;i++){
+    const slot=Math.floor(i/chordSteps),pos=i%chordSteps,rootDeg=prog[slot];
+    if(o.bassShape==='drive')bass.push(rootDeg-7);
+    else if(o.bassShape==='sparse')bass.push(pos===0?rootDeg-7:null);
+    else if(o.bassShape==='none')bass.push(null);
+    else bass.push((pos===0||pos===Math.floor(chordSteps/2))?rootDeg-7:null);
+    const off=leadPat[pos%leadPat.length];
+    lead.push(off==null?null:rootDeg+off+7);
+  }
+  return {scale:o.scale,root:o.root,bpm:o.bpm,bass,chord,chordSteps,lead,
+    waveBass:o.waveBass||'triangle',waveChord:o.waveChord||'sine',waveLead:o.waveLead||'sine',
+    volBass:o.volBass!=null?o.volBass:0.1,volChord:o.volChord!=null?o.volChord:0.045,volLead:o.volLead!=null?o.volLead:0.06,
+    leadSustain:o.leadSustain||0.82};
+}
+const MUSIC_TRACKS={
+  menu:           buildTrack({scale:'majPent',root:261,bpm:96, prog:[0,3,4,0],waveBass:'triangle',waveChord:'sine',    waveLead:'sine',    leadShape:'calm', bassShape:'omp'}),
+  r1:             buildTrack({scale:'maj',   root:220,bpm:100,prog:[0,4,5,3],waveBass:'triangle',waveChord:'sine',    waveLead:'triangle',leadShape:'calm', bassShape:'omp'}),
+  r2:             buildTrack({scale:'phryg', root:196,bpm:82, prog:[0,3,5,0],waveBass:'sawtooth',waveChord:'sine',    waveLead:'sine',    leadShape:'sparse',bassShape:'sparse',volLead:0.05,volChord:0.04}),
+  r3:             buildTrack({scale:'maj',   root:246,bpm:92, prog:[0,1,4,3],waveBass:'sine',    waveChord:'triangle',waveLead:'sine',    leadShape:'sparse',bassShape:'omp',volLead:0.055}),
+  r4:             buildTrack({scale:'lyd',   root:261,bpm:112,prog:[0,4,5,3],waveBass:'sawtooth',waveChord:'square',  waveLead:'square',  leadShape:'arp',  bassShape:'drive',volChord:0.04,volBass:0.09}),
+  house:          buildTrack({scale:'maj',   root:246,bpm:92, prog:[0,3,4,0],waveBass:'triangle',waveChord:'sine',    waveLead:'sine',    leadShape:'calm', bassShape:'sparse',volLead:0.05}),
+  shop:           buildTrack({scale:'majPent',root:261,bpm:104,prog:[0,3,4,3],waveBass:'triangle',waveChord:'square', waveLead:'square',  leadShape:'arp',  bassShape:'omp',volChord:0.035,volLead:0.05}),
+  center:         buildTrack({scale:'maj',   root:293,bpm:76, prog:[0,5,3,4],waveBass:'sine',    waveChord:'sine',    waveLead:'sine',    leadShape:'sparse',bassShape:'none',volChord:0.05,volLead:0.045,chordSteps:8}),
+  lab:            buildTrack({scale:'dor',   root:220,bpm:98, prog:[0,3,4,0],waveBass:'triangle',waveChord:'triangle',waveLead:'square',  leadShape:'arp',  bassShape:'sparse',volLead:0.045,volChord:0.035}),
+  liga:           buildTrack({scale:'lyd',   root:233,bpm:100,prog:[0,3,4,5],waveBass:'triangle',waveChord:'sine',    waveLead:'sine',    leadShape:'calm', bassShape:'omp',chordSteps:6}),
+  arena:          buildTrack({scale:'min',   root:220,bpm:96, prog:[0,3,5,4],waveBass:'sawtooth',waveChord:'sine',    waveLead:'sine',    leadShape:'sparse',bassShape:'sparse',volChord:0.04}),
+  forge:          buildTrack({scale:'min',   root:196,bpm:110,prog:[0,3,0,4],waveBass:'square',  waveChord:'triangle',waveLead:'square',  leadShape:'arp',  bassShape:'drive',volBass:0.08,volChord:0.03}),
+  battleWild:     buildTrack({scale:'min',   root:220,bpm:140,prog:[0,3,4,0],waveBass:'sawtooth',waveChord:'square',  waveLead:'square',  leadShape:'arp',  bassShape:'drive',volChord:0.04,volBass:0.1}),
+  battleTrainer:  buildTrack({scale:'min',   root:233,bpm:150,prog:[0,4,3,4],waveBass:'sawtooth',waveChord:'square',  waveLead:'sawtooth',leadShape:'arp',  bassShape:'drive',volChord:0.045,volBass:0.105}),
+  battleGym:      buildTrack({scale:'phryg', root:220,bpm:152,prog:[0,5,3,4],waveBass:'square',  waveChord:'sawtooth',waveLead:'square',  leadShape:'arp',  bassShape:'drive',volChord:0.05,volBass:0.11}),
+  battleChampion: buildTrack({scale:'min',   root:196,bpm:160,prog:[0,5,3,4],waveBass:'sawtooth',waveChord:'square',  waveLead:'sawtooth',leadShape:'arp',  bassShape:'drive',volChord:0.055,volBass:0.115}),
+  battleLegendary:buildTrack({scale:'phryg', root:174,bpm:132,prog:[0,5,3,4],waveBass:'sawtooth',waveChord:'square',  waveLead:'square',  leadShape:'arp',  bassShape:'drive',volChord:0.06,volBass:0.12,chordSteps:8}),
+};
+Object.assign(Au,{
+  mgain:null, mVol:1, music:{want:null,track:null,timer:null,next:0,step:0,secPerStep:0.2},
+  ensureMusicBus(){ if(!this.ctx)this.init(); if(this.ctx&&!this.mgain){ this.mgain=this.ctx.createGain(); this.mgain.gain.value=0.0001; this.mgain.connect(this.ctx.destination); } },
+  noteAt(freq,t,dur,wave,vol){
+    if(!this.ctx||!this.mgain)return;
+    const o=this.ctx.createOscillator(),g=this.ctx.createGain();
+    o.type=wave;o.frequency.value=freq;
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002,vol),t+0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+Math.max(0.05,dur));
+    o.connect(g);g.connect(this.mgain);
+    o.start(t);o.stop(t+dur+0.05);
+  },
+  scheduleStep(trk,step,t){
+    const dur=this.music.secPerStep;
+    const bn=trk.bass[step%trk.bass.length];
+    if(bn!=null)this.noteAt(trk.root*Math.pow(2,scaleDeg(trk.scale,bn)/12),t,dur*0.92,trk.waveBass,trk.volBass);
+    const ln=trk.lead[step%trk.lead.length];
+    if(ln!=null)this.noteAt(trk.root*Math.pow(2,scaleDeg(trk.scale,ln)/12),t,dur*trk.leadSustain,trk.waveLead,trk.volLead);
+    const cs=trk.chordSteps;
+    if(step%cs===0){
+      const slot=Math.floor(step/cs)%trk.chord.length;
+      trk.chord[slot].forEach(n=>this.noteAt(trk.root*Math.pow(2,scaleDeg(trk.scale,n)/12),t,dur*cs*0.96,trk.waveChord,trk.volChord));
+    }
+  },
+  runScheduler(name){
+    const m=this.music;
+    if(m.track!==name||!this.ctx)return;
+    const trk=MUSIC_TRACKS[name];
+    while(m.next<this.ctx.currentTime+0.25){
+      this.scheduleStep(trk,m.step,m.next);
+      m.step++; m.next+=m.secPerStep;
+    }
+  },
+  playMusic(name){
+    if(!MUSIC_TRACKS[name])return;
+    const m=this.music;
+    if(m.want===name)return;
+    m.want=name;
+    if(!this.on)return;
+    this.ensureMusicBus();
+    if(!this.ctx||!this.mgain)return;
+    this.res();
+    const doSwap=()=>{
+      if(m.want!==name)return;
+      if(m.timer){clearInterval(m.timer);m.timer=null;}
+      const trk=MUSIC_TRACKS[name];
+      m.track=name; m.step=0; m.secPerStep=60/trk.bpm/2; m.next=this.ctx.currentTime+0.05;
+      this.runScheduler(name);
+      m.timer=setInterval(()=>this.runScheduler(name),90);
+      this.mgain.gain.cancelScheduledValues(this.ctx.currentTime);
+      this.mgain.gain.setValueAtTime(0.0001,this.ctx.currentTime);
+      this.mgain.gain.exponentialRampToValueAtTime(this.mVol,this.ctx.currentTime+0.5);
+    };
+    if(m.track){
+      this.mgain.gain.cancelScheduledValues(this.ctx.currentTime);
+      this.mgain.gain.setValueAtTime(Math.max(0.0001,this.mgain.gain.value),this.ctx.currentTime);
+      this.mgain.gain.exponentialRampToValueAtTime(0.0001,this.ctx.currentTime+0.35);
+      setTimeout(doSwap,360);
+    } else doSwap();
+  },
+});
+
 // ===================== DATA =====================
 const MOVES={fire:[{name:'Glut',pow:40,acc:100},{name:'Flammenwurf',pow:90,acc:100},{name:'Feuersturm',pow:110,acc:85}],water:[{name:'Blubber',pow:40,acc:100},{name:'Aquaknarre',pow:65,acc:100},{name:'Hydropumpe',pow:110,acc:80}],grass:[{name:'Rankenhieb',pow:45,acc:100},{name:'Rasierblatt',pow:55,acc:95},{name:'Solarstrahl',pow:120,acc:100}],electric:[{name:'Donnerschock',pow:40,acc:100},{name:'Donnerblitz',pow:90,acc:100},{name:'Donner',pow:110,acc:70}],normal:[{name:'Tackle',pow:40,acc:100},{name:'Bodyslam',pow:85,acc:100},{name:'Hyperstrahl',pow:150,acc:90}],poison:[{name:'Giftpuder',pow:35,acc:100},{name:'Gifthieb',pow:80,acc:100},{name:'Matschbombe',pow:90,acc:100}],ground:[{name:'Schlammbad',pow:55,acc:100},{name:'Erdbeben',pow:100,acc:100},{name:'Rissbildung',pow:120,acc:80}],flying:[{name:'Windstosse',pow:40,acc:100},{name:'Windschnitt',pow:60,acc:95},{name:'Orkan',pow:110,acc:70}],psychic:[{name:'Konfusion',pow:50,acc:100},{name:'Psychokinese',pow:90,acc:100},{name:'Psychostoss',pow:100,acc:100}],rock:[{name:'Steinwurf',pow:50,acc:90},{name:'Felswurf',pow:75,acc:90},{name:'Steinhagel',pow:100,acc:80}],ice:[{name:'Eispulver',pow:40,acc:100},{name:'Eisstrahl',pow:90,acc:100},{name:'Blizzard',pow:110,acc:70}],dragon:[{name:'Drachenwut',pow:40,acc:100},{name:'Drachenklaue',pow:80,acc:100},{name:'Draco Meteor',pow:130,acc:90}],ghost:[{name:'Nachtnebel',pow:40,acc:100},{name:'Spukball',pow:80,acc:100},{name:'Phantomkraft',pow:90,acc:100}],fighting:[{name:'Karateschlag',pow:50,acc:100},{name:'Kreuzhieb',pow:100,acc:80},{name:'Nahkampf',pow:120,acc:100}]};
 
@@ -2349,7 +2470,7 @@ function completeQuest(qid){
 // spricht jeder den Spieler als Held bzw. Heldin an und erzahlt, was seither wieder
 // gut ist - kein Wort mehr uber Risse, Gefahr und Verluste. Wer noch eine Aufgabe zu
 // vergeben hat, fragt jetzt freundlich ('ask') statt duster.
-const LEGEND_REGIONS={r1:'lavados',r2:'arktos',r3:'zapdos',r4:'dragoran'};
+const LEGEND_REGIONS={r1:'lavados',r2:'zapdos',r3:'arktos',r4:'dragoran'};
 const LEGEND_BOSS='mewtwo';
 function isPostChampion(s){ return !!(s&&s.flags&&s.flags.champion); }
 function isLegendHunt(s){ return isPostChampion(s)&&!isHero(s); }
@@ -2584,7 +2705,7 @@ function conductorLines(s){
   return ['Schaffner Aldric: Der Zug zur Schattenregion steht bereit. Einsteigen?'];
 }
 function returnConductorLines(s){ if(isHero(s)) return hero('elrik');
-  if(isLegendHunt(s)){const need=[];if(!s.flags.legendR1)need.push('Heimatdorf (Lavados)');if(!s.flags.legendR2)need.push('Schattenregion (Arktos)');if(!s.flags.legendR3)need.push('Frostregion (Zapdos)');if(!s.flags.legendR4)need.push('Pokemon-Liga (Dragoran)');return need.length?['Schaffner Elrik: Legendaere Pokemon bedrohen die Regionen!','Noch zu bezwingen: '+need.join(', ')+'.','Steig ein, ich bringe dich hin!']:['Schaffner Elrik: Der Zug steht bereit!'];}
+  if(isLegendHunt(s)){const need=[];if(!s.flags.legendR1)need.push('Heimatdorf (Lavados)');if(!s.flags.legendR2)need.push('Schattenregion (Zapdos)');if(!s.flags.legendR3)need.push('Frostregion (Arktos)');if(!s.flags.legendR4)need.push('Pokemon-Liga (Dragoran)');return need.length?['Schaffner Elrik: Legendaere Pokemon bedrohen die Regionen!','Noch zu bezwingen: '+need.join(', ')+'.','Steig ein, ich bringe dich hin!']:['Schaffner Elrik: Der Zug steht bereit!'];}
   return ['Schaffner Elrik: Der Zug zuruck ins Heimatdorf steht bereit. Einsteigen?']; }
 function yaraLines(s){
   if(isHero(s)) return hero('yara');
@@ -3002,6 +3123,8 @@ const DOOR_STYLE={
 OUT_DOORS.forEach(d=>{DOOR_STYLE[d]='out';});
 const HOUSE_STYLE={};
 Object.keys(DOOR_HOUSE).forEach(k=>{ HOUSE_STYLE[DOOR_HOUSE[k]]=DOOR_STYLE[k]||'house'; });
+// Jeder Innenraum-Stil bekommt seine eigene Hintergrundmusik-Spur.
+const HOUSE_MUSIC={house:'house',house2:'house',home:'house',out:'house',shop:'shop',center:'center',lab:'lab',liga:'liga',arena:'arena',forge:'forge'};
 
 // Resolve which building a roof/wall piece belongs to by locating its door tile:
 // a building is always a 3x2 block with the door at the bottom centre.
@@ -5493,7 +5616,7 @@ const R3 = {
     const fovy = this.fov(inH ? 54 : 58);
     const far = 90;
     const px = G.v3x, pz = G.v3z;
-    let cx = px, cz = pz, dist = 11.4;
+    let cx = px, cz = pz, dist = 8.7;
     if (inH) {
       // Passt der ganze Raum ins Bild, bleibt die Kamera mittig wie bei einem Diorama.
       // Ist er dafuer zu gross (schmales Handy-Display), folgt sie der Figur und
@@ -5930,6 +6053,7 @@ const G = {
     const loop = (now) => {
       const dt = Math.min(0.06, (now - prev) / 1000); prev = now;
       this.frame++;
+      if (this.frame % 20 === 0) this.syncMusic();
       const onWorld = this.s && document.getElementById('scr-world').classList.contains('on');
       if (this.d3 && R3.ok) {
         if (onWorld && !this.s.inBattle) {
@@ -5945,6 +6069,23 @@ const G = {
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
+  },
+
+  // Waehlt anhand des aktuellen Spielzustands den passenden Musiktrack -
+  // Region, Haus-Stil oder Kampfart - und laesst Au ihn (falls noetig) einblenden.
+  syncMusic(){
+    const s=this.s;
+    if(!s){ Au.playMusic('menu'); return; }
+    if(s.inBattle){ Au.playMusic(this.battleTrackFor(s)); return; }
+    if(s.inHouse){ Au.playMusic(HOUSE_MUSIC[s.inHouseStyle]||'house'); return; }
+    Au.playMusic(MUSIC_TRACKS[s.region]?s.region:'r1');
+  },
+  battleTrackFor(s){
+    if(s.legendaryBattle) return 'battleLegendary';
+    if(s.gymFlag==='champion') return 'battleChampion';
+    if(s.gymFlag) return 'battleGym';
+    if(s.trainerBattle) return 'battleTrainer';
+    return 'battleWild';
   },
 
   // The logical position stays on the tile grid; only the drawn position glides,
@@ -5980,7 +6121,7 @@ const G = {
     const tr=document.getElementById('transition'); tr.classList.add('on');
     setTimeout(()=>{document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');
     if(id==='scr-world'){this.mmC.style.display='block';document.getElementById('mob-ctrl').classList.add('vis');}
-    else{this.mmC.style.display='none';document.getElementById('mob-ctrl').classList.remove('vis');}
+    else{this.mmC.style.display='none';document.getElementById('mob-ctrl').classList.remove('vis');const tl=document.getElementById('tracker-label');if(tl)tl.style.display='none';}
     document.getElementById('gl3d').classList.toggle('on', this.d3 && R3.ok && (id==='scr-world'||id==='scr-battle'));
     setTimeout(()=>tr.classList.remove('on'),50);},300);
   },
@@ -6541,7 +6682,7 @@ const G = {
 
   renderMM() {
     const mc=this.mmX;
-    if(this.s.inHouse){mc.clearRect(0,0,140,140);return;}
+    if(this.s.inHouse){mc.clearRect(0,0,140,140);const tl=document.getElementById('tracker-label');if(tl)tl.style.display='none';return;}
     const sc=140/this.s.mw;
     mc.clearRect(0,0,140,140);
     const region=this.s.region;
@@ -6572,6 +6713,20 @@ const G = {
     // NPC markers, so trainers scattered across the map can actually be found
     mc.fillStyle='#ff5030';
     (this.s.currentNpcs||[]).forEach(n=>{ mc.fillRect(n.x*sc-1.5,n.y*sc-1.5,3,3); });
+    // Poketracker: seit dem Champion-Sieg zeigt die Karte, wo das legendaere
+    // Pokemon dieser Region gerade steht - ein pulsierender violetter Marker.
+    const leg=(this.s.roamers||[]).find(r=>r.legendary);
+    const trackerLbl=document.getElementById('tracker-label');
+    if(leg){
+      const pulse=2.4+Math.sin(performance.now()/260)*1.3;
+      mc.fillStyle='rgba(220,90,255,0.35)';
+      mc.beginPath();mc.arc(leg.gx*sc,leg.gy*sc,7+pulse,0,Math.PI*2);mc.fill();
+      mc.strokeStyle='#e050ff';mc.lineWidth=1.4;
+      mc.beginPath();mc.arc(leg.gx*sc,leg.gy*sc,4,0,Math.PI*2);mc.stroke();
+      mc.fillStyle='#f0a0ff';
+      mc.beginPath();mc.arc(leg.gx*sc,leg.gy*sc,2.4,0,Math.PI*2);mc.fill();
+      if(trackerLbl){trackerLbl.style.display='block';trackerLbl.textContent='\u{1F52E} '+leg.def.nm;}
+    } else if(trackerLbl){trackerLbl.style.display='none';}
     // player dot with glow
     mc.fillStyle='rgba(255,255,0,0.3)';
     mc.beginPath();mc.arc(this.s.px*sc,this.s.py*sc,4,0,Math.PI*2);mc.fill();
@@ -6830,6 +6985,23 @@ const G = {
     return null;
   },
 
+  // Der legendaere Wachter einer Region wird immer rund um ihr Dorf/Liga-Gelaende
+  // gesucht, nie an der zufaelligen Position des Spielers - so steht z.B. Dragoran
+  // garantiert in der Naehe der Pokemon-Liga und nicht irgendwo in der Wildnis.
+  legendSpawnTile(){
+    const s=this.s;
+    const cx=Math.floor(s.mw/2), cy=Math.floor(s.mh/2);
+    for(let k=0;k<80;k++){
+      const a=Math.random()*Math.PI*2, r=5+Math.random()*24;
+      const x=Math.round(cx+Math.cos(a)*r), y=Math.round(cy+Math.sin(a)*r);
+      if(x<1||y<1||x>=s.mw-1||y>=s.mh-1)continue;
+      const t=s.map[y][x];
+      if(t!==T.TALL&&t!==T.GRASS&&t!==T.FLOWER&&t!==T.PATH)continue;
+      return {x,y,tall:t===T.TALL};
+    }
+    return null;
+  },
+
   syncRoamers(dt){
     const s=this.s;
     if(!s||s.inHouse||s.inBattle){ if(s) s.roamers=[]; return; }
@@ -6838,7 +7010,7 @@ const G = {
     if(isPostChampion(s)&&!s.flags['legendR'+s.region.slice(1)]){
       const lid=LEGEND_REGIONS[s.region];
       if(lid&&!s.roamers.some(r=>r.legendary)){
-        const sp=this.roamSpawnTile();
+        const sp=this.legendSpawnTile();
         if(sp){
           const def=DB.find(d=>d.id===lid);
           if(def)s.roamers.push({def, gx:sp.x, gy:sp.y, x:sp.x+0.5, z:sp.y+0.5,
@@ -7220,7 +7392,7 @@ const G = {
       this.s.quests=this.s.quests||{};
       this.s.quests.qL='active';
       this.saveGame();
-      document.getElementById('ending-text').innerHTML=`Seraphina tritt zur Seite, und zum ersten Mal seit jener Nacht beruhrt die Naht kein Widerstand mehr.<br><br>Drei Anker, ein Wille - der Riss schliesst sich. Der Rauch uber dem Frostsee zieht endlich weiter. In der Schattenregion geht die Sonne auf.<br><br>Doch kaum ist der letzte Riss geschlossen, dringt ein gewaltiges Bruellen durch die Stille. Legendaere Pokemon - aufgeschreckt durch das Heilen der Welt - bedrohen nun die vier Regionen!<br><br><b>Lavados</b> terrorisiert das Heimatdorf.<br><b>Arktos</b> bedroht die Schattenregion.<br><b>Zapdos</b> wuetet in der Frostregion.<br><b>Dragoran</b> herrscht ueber die Pokemon-Liga.<br><br>Reise in jede Region und bezwinge sie alle, um ein wahrer Held zu werden!`;
+      document.getElementById('ending-text').innerHTML=`Seraphina tritt zur Seite, und zum ersten Mal seit jener Nacht beruhrt die Naht kein Widerstand mehr.<br><br>Drei Anker, ein Wille - der Riss schliesst sich. Der Rauch uber dem Frostsee zieht endlich weiter. In der Schattenregion geht die Sonne auf.<br><br>Doch kaum ist der letzte Riss geschlossen, dringt ein gewaltiges Bruellen durch die Stille. Legendaere Pokemon - aufgeschreckt durch das Heilen der Welt - bedrohen nun die vier Regionen!<br><br><b>Lavados</b> terrorisiert das Heimatdorf.<br><b>Zapdos</b> bedroht die Schattenregion.<br><b>Arktos</b> wuetet in der Frostregion.<br><b>Dragoran</b> herrscht ueber die Pokemon-Liga.<br><br>Reise in jede Region und bezwinge sie alle, um ein wahrer Held zu werden!`;
       document.getElementById('ending-screen').classList.add('on');
     });
   },
@@ -7258,6 +7430,26 @@ const G = {
       grid.appendChild(c);
     });
     el.appendChild(grid);
+  },
+
+  // Aussehen wechseln: jeder Pokemon-Laden fuehrt auch einen kleinen Kleiderstaender.
+  openSkin(){if(this.s.inBattle)return;Au.cl();document.getElementById('ov-skin').classList.add('on');this.rSkin();},
+  closeSkin(){document.getElementById('ov-skin').classList.remove('on');},
+  rSkin(){
+    document.getElementById('skin-cash').textContent=this.s.cash||0;
+    const g=document.getElementById('skin-grid');g.innerHTML='';
+    TRAINERS.forEach(t=>{
+      const c=document.createElement('div');c.className='sel-card'+(this.s.char.id===t.id?' picked':'');
+      c.innerHTML=`<div class="spr">${t.spr}</div><div class="nm">${t.nm}</div>`;
+      c.onclick=()=>this.buySkin(t);
+      g.appendChild(c);
+    });
+  },
+  buySkin(t){
+    if(this.s.char.id===t.id){Au.cl();this.popup('Das traegst du schon!','caught-popup',1200);return;}
+    if((this.s.cash||0)<120){this.popup('Nicht genug PokeCash!','caught-popup',1500);return;}
+    Au.cl();this.s.cash-=120;this.s.char=t;this.updateHud();this.rSkin();this.saveGame();
+    this.popup(`Neuer Look: ${t.nm}!`,'caught-popup',1800);
   },
 
   // Save/Load
