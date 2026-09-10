@@ -3453,6 +3453,10 @@ const M4 = {
     o.fill(0); o[0]=t/asp; o[5]=t; o[11]=-1; o[10]=(f+n)/(n-f); o[14]=(2*f*n)/(n-f);
     return o;
   },
+  ortho(o, r, t, n, f) {
+    o.fill(0); o[0]=1/r; o[5]=1/t; o[10]=2/(n-f); o[14]=(f+n)/(n-f); o[15]=1;
+    return o;
+  },
   lookAt(o, ex,ey,ez, cx,cy,cz) {
     let zx=ex-cx, zy=ey-cy, zz=ez-cz;
     let l=Math.hypot(zx,zy,zz)||1; zx/=l; zy/=l; zz/=l;
@@ -3470,13 +3474,109 @@ const M4 = {
   },
 };
 
+// Jede Region bringt ihre eigene Lichtstimmung mit: Himmel, Nebel, Sonnenfarbe,
+// Bewoelkung und eine Farbkorrektur (Belichtung, Bloom, Vignette, Saettigung),
+// die am Ende der Nachbearbeitung greift.
 const ENV3 = {
-  r1:{skyT:[0.44,0.68,0.92], fog:[0.72,0.84,0.92], amb:[0.56,0.58,0.60], sun:[0.66,0.63,0.52], dir:[-0.42,0.80,0.43]},
-  r2:{skyT:[0.07,0.04,0.15], fog:[0.14,0.09,0.26], amb:[0.34,0.30,0.48], sun:[0.40,0.30,0.62], dir:[ 0.40,0.72,0.57]},
-  r3:{skyT:[0.52,0.70,0.86], fog:[0.84,0.91,0.95], amb:[0.64,0.68,0.74], sun:[0.52,0.56,0.66], dir:[-0.30,0.82,0.49]},
-  r4:{skyT:[0.86,0.66,0.28], fog:[0.90,0.82,0.60], amb:[0.60,0.55,0.42], sun:[0.74,0.64,0.40], dir:[ 0.34,0.76,0.55]},
-  in:{skyT:[0.04,0.04,0.06], fog:[0.06,0.06,0.09], amb:[0.76,0.72,0.66], sun:[0.50,0.45,0.36], dir:[-0.35,0.86,0.36]},
+  r1:{skyT:[0.35,0.62,0.95], fog:[0.70,0.83,0.94], amb:[0.50,0.53,0.58], sun:[0.98,0.92,0.78],
+      sunC:[1.00,0.96,0.84], dir:[-0.42,0.80,0.43], cloud:0.55,
+      grade:{exp:1.22, bloom:0.26, vig:0.30, sat:1.12}},
+  r2:{skyT:[0.05,0.03,0.13], fog:[0.13,0.08,0.24], amb:[0.30,0.27,0.46], sun:[0.52,0.38,0.86],
+      sunC:[0.62,0.44,0.98], dir:[ 0.40,0.72,0.57], cloud:0.75,
+      grade:{exp:1.50, bloom:0.40, vig:0.52, sat:1.16}},
+  r3:{skyT:[0.46,0.68,0.90], fog:[0.86,0.92,0.97], amb:[0.60,0.65,0.74], sun:[0.80,0.86,1.00],
+      sunC:[0.92,0.96,1.00], dir:[-0.30,0.82,0.49], cloud:0.85,
+      grade:{exp:1.16, bloom:0.30, vig:0.26, sat:0.96}},
+  r4:{skyT:[0.92,0.62,0.20], fog:[0.94,0.80,0.54], amb:[0.56,0.50,0.40], sun:[1.00,0.82,0.48],
+      sunC:[1.00,0.86,0.52], dir:[ 0.34,0.76,0.55], cloud:0.45,
+      grade:{exp:1.28, bloom:0.38, vig:0.40, sat:1.14}},
+  in:{skyT:[0.05,0.05,0.07], fog:[0.07,0.07,0.10], amb:[0.70,0.66,0.60], sun:[0.72,0.64,0.50],
+      sunC:[0.80,0.70,0.52], dir:[-0.35,0.86,0.36], cloud:0.0,
+      grade:{exp:1.32, bloom:0.20, vig:0.42, sat:1.04}},
 };
+
+
+// Alles ab hier rechnet in linearem Licht: Texturen werden beim Lesen aus dem
+// sRGB-Raum geholt, beleuchtet, in einen HDR-Puffer geschrieben und erst ganz am
+// Ende durch Belichtung, ACES-Tonemapping und sRGB-Kodierung auf den Schirm
+// gebracht. Genau das trennt ein flaches Browserbild von einem Spielbild.
+const VS_FULL = `#version 300 es
+precision highp float;
+out vec2 vT;
+void main(){
+  vec2 p = vec2((gl_VertexID == 1) ? 3.0 : -1.0, (gl_VertexID == 2) ? 3.0 : -1.0);
+  vT = p*0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0);
+}`;
+
+const FS_BRIGHT = `#version 300 es
+precision highp float;
+in vec2 vT; uniform sampler2D uTex; uniform vec2 uThr;
+out vec4 outC;
+void main(){
+  vec3 c = texture(uTex, vT).rgb;
+  float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  // weicher Knick statt harter Schwelle: sonst flackern Kanten beim Bewegen
+  float k = clamp((l - uThr.x + uThr.y) / (2.0*uThr.y + 1e-4), 0.0, 1.0);
+  float w = max(l - uThr.x, k*k*uThr.y) / max(l, 1e-4);
+  outC = vec4(c * w, 1.0);
+}`;
+
+const FS_BLUR = `#version 300 es
+precision highp float;
+in vec2 vT; uniform sampler2D uTex; uniform vec2 uDir;
+out vec4 outC;
+void main(){
+  vec3 c = texture(uTex, vT).rgb * 0.227027;
+  c += (texture(uTex, vT + uDir*1.3846).rgb + texture(uTex, vT - uDir*1.3846).rgb) * 0.316216;
+  c += (texture(uTex, vT + uDir*3.2308).rgb + texture(uTex, vT - uDir*3.2308).rgb) * 0.070270;
+  outC = vec4(c, 1.0);
+}`;
+
+const FS_POST = `#version 300 es
+precision highp float;
+in vec2 vT;
+uniform sampler2D uTex, uBloom;
+uniform float uExp, uBloomAmt, uVig, uSat, uFade;
+out vec4 outC;
+// ACES, gefittete Kurzform - haelt Lichter zusammen statt sie auszubrennen
+vec3 aces(vec3 x){
+  return clamp((x*(2.51*x + 0.03)) / (x*(2.43*x + 0.59) + 0.14), 0.0, 1.0);
+}
+void main(){
+  vec3 c = texture(uTex, vT).rgb + texture(uBloom, vT).rgb * uBloomAmt;
+  c = aces(c * uExp);
+  float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  c = mix(vec3(l), c, uSat);
+  vec2 d = (vT - 0.5) * vec2(1.0, 1.0);
+  c *= 1.0 - uVig * dot(d, d);
+  c = pow(max(c, 0.0), vec3(1.0/2.2)) * uFade;
+  outC = vec4(c, 1.0);
+}`;
+
+// FXAA in Kurzfassung: nur dort mischen, wo die Helligkeit ueber eine Kante springt.
+const FS_FXAA = `#version 300 es
+precision highp float;
+in vec2 vT; uniform sampler2D uTex; uniform vec2 uPx;
+out vec4 outC;
+float lum(vec3 c){ return dot(c, vec3(0.299, 0.587, 0.114)); }
+void main(){
+  vec3 rgbM = texture(uTex, vT).rgb;
+  float lNW = lum(texture(uTex, vT + vec2(-1.0,-1.0)*uPx).rgb);
+  float lNE = lum(texture(uTex, vT + vec2( 1.0,-1.0)*uPx).rgb);
+  float lSW = lum(texture(uTex, vT + vec2(-1.0, 1.0)*uPx).rgb);
+  float lSE = lum(texture(uTex, vT + vec2( 1.0, 1.0)*uPx).rgb);
+  float lM  = lum(rgbM);
+  float lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE)));
+  float lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
+  if (lMax - lMin < max(0.035, lMax * 0.125)) { outC = vec4(rgbM, 1.0); return; }
+  vec2 dir = vec2(-((lNW + lNE) - (lSW + lSE)), ((lNW + lSW) - (lNE + lSE)));
+  float rcp = 1.0 / (min(abs(dir.x), abs(dir.y)) + max((lNW + lNE + lSW + lSE) * 0.03125, 1.0/128.0));
+  dir = clamp(dir * rcp, -8.0, 8.0) * uPx;
+  vec3 a = 0.5 * (texture(uTex, vT + dir*(1.0/3.0 - 0.5)).rgb + texture(uTex, vT + dir*(2.0/3.0 - 0.5)).rgb);
+  vec3 b = a*0.5 + 0.25 * (texture(uTex, vT - dir*0.5).rgb + texture(uTex, vT + dir*0.5).rgb);
+  float lB = lum(b);
+  outC = vec4((lB < lMin || lB > lMax) ? a : b, 1.0);
+}`;
 
 const VS_WORLD = `#version 300 es
 precision highp float;
@@ -3508,9 +3608,24 @@ const FS_WORLD = `#version 300 es
 precision highp float; precision highp sampler2DArray;
 in vec3 vNrm; in vec2 vUV; in vec3 vW; flat in float vLayer; flat in float vSway;
 uniform sampler2DArray uTex;
-uniform vec3 uLight, uSun, uAmb, uFog, uEye, uFwd;
+uniform vec3 uLight, uSun, uAmb, uFog, uEye, uFwd, uSkyC;
 uniform vec2 uFogR; uniform float uTime;
+uniform highp sampler2DShadow uShadow; uniform mat4 uLVP; uniform float uShadowOn, uTexel;
 out vec4 outC;
+vec3 toLin(vec3 c){ return c*(c*(c*0.3053 + 0.6822) + 0.0125); }
+// 3x3-Mittelung: harte Ein-Pixel-Kanten wuerden bei dieser Aufloesung treppen
+float shadowAt(vec3 w, float ndl){
+  if (uShadowOn < 0.5) return 1.0;
+  vec4 lp = uLVP * vec4(w, 1.0);
+  vec3 q = lp.xyz / lp.w * 0.5 + 0.5;
+  if (q.x < 0.002 || q.x > 0.998 || q.y < 0.002 || q.y > 0.998 || q.z > 1.0) return 1.0;
+  q.z -= 0.0013 + 0.0045 * (1.0 - ndl);
+  float s = 0.0;
+  for (int y = -1; y <= 1; y++)
+    for (int x = -1; x <= 1; x++)
+      s += texture(uShadow, vec3(q.xy + vec2(float(x), float(y)) * uTexel, q.z));
+  return s / 9.0;
+}
 void main(){
   bool water = vSway > 1.5 && vSway < 2.5;
   vec4 t;
@@ -3524,18 +3639,70 @@ void main(){
 #ifdef AT
   if (t.a < 0.42) discard;
 #endif
+  vec3 alb = toLin(t.rgb);
   vec3 n = normalize(gl_FrontFacing ? vNrm : -vNrm);
+  vec3 v = normalize(uEye - vW);
   float d = max(dot(n, uLight), 0.0);
   float wrap = dot(n, uLight)*0.5 + 0.5;
-  vec3 col = t.rgb * (uAmb + uSun*(d*0.72 + wrap*0.28));
+  // Hemisphaerenlicht: von oben die Himmelsfarbe, von unten der Boden - billig,
+  // aber es nimmt Schattenseiten die tote Flaeche.
+  vec3 amb = toLin(uAmb) * mix(vec3(0.78, 0.80, 0.86), toLin(uSkyC)*1.25 + 0.35, n.y*0.5 + 0.5);
+  float sh = shadowAt(vW, d);
+  vec3 col = alb * (amb + toLin(uSun)*(d*0.85 + wrap*0.25) * mix(0.22, 1.0, sh));
+  float rim = pow(1.0 - max(dot(n, v), 0.0), 3.0);
+  col += toLin(uSun) * rim * 0.16 * (0.35 + 0.65*wrap) * sh;
   if (water) {
-    vec3 v = normalize(uEye - vW);
-    col = mix(col, uFog * 1.06, pow(1.0 - max(dot(n, v), 0.0), 3.0) * 0.5);
-    col += uSun * pow(max(dot(n, normalize(v + uLight)), 0.0), 40.0) * 1.1;
+    col = mix(col, toLin(uFog) * 1.25, rim * 0.62);
+    col += toLin(uSun) * pow(max(dot(n, normalize(v + uLight)), 0.0), 90.0) * 3.0;
   }
   float f = clamp((dot(vW - uEye, uFwd) - uFogR.x) / max(uFogR.y - uFogR.x, 0.001), 0.0, 1.0);
-  outC = vec4(mix(col, uFog, f), 1.0);
+  outC = vec4(mix(col, toLin(uFog), f), 1.0);
 }`;
+
+// Schattenwurf: Die Szene wird einmal aus Sicht der Sonne in eine Tiefenkarte
+// gezeichnet. Im Hauptdurchgang schlaegt jeder Punkt dort nach, ob zwischen ihm
+// und der Sonne etwas steht. Das ist der groesste einzelne Schritt weg vom
+// flachen "alles gleich hell"-Bild.
+const VS_SHADOW = `#version 300 es
+precision highp float;
+in vec3 aPos; in vec3 aNrm; in vec2 aUV; in float aLayer; in float aSway;
+uniform mat4 uVP; uniform float uTime; uniform vec3 uCam;
+out vec2 vUV; flat out float vLayer;
+void main(){
+  vec3 p = aPos;
+  if (aSway > 0.5 && (aSway < 1.5 || aSway > 2.5)) {
+    vec3 toCam = normalize(vec3(uCam.x - aNrm.x, 0.0, uCam.z - aNrm.z));
+    p.xz = vec2(aNrm.x, aNrm.z) + vec2(-toCam.z, toCam.x) * ((aUV.x - 0.5) * aNrm.y * 2.0);
+    float top = clamp(1.0 - aUV.y, 0.0, 1.0);
+    float amp = aSway < 1.5 ? 0.10 : (aSway > 3.5 ? 0.0 : 0.07);
+    float spd = aSway < 1.5 ? 2.5 : 1.05;
+    p.x += sin(uTime*spd + aNrm.x*2.1 + aNrm.z*1.7) * amp * top;
+    p.z += cos(uTime*spd*0.85 + aNrm.x*1.3) * amp * 0.6 * top;
+  }
+  vUV = aUV; vLayer = aLayer;
+  gl_Position = uVP * vec4(p, 1.0);
+}`;
+
+const FS_SHADOW = `#version 300 es
+precision highp float; precision highp sampler2DArray;
+in vec2 vUV; flat in float vLayer;
+uniform sampler2DArray uTex;
+void main(){
+#ifdef AT
+  if (texture(uTex, vec3(vUV, vLayer)).a < 0.42) discard;
+#endif
+}`;
+
+// Modelle (Kreaturen) werfen ueber denselben Weg, nur mit eigenem Vertexformat.
+const VS_SHADOW_M = `#version 300 es
+precision highp float;
+in vec3 aPos; in vec3 aNrm; in vec3 aCol;
+uniform mat4 uVP, uModel;
+void main(){ gl_Position = uVP * (uModel * vec4(aPos, 1.0)); }`;
+
+const FS_SHADOW_M = `#version 300 es
+precision highp float;
+void main(){}`;
 
 const VS_SPR = `#version 300 es
 precision highp float;
@@ -3555,13 +3722,260 @@ uniform sampler2D uTex;
 uniform vec3 uFog, uEye, uFlash, uShade, uFwd;
 uniform vec2 uFogR; uniform float uFlashAmt, uAlpha, uFogOn;
 out vec4 outC;
+vec3 toLin(vec3 c){ return c*(c*(c*0.3053 + 0.6822) + 0.0125); }
 void main(){
   vec4 t = texture(uTex, vUV);
   if (t.a < 0.28) discard;
-  vec3 c = mix(t.rgb * uShade, uFlash, uFlashAmt);
+  vec3 c = mix(toLin(t.rgb) * uShade, toLin(uFlash)*2.2, uFlashAmt);
   float f = clamp((dot(vW - uEye, uFwd) - uFogR.x) / max(uFogR.y - uFogR.x, 0.001), 0.0, 1.0) * uFogOn;
-  outC = vec4(mix(c, uFog, f), t.a * uAlpha);
+  outC = vec4(mix(c, toLin(uFog), f), t.a * uAlpha);
 }`;
+
+// Kreaturen sind keine gemalten Bilder mehr, sondern echte Koerper aus Ellipsoiden,
+// Kegeln und Fluegeln. Aufgebaut wird jede Art deterministisch aus Typ, Form, Stufe
+// und Kennung - dieselbe Art sieht also immer gleich aus, ohne dass ein einziges
+// Modell als Datei mitgeliefert werden muesste.
+const VS_MODEL = `#version 300 es
+precision highp float;
+in vec3 aPos; in vec3 aNrm; in vec3 aCol; in float aW;
+uniform mat4 uVP, uModel; uniform mat3 uNM;
+uniform float uTime, uPhase, uBreath;
+out vec3 vNrm, vCol, vW;
+void main(){
+  vec3 p = aPos;
+  // Atmen und leichtes Wiegen: die Staerke haengt an aW, damit Fuesse stehen bleiben
+  float t = uTime*1.9 + uPhase;
+  p.y += sin(t)*0.028*uBreath*aW;
+  p.xz *= 1.0 + sin(t*1.07)*0.021*uBreath*aW;
+  p.x += sin(t*0.63)*0.022*uBreath*aW*aW;
+  vec4 w = uModel * vec4(p, 1.0);
+  vW = w.xyz; vNrm = normalize(uNM * aNrm); vCol = aCol;
+  gl_Position = uVP * w;
+}`;
+
+const FS_MODEL = `#version 300 es
+precision highp float;
+in vec3 vNrm, vCol, vW;
+uniform vec3 uLight, uSun, uAmb, uFog, uEye, uFwd, uSkyC, uFlash;
+uniform vec2 uFogR; uniform float uFlashAmt, uAlpha, uShadowOn, uTexel;
+uniform highp sampler2DShadow uShadow; uniform mat4 uLVP;
+out vec4 outC;
+vec3 toLin(vec3 c){ return c*(c*(c*0.3053 + 0.6822) + 0.0125); }
+float shadowAt(vec3 w, float ndl){
+  if (uShadowOn < 0.5) return 1.0;
+  vec4 lp = uLVP * vec4(w, 1.0);
+  vec3 q = lp.xyz / lp.w * 0.5 + 0.5;
+  if (q.x < 0.002 || q.x > 0.998 || q.y < 0.002 || q.y > 0.998 || q.z > 1.0) return 1.0;
+  q.z -= 0.0016 + 0.0050 * (1.0 - ndl);
+  float s = 0.0;
+  for (int y = -1; y <= 1; y++)
+    for (int x = -1; x <= 1; x++)
+      s += texture(uShadow, vec3(q.xy + vec2(float(x), float(y)) * uTexel, q.z));
+  return s / 9.0;
+}
+void main(){
+  vec3 alb = toLin(vCol);
+  vec3 n = normalize(gl_FrontFacing ? vNrm : -vNrm);
+  vec3 v = normalize(uEye - vW);
+  float d = max(dot(n, uLight), 0.0);
+  float wrap = dot(n, uLight)*0.5 + 0.5;
+  float sh = shadowAt(vW, d);
+  // Das Umgebungslicht bleibt bewusst schwach und wenig blau: sonst zieht es
+  // jeder Kreatur die Eigenfarbe aus dem Fell.
+  vec3 amb = toLin(uAmb) * mix(vec3(0.34, 0.36, 0.42), toLin(uSkyC)*0.42 + 0.30, n.y*0.5 + 0.5);
+  // Sonne allein trifft eine Kreatur oft nur von hinten oben. Ein Aufhelllicht aus
+  // Kamerarichtung - in jedem Figurenlicht-Setup die "Fill" - holt Form und
+  // Eigenfarbe genau dort heraus, wo der Spieler hinschaut.
+  float fill = max(dot(n, v), 0.0);
+  vec3 col = alb * (amb + toLin(uSun)*(d*1.02 + wrap*0.16) * mix(0.34, 1.0, sh)
+                        + toLin(uSun)*fill*0.62);
+  // Glanzlicht und Randlicht loesen den Koerper vom Hintergrund - der wichtigste
+  // Unterschied zwischen "Klecks" und "Figur"
+  vec3 hv = normalize(v + uLight);
+  col += toLin(uSun) * alb * pow(max(dot(n, hv), 0.0), 30.0) * 1.1 * sh;
+  float rim = pow(1.0 - max(dot(n, v), 0.0), 3.6);
+  col += (toLin(uSun)*0.45 + toLin(uSkyC)*0.35) * rim * 0.16;
+  col = mix(col, toLin(uFlash)*2.6, uFlashAmt);
+  float f = clamp((dot(vW - uEye, uFwd) - uFogR.x) / max(uFogR.y - uFogR.x, 0.001), 0.0, 1.0);
+  outC = vec4(mix(col, toLin(uFog), f), uAlpha);
+}`;
+
+// ---- Modellbau ------------------------------------------------------------
+const MB = {
+  v:null, n:0,
+  begin(){ if(!this.v) this.v = new Float32Array(1<<18); this.n = 0; },
+  push(x,y,z, nx,ny,nz, c, w){
+    const a=this.v; let i=this.n;
+    if(i+10>a.length) return;
+    a[i]=x;a[i+1]=y;a[i+2]=z;a[i+3]=nx;a[i+4]=ny;a[i+5]=nz;
+    a[i+6]=c[0];a[i+7]=c[1];a[i+8]=c[2];a[i+9]=w;
+    this.n=i+10;
+  },
+  // Flaechennormalen statt interpolierter: facettiert, aber garantiert richtig
+  // orientiert - und der kantige Look passt zum Rest des Spiels.
+  tri3(A, B, C, c){
+    let nx=(B[1]-A[1])*(C[2]-A[2])-(B[2]-A[2])*(C[1]-A[1]);
+    let ny=(B[2]-A[2])*(C[0]-A[0])-(B[0]-A[0])*(C[2]-A[2]);
+    let nz=(B[0]-A[0])*(C[1]-A[1])-(B[1]-A[1])*(C[0]-A[0]);
+    const l=Math.hypot(nx,ny,nz); if(l<1e-9) return;
+    nx/=l; ny/=l; nz/=l;
+    const w=v=>Math.max(0, Math.min(1, (v[1]-0.02)/1.3));
+    this.push(A[0],A[1],A[2], nx,ny,nz, c, w(A));
+    this.push(B[0],B[1],B[2], nx,ny,nz, c, w(B));
+    this.push(C[0],C[1],C[2], nx,ny,nz, c, w(C));
+  },
+  // Ellipsoid, optional unten gestaucht - deckt Koerper, Kopf, Glieder, Augen ab
+  ell(cx,cy,cz, rx,ry,rz, c, seg, squash){
+    seg = seg||8; squash = squash||1;
+    const RI=seg, SE=seg+4;
+    const pt=(p,t)=>{
+      const sp=Math.sin(p), y=Math.cos(p);
+      const nx=sp*Math.cos(t), nz=sp*Math.sin(t);
+      const sy=y<0?y*squash:y;
+      return [cx+nx*rx, cy+sy*ry, cz+nz*rz];
+    };
+    for(let i=0;i<RI;i++){
+      const p0=Math.PI*i/RI, p1=Math.PI*(i+1)/RI;
+      for(let j=0;j<SE;j++){
+        const t0=2*Math.PI*j/SE, t1=2*Math.PI*(j+1)/SE;
+        const A=pt(p0,t0), B=pt(p1,t0), C=pt(p1,t1), D=pt(p0,t1);
+        // Wicklung so, dass die Normale nach aussen zeigt
+        this.tri3(A, C, B, c); this.tri3(A, D, C, c);
+      }
+    }
+  },
+  // Kegel fuer Flammen, Hoerner, Schnaebel, Stacheln
+  cone(cx,cy,cz, r, h, c, seg, tilt){
+    seg = seg||9; tilt = tilt||0;
+    const T=[cx+Math.sin(tilt)*h*0.5, cy+h, cz];
+    for(let j=0;j<seg;j++){
+      const t0=2*Math.PI*j/seg, t1=2*Math.PI*(j+1)/seg;
+      const p=(t)=>[cx+Math.cos(t)*r, cy, cz+Math.sin(t)*r];
+      this.tri3(p(t1), p(t0), T, c);
+    }
+  },
+  // Flaches Blatt/Fluegel-Viereck, beidseitig sichtbar
+  fin(p, c){ this.tri3(p[0], p[1], p[2], c); },
+};
+
+// Fuenf Bauplaene, je nach Typ. Die Stufe steuert Groesse und Zierrat: eine
+// Stufe-4-Art bekommt Hoerner, Stacheln und einen zweiten Schweif, eine Stufe-1-Art
+// bleibt rundlich und klein.
+const CBUILD = {
+  // Farbtoene aus der Grundfarbe ableiten, damit Bauch, Schatten und Zierrat
+  // zusammenpassen statt zufaellig zu wirken
+  pal(hex, r){
+    const h=hex.replace('#',''), n=parseInt(h,16);
+    const R=(n>>16)&255, G=(n>>8)&255, B=n&255;
+    const mix=(a,b,t)=>[ (a[0]+(b[0]-a[0])*t)/255, (a[1]+(b[1]-a[1])*t)/255, (a[2]+(b[2]-a[2])*t)/255 ];
+    const base=[R,G,B], white=[255,252,244], black=[26,22,30];
+    const jitter=(1-r()*0.22);
+    const b=[R*jitter, G*jitter, B*jitter];
+    return {
+      body: mix(b, white, 0.06),
+      belly: mix(b, white, 0.52),
+      dark:  mix(b, black, 0.42),
+      accent:mix(b, white, 0.78),
+      eye:   [0.99, 0.98, 0.95],
+      pupil: [0.09, 0.08, 0.12],
+      horn:  mix(b, white, 0.86),
+    };
+  },
+  eyes(cx, cy, cz, r, spread, p){
+    for(const s of [-1, 1]){
+      MB.ell(cx + spread*s, cy, cz + r*0.72, r, r*1.08, r*0.55, p.eye, 7);
+      MB.ell(cx + spread*s*1.02, cy + r*0.06, cz + r*0.98, r*0.46, r*0.52, r*0.32, p.pupil, 6);
+    }
+  },
+  biped(p, t, r){
+    const s = 0.86 + t*0.09;
+    MB.ell(-0.30*s, 0.20*s, 0.02, 0.19*s, 0.20*s, 0.26*s, p.dark, 7);
+    MB.ell( 0.30*s, 0.20*s, 0.02, 0.19*s, 0.20*s, 0.26*s, p.dark, 7);
+    MB.ell(0, 0.74*s, 0, 0.50*s, 0.52*s, 0.44*s, p.body, 9);
+    MB.ell(0, 0.66*s, 0.20*s, 0.34*s, 0.36*s, 0.30*s, p.belly, 8);
+    MB.ell(-0.52*s, 0.80*s, 0.04, 0.15*s, 0.28*s, 0.16*s, p.body, 7);
+    MB.ell( 0.52*s, 0.80*s, 0.04, 0.15*s, 0.28*s, 0.16*s, p.body, 7);
+    MB.ell(0, 1.34*s, 0.03, 0.40*s, 0.38*s, 0.37*s, p.body, 9);
+    this.eyes(0, 1.40*s, 0.24*s, 0.085*s, 0.155*s, p);
+    MB.cone(0, 1.62*s, -0.02, 0.13*s, 0.34*s + t*0.05, p.accent, 9, 0.2);
+    if(t >= 2) MB.ell(0, 0.30*s, -0.44*s, 0.14*s, 0.14*s, 0.30*s, p.dark, 7);
+    if(t >= 3) for(const sg of [-1,1]) MB.cone(sg*0.24*s, 1.58*s, -0.06, 0.06*s, 0.26*s, p.horn, 7, sg*0.5);
+    if(t >= 4) for(let i=0;i<3;i++) MB.cone(0, (0.95+i*0.16)*s, -0.36*s, 0.07*s, 0.19*s, p.horn, 6, -0.7);
+  },
+  quad(p, t, r){
+    const s = 0.88 + t*0.08;
+    for(const sx of [-1,1]) for(const sz of [-1,1])
+      MB.ell(sx*0.34*s, 0.19*s, sz*0.30*s, 0.14*s, 0.19*s, 0.15*s, p.dark, 7);
+    MB.ell(0, 0.56*s, 0, 0.46*s, 0.36*s, 0.62*s, p.body, 9);
+    MB.ell(0, 0.40*s, 0.06*s, 0.34*s, 0.22*s, 0.48*s, p.belly, 8);
+    MB.ell(0, 0.74*s, 0.66*s, 0.33*s, 0.30*s, 0.32*s, p.body, 8);
+    this.eyes(0, 0.80*s, 0.88*s, 0.075*s, 0.145*s, p);
+    MB.cone(0, 0.38*s, -0.66*s, 0.11*s, 0.42*s + t*0.06, p.accent, 8, -0.9);
+    for(const sg of [-1,1]) MB.ell(sg*0.26*s, 0.92*s, 0.62*s, 0.09*s, 0.13*s, 0.07*s, p.accent, 6);
+    if(t >= 2) for(let i=0;i<4;i++) MB.cone(0, (0.86 - i*0.03)*s, (0.26 - i*0.21)*s, 0.055*s, 0.17*s, p.horn, 6, 0);
+    if(t >= 3) for(const sg of [-1,1]) MB.cone(sg*0.18*s, 0.98*s, 0.60*s, 0.06*s, 0.24*s, p.horn, 6, sg*0.4);
+    if(t >= 4) MB.ell(0, 0.62*s, -0.52*s, 0.30*s, 0.26*s, 0.22*s, p.dark, 7);
+  },
+  bulb(p, t, r){
+    const s = 0.84 + t*0.09;
+    for(const sx of [-1,1]) for(const sz of [-1,1])
+      MB.ell(sx*0.28*s, 0.15*s, sz*0.24*s, 0.13*s, 0.15*s, 0.14*s, p.dark, 6);
+    MB.ell(0, 0.62*s, 0, 0.52*s, 0.48*s, 0.50*s, p.body, 9);
+    MB.ell(0, 0.54*s, 0.24*s, 0.36*s, 0.32*s, 0.32*s, p.belly, 8);
+    this.eyes(0, 0.74*s, 0.44*s, 0.085*s, 0.17*s, p);
+    // Knolle mit Blattkranz: das Erkennungszeichen der Pflanzenformen
+    MB.ell(0, 1.12*s, -0.06*s, 0.30*s + t*0.02, 0.30*s, 0.30*s, p.accent, 8);
+    const nl = 3 + t;
+    for(let i=0;i<nl;i++){
+      const a = i/nl*Math.PI*2 + r()*0.3, L = (0.42 + t*0.05)*s;
+      MB.fin([[Math.cos(a)*0.10*s, 1.26*s, Math.sin(a)*0.10*s],
+              [Math.cos(a+0.6)*0.16*s, 1.22*s, Math.sin(a+0.6)*0.16*s],
+              [Math.cos(a+0.3)*L, (1.44 + t*0.05)*s, Math.sin(a+0.3)*L]], p.accent);
+      MB.fin([[Math.cos(a+0.6)*0.16*s, 1.22*s, Math.sin(a+0.6)*0.16*s],
+              [Math.cos(a)*0.10*s, 1.26*s, Math.sin(a)*0.10*s],
+              [Math.cos(a+0.3)*L, (1.44 + t*0.05)*s, Math.sin(a+0.3)*L]], p.body);
+    }
+    if(t >= 3) for(const sg of [-1,1]) MB.ell(sg*0.46*s, 0.70*s, 0.08*s, 0.13*s, 0.17*s, 0.13*s, p.body, 6);
+  },
+  wing(p, t, r){
+    const s = 0.82 + t*0.09;
+    for(const sx of [-1,1]) MB.ell(sx*0.16*s, 0.16*s, 0, 0.09*s, 0.16*s, 0.11*s, p.dark, 6);
+    MB.ell(0, 0.72*s, 0, 0.34*s, 0.44*s, 0.40*s, p.body, 9);
+    MB.ell(0, 0.66*s, 0.20*s, 0.24*s, 0.30*s, 0.26*s, p.belly, 7);
+    MB.ell(0, 1.20*s, 0.04*s, 0.28*s, 0.27*s, 0.27*s, p.body, 8);
+    this.eyes(0, 1.24*s, 0.20*s, 0.075*s, 0.13*s, p);
+    MB.cone(0, 1.16*s, 0.26*s, 0.075*s, 0.26*s, p.horn, 7, 1.35);
+    // Fluegel als aufgefaechertes Dreieckspaar, leicht nach oben gestellt
+    for(const sg of [-1,1]){
+      const W = (0.86 + t*0.10)*s, H = (0.40 + t*0.05)*s;
+      MB.fin([[sg*0.24*s, 0.92*s, 0.04*s], [sg*0.30*s, 0.52*s, -0.10*s], [sg*W, 1.02*s + H, -0.22*s]], p.accent);
+      MB.fin([[sg*0.30*s, 0.52*s, -0.10*s], [sg*0.24*s, 0.92*s, 0.04*s], [sg*W, 1.02*s + H, -0.22*s]], p.body);
+      MB.fin([[sg*0.26*s, 0.58*s, -0.08*s], [sg*0.22*s, 0.34*s, -0.16*s], [sg*W*0.82, 0.60*s, -0.34*s]], p.body);
+      MB.fin([[sg*0.22*s, 0.34*s, -0.16*s], [sg*0.26*s, 0.58*s, -0.08*s], [sg*W*0.82, 0.60*s, -0.34*s]], p.accent);
+    }
+    const nt = 2 + t;
+    for(let i=0;i<nt;i++){
+      const a = (i - (nt-1)/2) * 0.30;
+      MB.fin([[0, 0.66*s, -0.30*s], [Math.sin(a)*0.10*s, 0.58*s, -0.34*s],
+              [Math.sin(a)*0.42*s, (0.52 - Math.abs(a)*0.1)*s, -(0.86 + t*0.08)*s]], p.accent);
+    }
+    if(t >= 3) MB.cone(0, 1.42*s, 0.0, 0.09*s, 0.28*s, p.horn, 7, 0.15);
+  },
+  wisp(p, t, r){
+    const s = 0.86 + t*0.10;
+    // Schwebt: kein Standbein, dafuer ein auslaufender Schweif
+    MB.ell(0, 1.00*s, 0, 0.44*s, 0.46*s, 0.42*s, p.body, 10);
+    MB.ell(0, 0.94*s, 0.22*s, 0.30*s, 0.30*s, 0.26*s, p.belly, 8);
+    this.eyes(0, 1.10*s, 0.34*s, 0.10*s, 0.18*s, p);
+    for(let i=0;i<5;i++){
+      const k = i/5, rr = (0.34 - k*0.26)*s;
+      MB.ell(Math.sin(i*1.9)*0.14*s, (0.62 - k*0.44)*s, Math.cos(i*1.4)*0.10*s, rr, rr*0.8, rr, p.dark, 6);
+    }
+    for(const sg of [-1,1]) MB.ell(sg*0.44*s, 1.10*s, 0.02, 0.13*s, 0.20*s, 0.12*s, p.body, 6);
+    if(t >= 2) for(const sg of [-1,1]) MB.cone(sg*0.20*s, 1.36*s, -0.02, 0.08*s, 0.30*s, p.horn, 6, sg*0.55);
+    if(t >= 4) MB.ell(0, 1.52*s, 0, 0.16*s, 0.16*s, 0.16*s, p.accent, 7);
+  },
+};
 
 const VS_SKY = `#version 300 es
 precision highp float;
@@ -3574,12 +3988,31 @@ void main(){
 const FS_SKY = `#version 300 es
 precision highp float;
 in vec2 vP;
-uniform vec3 uTop, uBot; uniform float uHorizon;
+uniform vec3 uTop, uBot, uSunC; uniform vec2 uSunP; uniform float uHorizon, uTime, uCloud, uAsp;
 out vec4 outC;
+vec3 toLin(vec3 c){ return c*(c*(c*0.3053 + 0.6822) + 0.0125); }
+float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p){
+  vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f);
+  return mix(mix(h(i), h(i+vec2(1,0)), f.x), mix(h(i+vec2(0,1)), h(i+vec2(1,1)), f.x), f.y);
+}
 void main(){
   float k = smoothstep(uHorizon - 1.15, uHorizon + 0.95, vP.y);
-  vec3 c = mix(uBot, uTop, k);
-  c += uBot * 0.10 * exp(-abs(vP.y - uHorizon) * 3.5);
+  vec3 c = mix(toLin(uBot), toLin(uTop), k);
+  c += toLin(uBot) * 0.14 * exp(-abs(vP.y - uHorizon) * 3.5);
+  // Sonne: Scheibe plus weiter Hof, damit der Himmel eine Richtung bekommt
+  vec2 sd = (vP - uSunP) * vec2(uAsp, 1.0);
+  float r = length(sd);
+  c += toLin(uSunC) * (smoothstep(0.085, 0.03, r) * 5.5 + exp(-r*3.4) * 0.55);
+  if (uCloud > 0.01 && vP.y > uHorizon - 0.3) {
+    // drei Oktaven, langsam driftend - genug fuer Struktur, billig genug fuers Handy
+    vec2 q = vec2(vP.x*1.7, (vP.y - uHorizon)*0.9) / max(vP.y - uHorizon + 0.55, 0.14);
+    q += vec2(uTime*0.012, 0.0);
+    float n = noise(q*2.0)*0.55 + noise(q*4.3)*0.28 + noise(q*9.1)*0.17;
+    float m = smoothstep(0.52, 0.86, n) * smoothstep(uHorizon - 0.2, uHorizon + 0.9, vP.y) * uCloud;
+    vec3 lit = mix(toLin(uBot)*1.3, toLin(uSunC)*1.15, 0.45);
+    c = mix(c, lit, m);
+  }
   outC = vec4(c, 1.0);
 }`;
 
@@ -3608,7 +4041,12 @@ const R3 = {
       this.pSky = this.prog(VS_SKY, FS_SKY);
       this.initTexArray();
       this.initQuad();
+      this.initPost();
+      this.initShadow();
+      this.initModel();
     } catch { return false; }
+    // Auf Touchgeraeten kostet die Kantenglaettung mehr als sie bringt.
+    this.fxaa = !matchMedia('(pointer: coarse)').matches;
     this.scratch = new Float32Array(1 << 20);
     this.scratch2 = new Float32Array(1 << 19);
     this.emptyVao = gl.createVertexArray();
@@ -3619,6 +4057,315 @@ const R3 = {
     this.resize();
     window.addEventListener('resize', () => this.resize());
     return true;
+  },
+
+  // ---- Kreaturenmodelle ----------------------------------------------------
+  initModel() {
+    const gl = this.gl;
+    this.pModel = this.prog(VS_MODEL, FS_MODEL, ['aPos','aNrm','aCol','aW']);
+    this.pModelS = this.prog(VS_MODEL, FS_SHADOW_M.replace('void main(){}','void main(){}'), ['aPos','aNrm','aCol','aW']);
+    this.models = new Map();
+    this.mModel = new Float32Array(16);
+    this.mNrm = new Float32Array(9);
+  },
+
+  // Ein Modell je Art. Gebaut wird einmal, danach liegt es als VAO im Speicher.
+  modelFor(mon) {
+    const key = mon.id + ':' + mon.t + ':' + (mon.tier || 1);
+    let m = this.models.get(key);
+    if (m) return m;
+    const gl = this.gl;
+    let sd = Sprites.seedFromId(mon.id) >>> 0;
+    const rnd = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
+    const form = Sprites.CREATURE_FORM[mon.t] || 'biped';
+    const pal = CBUILD.pal(Sprites.TYPE_COLORS[mon.t] || '#a8a878', rnd);
+    MB.begin();
+    (CBUILD[form] || CBUILD.biped).call(CBUILD, pal, Math.max(1, Math.min(4, mon.tier || 1)), rnd);
+    const data = MB.v.slice(0, MB.n);
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    [[0,3,0],[1,3,12],[2,3,24],[3,1,36]].forEach(([loc, sz, off]) => {
+      gl.enableVertexAttribArray(loc);
+      gl.vertexAttribPointer(loc, sz, gl.FLOAT, false, 40, off);
+    });
+    gl.bindVertexArray(null);
+    m = {vao, buf, count: MB.n / 10};
+    // Der Speicher bleibt klein: seltene Arten fliegen wieder raus.
+    if (this.models.size > 26) {
+      const k = this.models.keys().next().value, o = this.models.get(k);
+      gl.deleteVertexArray(o.vao); gl.deleteBuffer(o.buf); this.models.delete(k);
+    }
+    this.models.set(key, m);
+    return m;
+  },
+
+  // Verschiebung, Drehung, Groesse - mehr braucht ein Kaempfer nicht
+  setModelMat(x, y, z, sc, yaw, lean) {
+    const c = Math.cos(yaw), s = Math.sin(yaw), m = this.mModel;
+    const cl = Math.cos(lean || 0), sl = Math.sin(lean || 0);
+    m[0]=c*sc;  m[1]=0;      m[2]=-s*sc;  m[3]=0;
+    m[4]=s*sl*sc; m[5]=cl*sc; m[6]=c*sl*sc; m[7]=0;
+    m[8]=s*cl*sc; m[9]=-sl*sc; m[10]=c*cl*sc; m[11]=0;
+    m[12]=x; m[13]=y; m[14]=z; m[15]=1;
+    const n = this.mNrm;
+    n[0]=c;    n[1]=0;   n[2]=-s;
+    n[3]=s*sl; n[4]=cl;  n[5]=c*sl;
+    n[6]=s*cl; n[7]=-sl; n[8]=c*cl;
+  },
+
+  beginModels(env, fogNear, fogFar, shOk) {
+    const gl = this.gl, P = this.pModel;
+    gl.useProgram(P.p);
+    const d = env.dir, dl = Math.hypot(d[0], d[1], d[2]) || 1;
+    gl.uniformMatrix4fv(P.u.uVP, false, this.vp);
+    gl.uniform3f(P.u.uLight, d[0]/dl, d[1]/dl, d[2]/dl);
+    gl.uniform3fv(P.u.uSun, env.sun);
+    gl.uniform3fv(P.u.uAmb, env.amb);
+    gl.uniform3fv(P.u.uFog, env.fog);
+    gl.uniform3fv(P.u.uSkyC, env.skyT);
+    gl.uniform3fv(P.u.uEye, this.eye);
+    gl.uniform3fv(P.u.uFwd, this.fwd);
+    gl.uniform2f(P.u.uFogR, fogNear, fogFar);
+    gl.uniform1f(P.u.uTime, this.time);
+    gl.uniform1f(P.u.uShadowOn, shOk && this.sm ? 1 : 0);
+    if (shOk && this.sm) {
+      gl.uniformMatrix4fv(P.u.uLVP, false, this.lvp);
+      gl.uniform1f(P.u.uTexel, 1 / this.SHADOW);
+      gl.uniform1i(P.u.uShadow, 3);
+      gl.activeTexture(gl.TEXTURE3);
+      gl.bindTexture(gl.TEXTURE_2D, this.sm.t);
+      gl.activeTexture(gl.TEXTURE0);
+    }
+  },
+
+  drawModel(mon, x, y, z, sc, yaw, o) {
+    const gl = this.gl, P = this.pModel;
+    o = o || {};
+    const m = this.modelFor(mon);
+    this.setModelMat(x, y, z, sc, yaw, o.lean);
+    gl.uniformMatrix4fv(P.u.uModel, false, this.mModel);
+    gl.uniformMatrix3fv(P.u.uNM, false, this.mNrm);
+    gl.uniform1f(P.u.uPhase, o.phase || 0);
+    gl.uniform1f(P.u.uBreath, o.breath === undefined ? 1 : o.breath);
+    gl.uniform1f(P.u.uFlashAmt, o.flash || 0);
+    gl.uniform3fv(P.u.uFlash, o.flashCol || [1, 0.4, 0.32]);
+    gl.uniform1f(P.u.uAlpha, o.alpha === undefined ? 1 : o.alpha);
+    gl.bindVertexArray(m.vao);
+    gl.drawArrays(gl.TRIANGLES, 0, m.count);
+  },
+
+  // Im Schattendurchgang zaehlt nur die Silhouette, also dasselbe Modell ohne Licht.
+  shadowModel(mon, x, y, z, sc, yaw, o) {
+    const gl = this.gl, P = this.pModelS;
+    o = o || {};
+    const m = this.modelFor(mon);
+    this.setModelMat(x, y, z, sc, yaw, o.lean);
+    gl.useProgram(P.p);
+    gl.uniformMatrix4fv(P.u.uVP, false, this.lvp);
+    gl.uniformMatrix4fv(P.u.uModel, false, this.mModel);
+    gl.uniformMatrix3fv(P.u.uNM, false, this.mNrm);
+    gl.uniform1f(P.u.uTime, this.time);
+    gl.uniform1f(P.u.uPhase, o.phase || 0);
+    gl.uniform1f(P.u.uBreath, o.breath === undefined ? 1 : o.breath);
+    gl.bindVertexArray(m.vao);
+    gl.drawArrays(gl.TRIANGLES, 0, m.count);
+  },
+
+  // ---- Tiefenkarte der Sonne ----------------------------------------------
+  initShadow() {
+    const gl = this.gl;
+    const coarse = matchMedia('(pointer: coarse)').matches;
+    const S = this.SHADOW = coarse ? 1024 : 2048;
+    this.pShadow  = this.prog(VS_SHADOW, FS_SHADOW, ['aPos','aNrm','aUV','aLayer','aSway']);
+    this.pShadowA = this.prog(VS_SHADOW, FS_SHADOW.replace('#version 300 es','#version 300 es\n#define AT 1'),
+                              ['aPos','aNrm','aUV','aLayer','aSway']);
+    const t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.DEPTH_COMPONENT24, S, S);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_FUNC, gl.LEQUAL);
+    const f = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, f);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, t, 0);
+    const okFb = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    this.sm = okFb ? {t, f} : null;
+    this.lvp = new Float32Array(16);
+    this.lproj = new Float32Array(16);
+    this.lview = new Float32Array(16);
+  },
+
+  // Die Lichtkamera folgt dem Blickpunkt und rastet auf Texel ein - sonst
+  // kriecht der Schattenrand bei jeder Bewegung.
+  setLightCam(cx, cy, cz, radius, env) {
+    const d = env.dir, dl = Math.hypot(d[0], d[1], d[2]) || 1;
+    const dist = radius * 2.6;
+    const q = radius * 2 / this.SHADOW;
+    cx = Math.round(cx / q) * q; cz = Math.round(cz / q) * q;
+    M4.ortho(this.lproj, radius, radius, 0.1, dist * 2.4);
+    M4.lookAt(this.lview, cx + d[0]/dl*dist, cy + d[1]/dl*dist, cz + d[2]/dl*dist, cx, cy, cz);
+    M4.mul(this.lvp, this.lproj, this.lview);
+  },
+
+  shadowPass(draw) {
+    const gl = this.gl;
+    if (!this.sm) return false;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.sm.f);
+    gl.viewport(0, 0, this.SHADOW, this.SHADOW);
+    gl.clear(gl.DEPTH_BUFFER_BIT);
+    gl.colorMask(false, false, false, false);
+    gl.enable(gl.POLYGON_OFFSET_FILL);
+    gl.polygonOffset(2.2, 3.0);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.tex);
+    for (const P of [this.pShadow, this.pShadowA]) {
+      gl.useProgram(P.p);
+      gl.uniformMatrix4fv(P.u.uVP, false, this.lvp);
+      gl.uniform1f(P.u.uTime, this.time);
+      gl.uniform3fv(P.u.uCam, this.eye);
+      gl.uniform1i(P.u.uTex, 0);
+    }
+    draw();
+    gl.disable(gl.POLYGON_OFFSET_FILL);
+    gl.colorMask(true, true, true, true);
+    return true;
+  },
+
+  bindShadow(on) {
+    const gl = this.gl;
+    for (const P of [this.pWorld, this.pWorldA]) {
+      gl.useProgram(P.p);
+      gl.uniform1f(P.u.uShadowOn, on && this.sm ? 1 : 0);
+      if (on && this.sm) {
+        gl.uniformMatrix4fv(P.u.uLVP, false, this.lvp);
+        gl.uniform1f(P.u.uTexel, 1 / this.SHADOW);
+        gl.uniform1i(P.u.uShadow, 3);
+      }
+    }
+    if (on && this.sm) {
+      gl.activeTexture(gl.TEXTURE3);
+      gl.bindTexture(gl.TEXTURE_2D, this.sm.t);
+      gl.activeTexture(gl.TEXTURE0);
+    }
+  },
+
+  // ---- HDR-Ziel und Nachbearbeitung ---------------------------------------
+  // Die Szene landet nicht direkt auf dem Schirm, sondern in einem Fliesskomma-
+  // Puffer. Erst danach kommen Bloom, Belichtung, Tonemapping und Kantenglaettung.
+  initPost() {
+    const gl = this.gl;
+    this.hdr = !!(gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float'));
+    this.fmt = this.hdr ? gl.RGBA16F : gl.RGBA8;
+    this.pBright = this.prog(VS_FULL, FS_BRIGHT);
+    this.pBlur   = this.prog(VS_FULL, FS_BLUR);
+    this.pPost   = this.prog(VS_FULL, FS_POST);
+    this.pFxaa   = this.prog(VS_FULL, FS_FXAA);
+    this.scene = null; this.ldr = null; this.bl = [null, null];
+    this.postW = 0; this.postH = 0;
+  },
+
+  mkTarget(w, h, fmt, depth) {
+    const gl = this.gl;
+    const t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texStorage2D(gl.TEXTURE_2D, 1, fmt, w, h);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const f = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, f);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+    let rb = null;
+    if (depth) {
+      rb = gl.createRenderbuffer();
+      gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, w, h);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, rb);
+    }
+    const okFb = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return okFb ? {t, f, rb, w, h} : null;
+  },
+
+  freeTarget(o) {
+    if (!o) return;
+    const gl = this.gl;
+    gl.deleteTexture(o.t); gl.deleteFramebuffer(o.f);
+    if (o.rb) gl.deleteRenderbuffer(o.rb);
+  },
+
+  resizePost() {
+    const w = this.cv.width, h = this.cv.height;
+    if (w === this.postW && h === this.postH && this.scene) return this.scene;
+    [this.scene, this.ldr, this.bl[0], this.bl[1]].forEach(o => this.freeTarget(o));
+    const bw = Math.max(1, w >> 2), bh = Math.max(1, h >> 2);
+    this.scene = this.mkTarget(w, h, this.fmt, true);
+    this.ldr   = this.mkTarget(w, h, this.gl.RGBA8, false);
+    this.bl[0] = this.mkTarget(bw, bh, this.fmt, false);
+    this.bl[1] = this.mkTarget(bw, bh, this.fmt, false);
+    this.postW = w; this.postH = h;
+    if (!this.scene || !this.ldr || !this.bl[0] || !this.bl[1]) this.post = false;
+    return this.scene;
+  },
+
+  beginFrame() {
+    const gl = this.gl;
+    if (this.post !== false) this.resizePost();
+    const t = this.post !== false && this.scene;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, t ? this.scene.f : null);
+    gl.viewport(0, 0, this.cv.width, this.cv.height);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  },
+
+  blit(P, src, w, h, dst, setup) {
+    const gl = this.gl;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, dst ? dst.f : null);
+    gl.viewport(0, 0, w, h);
+    gl.useProgram(P.p);
+    gl.bindVertexArray(this.emptyVao);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, src);
+    gl.uniform1i(P.u.uTex, 0);
+    if (setup) setup(P);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  },
+
+  endFrame(grade) {
+    const gl = this.gl;
+    if (this.post === false || !this.scene) return;
+    const g = grade || {};
+    gl.disable(gl.DEPTH_TEST); gl.disable(gl.BLEND); gl.depthMask(false);
+    const b0 = this.bl[0], b1 = this.bl[1];
+    this.blit(this.pBright, this.scene.t, b0.w, b0.h, b0, P => gl.uniform2f(P.u.uThr, 1.25, 0.30));
+    // zwei Durchgaenge waagrecht/senkrecht, zweimal - breiter Schein bei wenig Kosten
+    for (let i = 0; i < 2; i++) {
+      this.blit(this.pBlur, b0.t, b1.w, b1.h, b1, P => gl.uniform2f(P.u.uDir, 1.0 / b1.w, 0));
+      this.blit(this.pBlur, b1.t, b0.w, b0.h, b0, P => gl.uniform2f(P.u.uDir, 0, 1.0 / b0.h));
+    }
+    const fx = this.fxaa !== false;
+    this.blit(this.pPost, this.scene.t, this.cv.width, this.cv.height, fx ? this.ldr : null, P => {
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, b0.t);
+      gl.uniform1i(P.u.uBloom, 1);
+      gl.uniform1f(P.u.uExp, g.exp === undefined ? 1.15 : g.exp);
+      gl.uniform1f(P.u.uBloomAmt, g.bloom === undefined ? 0.28 : g.bloom);
+      gl.uniform1f(P.u.uVig, g.vig === undefined ? 0.3 : g.vig);
+      gl.uniform1f(P.u.uSat, g.sat === undefined ? 1.08 : g.sat);
+      gl.uniform1f(P.u.uFade, g.fade === undefined ? 1 : g.fade);
+      gl.activeTexture(gl.TEXTURE0);
+    });
+    if (fx) this.blit(this.pFxaa, this.ldr.t, this.cv.width, this.cv.height, null,
+      P => gl.uniform2f(P.u.uPx, 1 / this.cv.width, 1 / this.cv.height));
+    gl.enable(gl.DEPTH_TEST); gl.depthMask(true);
+    gl.bindVertexArray(null);
   },
 
   prog(vsSrc, fsSrc, attrs) {
@@ -4559,7 +5306,17 @@ const R3 = {
     gl.bindVertexArray(this.emptyVao);
     gl.depthMask(false); gl.disable(gl.DEPTH_TEST);
     gl.uniform3fv(P.u.uTop, env.skyT); gl.uniform3fv(P.u.uBot, env.fog);
+    gl.uniform3fv(P.u.uSunC, env.sunC || env.sun);
     gl.uniform1f(P.u.uHorizon, Math.max(-1.5, Math.min(1.5, Math.tan(pitch) / Math.tan(fovy/2))));
+    gl.uniform1f(P.u.uTime, this.time);
+    gl.uniform1f(P.u.uCloud, env.cloud === undefined ? 0.5 : env.cloud);
+    gl.uniform1f(P.u.uAsp, this.aspect());
+    // Sonnenstand: Lichtrichtung weit hinausprojizieren und im Bild verorten
+    const d = env.dir, dl = Math.hypot(d[0], d[1], d[2]) || 1, m = this.vp;
+    const x = this.eye[0] + d[0]/dl*900, y = this.eye[1] + d[1]/dl*900, z = this.eye[2] + d[2]/dl*900;
+    const w = m[3]*x + m[7]*y + m[11]*z + m[15];
+    gl.uniform2f(P.u.uSunP, w > 0 ? (m[0]*x + m[4]*y + m[8]*z + m[12])/w : 99,
+                            w > 0 ? (m[1]*x + m[5]*y + m[9]*z + m[13])/w : 99);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.enable(gl.DEPTH_TEST); gl.depthMask(true);
   },
@@ -4579,6 +5336,7 @@ const R3 = {
       gl.uniform3fv(P.u.uSun, env.sun);
       gl.uniform3fv(P.u.uAmb, env.amb);
       gl.uniform3fv(P.u.uFog, env.fog);
+      gl.uniform3fv(P.u.uSkyC, env.skyT);
       gl.uniform3fv(P.u.uEye, this.eye);
       gl.uniform3fv(P.u.uFwd, this.fwd);
       gl.uniform2f(P.u.uFogR, fogNear, fogFar);
@@ -4598,8 +5356,8 @@ const R3 = {
     gl.uniform2f(P.u.uFogR, fogNear, fogFar);
     gl.uniform1f(P.u.uFogOn, fogOn === undefined ? 1 : fogOn);
     gl.uniform1i(P.u.uTex, 0);
-    const l = env.amb, s = env.sun;
-    this.spriteShade = [Math.min(1.35, l[0]+s[0]*0.7), Math.min(1.35, l[1]+s[1]*0.7), Math.min(1.35, l[2]+s[2]*0.7)];
+    const l = env.amb, s = env.sun, lin = c => c*(c*(c*0.3053 + 0.6822) + 0.0125);
+    this.spriteShade = [lin(l[0])+lin(s[0])*0.78, lin(l[1])+lin(s[1])*0.78, lin(l[2])+lin(s[2])*0.78];
   },
 
   sprite(t, x, y, z, w, h, o) {
@@ -4678,7 +5436,7 @@ const R3 = {
       cz = Math.min(s.mh / 2 + slackZ, Math.max(s.mh / 2 - slackZ, pz));
     }
     this.setCam(cx, Math.sin(pitch)*dist + 0.5, cz + Math.cos(pitch)*dist, cx, inH ? 0.3 : 1.0, cz, fovy, far);
-    const fogN = inH ? 40 : 21, fogF = inH ? 90 : 40;
+    const fogN = inH ? 40 : 30, fogF = inH ? 90 : 78;
 
     const CH = this.CH, rad = inH ? 2 : 4;
     const pcx = Math.floor(px / CH), pcz = Math.floor(pz / CH);
@@ -4695,11 +5453,21 @@ const R3 = {
     if (this.frameNo % 240 === 0) this.evict();
     if (this.mipDirty) { gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.tex); gl.generateMipmap(gl.TEXTURE_2D_ARRAY); this.mipDirty = false; }
 
-    gl.viewport(0, 0, this.cv.width, this.cv.height);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    // Schattenkarte um den Blickpunkt: draussen weiter Radius, drinnen eng
+    const shR = inH ? Math.max(s.mw, s.mh) * 0.62 + 3 : 26;
+    this.setLightCam(cx, 0.4, cz, shR, env);
+    const shOk = this.shadowPass(() => {
+      gl.useProgram(this.pShadow.p);
+      for (const c of list) if (c.count) { gl.bindVertexArray(c.vao); gl.drawArrays(gl.TRIANGLES, 0, c.count); }
+      gl.useProgram(this.pShadowA.p);
+      for (const c of list) if (c.aCount) { gl.bindVertexArray(c.vao); gl.drawArrays(gl.TRIANGLES, c.count, c.aCount); }
+    });
+
+    this.beginFrame();
     gl.disable(gl.BLEND);
     this.sky(env, pitch, fovy);
     this.beginWorld(env, fogN, fogF);
+    this.bindShadow(shOk);
     gl.useProgram(this.pWorld.p);
     for (const c of list) if (c.count) { gl.bindVertexArray(c.vao); gl.drawArrays(gl.TRIANGLES, 0, c.count); }
     if (!inH) { const g = this.groundPlane(s.region || 'r1'); gl.bindVertexArray(g.vao); gl.drawArrays(gl.TRIANGLES, 0, g.count); }
@@ -4736,6 +5504,7 @@ const R3 = {
     gl.depthFunc(gl.LESS); gl.depthMask(true);
     gl.disable(gl.BLEND);
     gl.bindVertexArray(null);
+    this.endFrame(env.grade);
   },
 
   evict() {
@@ -4830,28 +5599,66 @@ const R3 = {
     this.bpos.player = lerp([-1.9,0,1.6], [-3.9,0,0.8]);
     this.bpos.enemy = lerp([2.6,0,-3.0], [5.4,0,-3.4]);
     this.setCam(-4.3, 5.3, 9.5, 0.4, 0.5, -1.3, fovy, 140);
-    const fogN = 15, fogF = 34;
+    const fogN = 24, fogF = 72;
+    this.setLightCam(0.4, 0.4, -1.0, 13, env);
 
-    gl.viewport(0, 0, this.cv.width, this.cv.height);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    const pm0 = s.team[s.active], em0 = s.enemy;
+    const pp0 = this.monPos('player'), ep0 = this.monPos('enemy');
+    // Beide drehen sich zueinander, bleiben aber knapp der Kamera zugewandt:
+    // zwischen "Blick zur Kamera" und "Blick zum Gegner" wird interpoliert, sonst
+    // sieht der Spieler nur Ruecken.
+    const yawTo = (ax, az, bx, bz) => Math.atan2(bx - ax, bz - az);
+    const blend = (px_, pz_, ox, oz, k) => {
+      const toCam = yawTo(px_, pz_, this.eye[0], this.eye[2]);
+      let dlt = yawTo(px_, pz_, ox, oz) - toCam;
+      while (dlt > Math.PI) dlt -= 2*Math.PI;
+      while (dlt < -Math.PI) dlt += 2*Math.PI;
+      return toCam + dlt * k;
+    };
+    // Der eigene Kaempfer steht vorn und wird eher von hinten gezeigt (wie in den
+    // Vorbildern), der Gegner dreht sich weiter zur Kamera, damit man ihn ansieht.
+    const yP = blend(pp0.x, pp0.z, ep0.x, ep0.z, 0.34);
+    const yE = blend(ep0.x, ep0.z, pp0.x, pp0.z, 0.42);
+    const scP = 1.34, scE = 1.24;
+    const shOk = this.shadowPass(() => {
+      gl.useProgram(this.pShadow.p);
+      gl.bindVertexArray(st.vao);
+      if (st.count) gl.drawArrays(gl.TRIANGLES, 0, st.count);
+      gl.useProgram(this.pShadowA.p);
+      if (st.aCount) gl.drawArrays(gl.TRIANGLES, st.count, st.aCount);
+      if (pm0) this.shadowModel(pm0, pp0.x, pp0.y, pp0.z, scP, yP, {phase:0.0});
+      this.shadowModel(em0, ep0.x, ep0.y, ep0.z, scE, yE, {phase:1.7});
+    });
+    this.beginFrame();
     gl.disable(gl.BLEND);
     this.sky(env, 0.24, fovy);
     this.beginWorld(env, fogN, fogF);
+    this.bindShadow(shOk);
     this.drawMesh(st);
 
-    const pm = s.team[s.active], em = s.enemy;
-    const pp = this.monPos('player'), ep = this.monPos('enemy');
+    const pm = pm0, em = em0, pp = pp0, ep = ep0;
     this.beginSprites(env, fogN, fogF);
     gl.depthMask(false);
-    this.blob(pp.x, pp.z, 2.2, 0.85); this.blob(ep.x, ep.z, 1.9, 0.8);
+    this.blob(pp.x, pp.z, 2.2, 0.7); this.blob(ep.x, ep.z, 1.9, 0.66);
     gl.depthMask(true);
-    if (pm) this.sprite(this.monTex(pm), pp.x, pp.y, pp.z, 2.9, 2.9, {flash: pp.flash, alpha: pm.hp > 0 ? 1 : 0.35});
-    this.sprite(this.monTex(em), ep.x, ep.y, ep.z, 2.6, 2.6, {flash: ep.flash, alpha: em.hp > 0 ? 1 : 0.35});
+    gl.disable(gl.BLEND);
+    this.beginModels(env, fogN, fogF, shOk);
+    // Beim Angriff neigt sich der Koerper nach vorn, beim Treffer zuckt er zurueck
+    const leanOf = side => { const f = this.fxOf(side); if (!f) return 0;
+      return f.kind === 'hit' ? -Math.sin(f.t * Math.PI) * 0.3 : Math.sin(f.t * Math.PI) * 0.38; };
+    const ko = m => m && m.hp <= 0;
+    if (pm) this.drawModel(pm, pp.x, pp.y, pp.z, scP, yP,
+      {phase:0.0, flash:pp.flash, lean:leanOf('player') + (ko(pm) ? 1.25 : 0),
+       breath: ko(pm) ? 0.15 : 1, alpha: ko(pm) ? 0.5 : 1});
+    this.drawModel(em, ep.x, ep.y, ep.z, scE, yE,
+      {phase:1.7, flash:ep.flash, lean:leanOf('enemy') + (ko(em) ? 1.25 : 0),
+       breath: ko(em) ? 0.15 : 1, alpha: ko(em) ? 0.5 : 1});
     gl.disable(gl.BLEND);
     gl.bindVertexArray(null);
+    this.endFrame(env.grade);
     this.bScreen = {
-      player: this.project(pp.x, pp.y + 2.9, pp.z),
-      enemy: this.project(ep.x, ep.y + 2.6, ep.z),
+      player: this.project(pp.x, pp.y + 2.5, pp.z),
+      enemy: this.project(ep.x, ep.y + 2.3, ep.z),
     };
   },
 };
