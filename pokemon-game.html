@@ -2317,8 +2317,13 @@ const QUESTS={
     check:s=>s.battlesWon>=35,progress:s=>Math.min(s.battlesWon,35)+'/35',reward:{potions:6,cash:250}},
   q10:{id:'q10',giverName:'Kristallschurfer Finn',name:'Eisiger Meister',desc:'Bringe ein Pokemon auf Level 30.',
     check:s=>s.team.some(p=>p.lv>=30),progress:s=>Math.max(...s.team.map(p=>p.lv))+'/30',reward:{potions:7,cash:300}},
-  q11:{id:'q11',giverName:'Schneejagerin Runa',name:'Seltene Beute',desc:'Fange ein Pokemon der Stufe 4.',
+  q11:{id:'q11',giverName:'Schneejagerin Runa',name:'Seltene Beute',desc:'Fange ein legendaeres Pokemon.',
     check:s=>s.team.some(p=>p.tier>=4),progress:s=>s.team.some(p=>p.tier>=4)?'1/1':'0/1',reward:{potions:8,cash:350}},
+  qL:{id:'qL',giverName:'Professor Eichenholz',name:'Legendaere Bedrohung',
+    desc:'Legendaere Pokemon bedrohen die vier Regionen! Reise in jede Region, finde das legendaere Pokemon und fange es, um die Menschen zu retten.',
+    check:s=>!!(s.flags.legendR1&&s.flags.legendR2&&s.flags.legendR3&&s.flags.legendR4),
+    progress:s=>{const c=(s.flags.legendR1?1:0)+(s.flags.legendR2?1:0)+(s.flags.legendR3?1:0)+(s.flags.legendR4?1:0);return c+'/4 Legendaere bezwungen';},
+    reward:{}},
 };
 function questStatus(qid,s){
   const st=(s.quests||{})[qid];
@@ -2344,7 +2349,12 @@ function completeQuest(qid){
 // spricht jeder den Spieler als Held bzw. Heldin an und erzahlt, was seither wieder
 // gut ist - kein Wort mehr uber Risse, Gefahr und Verluste. Wer noch eine Aufgabe zu
 // vergeben hat, fragt jetzt freundlich ('ask') statt duster.
-function isHero(s){ return !!(s&&s.flags&&s.flags.champion); }
+const LEGEND_REGIONS={r1:'lavados',r2:'arktos',r3:'zapdos',r4:'dragoran'};
+const LEGEND_BOSS='mewtwo';
+function isPostChampion(s){ return !!(s&&s.flags&&s.flags.champion); }
+function isLegendHunt(s){ return isPostChampion(s)&&!isHero(s); }
+function allLegendsCaught(s){ return !!(s&&s.flags&&s.flags.legendR1&&s.flags.legendR2&&s.flags.legendR3&&s.flags.legendR4); }
+function isHero(s){ return !!(s&&s.flags&&s.flags.legendaryHero); }
 function heroName(){
   const c=G.s&&G.s.char;
   const t=/\u{1F469}|\u{1F467}/u.test((c&&c.spr)||'')?'Heldin':'Held';
@@ -2461,6 +2471,7 @@ function professorLines(s){
   if(st==='active') return [`Professor Eichenholz: Fortschritt: ${QUESTS.q1.progress(s)}.`,'Die Nahte warten nicht auf dich. Aber sie reissen auch nicht schneller, wenn du hetzt.'];
   const b=(s.flags.badgeR1?1:0)+(s.flags.badgeR2?1:0)+(s.flags.badgeR3?1:0);
   if(isHero(s)) return hero('professor');
+  if(isLegendHunt(s)){const c=(s.flags.legendR1?1:0)+(s.flags.legendR2?1:0)+(s.flags.legendR3?1:0)+(s.flags.legendR4?1:0);return ['Professor Eichenholz: Die Welt ist geheilt, aber legendaere Pokemon bedrohen die Regionen!',`${c} von 4 Legendaeren sind bezwungen. Reise in jede Region und fange sie!`,'Nur wer alle vier baendigt, wird ein wahrer Held.'];}
   if(b===3) return ['Professor Eichenholz: Alle drei Anker folgen dir. Damit hat noch nie jemand die Liga betreten.','Die letzte Naht liegt dort. Sie ist die grosste. Sei vorsichtig.'];
   if(b===2) return ['Professor Eichenholz: Zwei Anker. Die Erschutterungen werden seltener - man merkt es an den Instrumenten.','Einer fehlt noch. Der schwerste, naturlich.'];
   if(b===1) return ['Professor Eichenholz: Ein Anker folgt dir bereits. Die Naht uber unserem Dorf hat sich messbar beruhigt.','Zwei fehlen. Weiter im Osten wartet mehr.'];
@@ -2573,6 +2584,7 @@ function conductorLines(s){
   return ['Schaffner Aldric: Der Zug zur Schattenregion steht bereit. Einsteigen?'];
 }
 function returnConductorLines(s){ if(isHero(s)) return hero('elrik');
+  if(isLegendHunt(s)){const need=[];if(!s.flags.legendR1)need.push('Heimatdorf (Lavados)');if(!s.flags.legendR2)need.push('Schattenregion (Arktos)');if(!s.flags.legendR3)need.push('Frostregion (Zapdos)');if(!s.flags.legendR4)need.push('Pokemon-Liga (Dragoran)');return need.length?['Schaffner Elrik: Legendaere Pokemon bedrohen die Regionen!','Noch zu bezwingen: '+need.join(', ')+'.','Steig ein, ich bringe dich hin!']:['Schaffner Elrik: Der Zug steht bereit!'];}
   return ['Schaffner Elrik: Der Zug zuruck ins Heimatdorf steht bereit. Einsteigen?']; }
 function yaraLines(s){
   if(isHero(s)) return hero('yara');
@@ -2888,6 +2900,13 @@ function registerAllOutpostQuests(s){
 function outpostLines(def,qid,s){
   const st=questStatus(qid,s);
   if(isHero(s)&&def.hero) return heroText(st==='none'&&def.heroAsk?def.heroAsk:def.hero);
+  if(isLegendHunt(s)){
+    const lid=LEGEND_REGIONS[s.region];
+    const lnm=lid?DB.find(d=>d.id===lid):null;
+    const done=s.flags['legendR'+(s.region||'r1').slice(1)];
+    if(done) return [`${def.npc}: Das legendaere Pokemon ist fort! Endlich Ruhe.`];
+    if(lnm) return [`${def.npc}: Ein ${lnm.nm} terrorisiert unsere Gegend!`,'Bitte finde es und fange es, bevor es noch mehr Schaden anrichtet!'];
+  }
   if(st==='none')return def.intro;
   if(st==='active')return def.wait;
   if(st==='ready')return def.done;
@@ -2920,6 +2939,8 @@ function buildRandomTrainerNpc(rt){
       ? heroText(s.flags[flagId]
           ? [`${rt.name}: {H}! Von dir besiegt worden zu sein erzahle ich noch meinen Enkeln.`]
           : [`${rt.name}: {H}? Wirklich? Einmal gegen dich kampfen - bitte!`])
+      : isLegendHunt(s)
+      ? (s.flags[flagId]?[`${rt.name}: Pass auf dich auf da draussen. Man hoert von legendaeren Pokemon!`]:[`${rt.name}: Bevor du gegen das Legendaere antrittst - trainier erst mit mir!`])
       : (s.flags[flagId]?[`${rt.name}: Gut gekampft!`]:[`${rt.name}: Ich fordere dich zu einem Kampf heraus!`]),
     onEnd:()=>{ if(!G.s.flags[flagId]) setTimeout(()=>G.startTrainerBattle(flagId,rt.name,rt.tier,rt.tier*2),200); }};
 }
@@ -5617,7 +5638,7 @@ const R3 = {
 
   // Staerkere Arten sind auch draussen sichtbar groesser - das ist die Warnung,
   // bevor man hineinlaeuft.
-  roamScale(r) { return 0.46 + (r.def.tier || 1) * 0.105; },
+  roamScale(r) { return r.legendary ? 1.1 : 0.46 + (r.def.tier || 1) * 0.105; },
 
   evict() {
     const gl = this.gl, cut = this.frameNo - 900, dead = [];
@@ -6761,14 +6782,14 @@ const G = {
   },
 
   wildLv(){const a=this.s.team[this.s.active];return Math.max(1,Math.max(1,a.lv-3)+Math.floor(Math.random()*(6+Math.floor(this.s.battlesWon/4))));},
-  wildTier(){const w=this.s.battlesWon,r=Math.random();let t;if(w<5)t=1;else if(w<12)t=r<.65?1:2;else if(w<25)t=r<.2?1:r<.75?2:3;else if(w<45)t=r<.05?1:r<.35?2:r<.8?3:4;else t=r<.3?3:4;
-    if(this.s.region==='r2')t=Math.min(4,t+1); else if(this.s.region==='r3')t=Math.min(4,t+2); else if(this.s.region==='r4')t=4;
+  wildTier(){const w=this.s.battlesWon,r=Math.random();let t;if(w<5)t=1;else if(w<12)t=r<.65?1:2;else if(w<25)t=r<.2?1:r<.75?2:3;else t=r<.3?2:3;
+    if(this.s.region==='r2')t=Math.min(3,t+1); else if(this.s.region==='r3')t=Math.min(3,t+1); else if(this.s.region==='r4')t=3;
     return t;},
   // ===== Streifende Pokemon =====
   // Statt nur unsichtbarer Zufallstreffer im hohen Gras laufen Pokemon jetzt
   // sichtbar durch die Welt. Man sieht, was einen erwartet, kann ausweichen oder
   // gezielt hingehen - und die Landschaft wirkt bewohnt statt leer.
-  ROAM_MAX: 9, ROAM_R: 17,
+  ROAM_MAX: 6, ROAM_R: 17,
 
   // Tageslicht der Region zur aktuellen Uhrzeit. Wird je Bild einmal gemischt und
   // gepuffert, damit die Interpolation nicht in jedem Zeichenaufruf neu laeuft.
@@ -6813,13 +6834,24 @@ const G = {
     const s=this.s;
     if(!s||s.inHouse||s.inBattle){ if(s) s.roamers=[]; return; }
     s.roamers=s.roamers||[];
-    // Zu weit entfernte verschwinden wieder, damit die Liste kurz bleibt
-    s.roamers=s.roamers.filter(r=>Math.abs(r.gx-s.px)<this.ROAM_R+7&&Math.abs(r.gy-s.py)<this.ROAM_R+7);
+    s.roamers=s.roamers.filter(r=>r.legendary||Math.abs(r.gx-s.px)<this.ROAM_R+7&&Math.abs(r.gy-s.py)<this.ROAM_R+7);
+    if(isPostChampion(s)&&!s.flags['legendR'+s.region.slice(1)]){
+      const lid=LEGEND_REGIONS[s.region];
+      if(lid&&!s.roamers.some(r=>r.legendary)){
+        const sp=this.roamSpawnTile();
+        if(sp){
+          const def=DB.find(d=>d.id===lid);
+          if(def)s.roamers.push({def, gx:sp.x, gy:sp.y, x:sp.x+0.5, z:sp.y+0.5,
+            tx:sp.x+0.5, tz:sp.y+0.5, lv:Math.max(35, (s.team[s.active]||s.team[0]).lv+5),
+            yaw:Math.random()*6.283, phase:Math.random()*6.283, wait:0.5, legendary:true});
+        }
+      }
+    }
     while(s.roamers.length<this.ROAM_MAX){
       const sp=this.roamSpawnTile(); if(!sp)break;
       let tier=this.wildTier();
       // Nachts traut sich Staerkeres heraus - das ist der Grund, tagsueber zu reisen
-      if(isNight(this.s)&&Math.random()<0.45) tier=Math.min(4,tier+1);
+      if(isNight(this.s)&&Math.random()<0.45) tier=Math.min(3,tier+1);
       let pool=DB.filter(d=>d.tier===tier);
       if(isNight(this.s)){
         const nocturnal=pool.filter(d=>d.t==='ghost'||d.t==='poison'||d.t==='psychic'||d.t==='dragon');
@@ -6854,12 +6886,15 @@ const G = {
   roamerAt(x,y){ return (this.s.roamers||[]).find(r=>r.gx===x&&r.gy===y); },
 
   startRoamBattle(r){
+    const isLeg=!!r.legendary;
     this.s.roamers=this.s.roamers.filter(o=>o!==r);
     Au.enc(); this.s.inBattle=true; this.battleBusy=false; this.s.trainerBattle=false;
+    if(isLeg) this.s.legendaryBattle=this.s.region;
     this.s.enemy=this.mkP(r.def, r.lv); this.markSeen(this.s.enemy);
     const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
+    const msg=isLeg?`Das legendaere ${this.s.enemy.nm} (Lv.${this.s.enemy.lv}) greift an!`:`${this.s.enemy.nm} (Lv.${this.s.enemy.lv}) stellt sich dir!`;
     setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();Au.cry(this.s.enemy);
-      this.bl(`${this.s.enemy.nm} (Lv.${this.s.enemy.lv}) stellt sich dir!`);this.rBA();},350);},400);
+      this.bl(msg);this.rBA();},350);},400);
   },
 
   spawnW(){const t=this.wildTier();const pool=DB.filter(d=>d.tier===t);return this.mkP(pool[Math.floor(Math.random()*pool.length)],this.wildLv());},
@@ -6894,7 +6929,7 @@ const G = {
 
   startChampionBattle(){Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=true;this.s.trainerFlag=null;this.s.gymFlag='champion';
     const lvl=Math.max(15,this.s.team[this.s.active].lv+15);
-    const pool=DB.filter(d=>d.tier===4);
+    const pool=DB.filter(d=>d.tier===3);
     this.s.enemy=this.mkP(pool[Math.floor(Math.random()*pool.length)],lvl);this.markSeen(this.s.enemy);
     const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
     setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();Au.cry(this.s.enemy);this.bl('Champion Seraphina fordert dich zum finalen Kampf heraus!');this.rBA();},350);},400);},
@@ -6952,7 +6987,7 @@ const G = {
         const wasChampion=this.s.gymFlag==='champion';
         this.s.flags[this.s.gymFlag]=true;this.s.gymFlag=null;
         cash*=wasChampion?5:3;
-        if(wasChampion){ vicMsg='Champion besiegt! Du bist Pokemon-Meister/in!'; this.s.quests=this.s.quests||{}; this.s.quests.q0='completed'; setTimeout(()=>this.showEnding(),1200); }
+        if(wasChampion){ vicMsg='Champion besiegt! Die Welt ist repariert!'; this.s.quests=this.s.quests||{}; this.s.quests.q0='completed'; setTimeout(()=>this.showWorldHealed(),1200); }
         else{ vicMsg='Meister besiegt! Orden erhalten!'; this.popup('Orden erhalten!<div class="lvl-sub">Du hast den Arena-Meister besiegt!</div>','caught-popup',2600); }
       } else if(this.s.trainerFlag){this.s.flags[this.s.trainerFlag]=true;this.s.trainerFlag=null;vicMsg='Trainer besiegt!';}
       else{this.s.flags.rivalWins=(this.s.flags.rivalWins||0)+1;vicMsg='Rivale besiegt!';}
@@ -6964,16 +6999,38 @@ const G = {
     const xp=Math.floor(e.lv*18+e.tier*15);p.xp+=xp;
     this.bl(`${vicMsg} +${xp} XP${cashMsg}`);
     while(p.xp>=p.xpN){p.xp-=p.xpN;this.lvUp(p);this.bl(`${p.nm} erreicht Level ${p.lv}!`);}
+    if(this.s.legendaryBattle){
+      this.bl(`${e.nm} flieht... Du musst es FANGEN, nicht nur besiegen!`);
+      this.s.legendaryBattle=null;
+    }
     this.renderB();this.battleBusy=false;this.rBA();},
 
   async bCat(){if(this.s.battleOver||this.battleBusy||this.s.trainerBattle)return;this.battleBusy=true;
     const e=this.s.enemy;let rate=(1-e.hp/e.mhp)*0.55+0.08;if(e.tier>=3)rate*=0.45;if(e.tier>=4)rate*=0.25;
     this.bl('Pokeball!');const an=document.createElement('div');an.className='catch-anim';an.innerHTML='<div class="catch-ball">⚪</div>';document.body.appendChild(an);await this.w(800);
-    if(Math.random()<rate){Au.cat();setTimeout(()=>Au.cry(e),260);an.innerHTML+='<div class="catch-result" style="color:#44dd44;">Gefangen!</div>';this.s.team.push({...e});this.s.battleOver=true;this.s.battlesWon++;this.s.caughtCount=(this.s.caughtCount||0)+1;this.s.dex=this.s.dex||{};this.s.dex[e.id]='caught';const xp=Math.floor(e.lv*12);const p=this.s.team[this.s.active];p.xp+=xp;while(p.xp>=p.xpN){p.xp-=p.xpN;this.lvUp(p);}this.bl(`${e.nm} gefangen! +${xp} XP`);}
+    if(Math.random()<rate){Au.cat();setTimeout(()=>Au.cry(e),260);an.innerHTML+='<div class="catch-result" style="color:#44dd44;">Gefangen!</div>';this.s.team.push({...e});this.s.battleOver=true;this.s.battlesWon++;this.s.caughtCount=(this.s.caughtCount||0)+1;this.s.dex=this.s.dex||{};this.s.dex[e.id]='caught';const xp=Math.floor(e.lv*12);const p=this.s.team[this.s.active];p.xp+=xp;while(p.xp>=p.xpN){p.xp-=p.xpN;this.lvUp(p);}this.bl(`${e.nm} gefangen! +${xp} XP`);this.checkLegendaryCatch(e);}
     else{Au.fail();an.innerHTML+='<div class="catch-result" style="color:#dd4444;">Entkommen!</div>';this.bl('Entkommen!');}
     await this.w(1200);an.remove();
     if(!this.s.battleOver){const p=this.s.team[this.s.active];const em=e.moves[Math.floor(Math.random()*e.moves.length)];const r=this.cD(e.atk,p.def,em,e.t,p.t,e.lv);p.hp=Math.max(0,p.hp-r.dmg);this.aS('player','hit');Au.hit();this.sDmg('player',r.dmg,r.crit);this.bl(`${e.nm}: ${em.name}! ${r.dmg}`);this.renderB();if(p.hp<=0){this.hFaint();return;}}
     this.renderB();this.battleBusy=false;this.rBA();},
+
+  checkLegendaryCatch(e){
+    const reg=this.s.legendaryBattle;
+    if(!reg)return;
+    const lid=LEGEND_REGIONS[reg];
+    if(lid&&e.id===lid){
+      const flagKey='legendR'+reg.slice(1);
+      this.s.flags[flagKey]=true;
+      this.s.legendaryBattle=null;
+      this.popup(`${e.nm} bezwungen!<div class="lvl-sub">${TRAIN_DEST[reg]} ist befreit!</div>`,'caught-popup',3000);
+      if(allLegendsCaught(this.s)){
+        this.s.quests=this.s.quests||{};
+        this.s.quests.qL='completed';
+        setTimeout(()=>this.showEnding(),2000);
+      }
+      this.saveGame();
+    }
+  },
 
   bSw(){if(this.s.battleOver||this.battleBusy)return;
     if(!this.s.team.some((p,i)=>p.hp>0&&i!==this.s.active)){this.bl('Kein anderes Pokemon!');return;}
@@ -7021,7 +7078,7 @@ const G = {
     if(Math.random()<ch){Au.fl();this.bl('Geflohen!');this.s.battleOver=true;this.battleBusy=false;this.rBA();}
     else{this.bl('Flucht fehlgeschlagen!');await this.w(300);const e=this.s.enemy;const em=e.moves[Math.floor(Math.random()*e.moves.length)];const r=this.cD(e.atk,p.def,em,e.t,p.t,e.lv);p.hp=Math.max(0,p.hp-r.dmg);this.aS('player','hit');Au.hit();this.sDmg('player',r.dmg,r.crit);this.bl(`${e.nm}: ${em.name}! ${r.dmg}`);this.renderB();if(p.hp<=0){this.hFaint();return;}this.battleBusy=false;this.rBA();}},
 
-  endB(){Au.cl();this.s.inBattle=false;this.s.battleOver=false;this.s.trainerBattle=false;this.s.trainerFlag=null;this.s.gymFlag=null;document.getElementById('b-log').innerHTML='';this.rebuildNpcs();this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();this.saveGame();},350);},
+  endB(){Au.cl();this.s.inBattle=false;this.s.battleOver=false;this.s.trainerBattle=false;this.s.trainerFlag=null;this.s.gymFlag=null;this.s.legendaryBattle=null;document.getElementById('b-log').innerHTML='';this.rebuildNpcs();this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();this.saveGame();},350);},
   w(ms){return new Promise(r=>setTimeout(r,ms));},
 
   // Team/Potions
@@ -7041,18 +7098,18 @@ const G = {
   closeQuests(){document.getElementById('ov-quests').classList.remove('on');},
   rQL(){
     const el=document.getElementById('quest-list');
-    const entries=Object.keys(this.s.quests||{}).sort((a,b)=>(a==='q0'?-1:b==='q0'?1:0));
+    const entries=Object.keys(this.s.quests||{}).sort((a,b)=>{const o={q0:0,qL:1};return (o[a]??2)-(o[b]??2);});
     if(entries.length===0){el.innerHTML='<p style="color:#667;">Noch keine Aufgaben angenommen. Sprich mit den Bewohnern im Dorf!</p>';return;}
     el.innerHTML=entries.map(qid=>{
       const q=QUESTS[qid];const st=this.s.quests[qid];
       if(!q)return '';
-      const isMain=qid==='q0';
+      const isMain=qid==='q0';const isLeg=qid==='qL';
       const ready=st!=='completed'&&q.check(this.s);
-      const statusTxt=st==='completed'?'Abgeschlossen':(ready?(isMain?'Bereit! Werde jetzt Pokemon-Meister!':'Bereit zur Abgabe! Sprich mit '+q.giverName):'In Arbeit: '+q.progress(this.s));
+      const statusTxt=st==='completed'?'Abgeschlossen':(ready?(isMain?'Bereit! Werde jetzt Pokemon-Meister!':(isLeg?'Alle Legendaeren gefangen! Du bist ein wahrer Held!':'Bereit zur Abgabe! Sprich mit '+q.giverName)):'In Arbeit: '+q.progress(this.s));
       const color=st==='completed'?'#4a4':(ready?'#ffcc00':'#889');
-      const style=isMain?'background:linear-gradient(135deg,#241a08,#150f04);border:2px solid #ffcc00;border-radius:10px;padding:10px 14px;margin-bottom:10px;text-align:left;box-shadow:0 0 14px rgba(255,204,0,0.15);':'background:#0e1520;border:1px solid #1a2a3a;border-radius:10px;padding:10px 14px;margin-bottom:8px;text-align:left;';
+      const style=(isMain||isLeg)?'background:linear-gradient(135deg,#241a08,#150f04);border:2px solid #ffcc00;border-radius:10px;padding:10px 14px;margin-bottom:10px;text-align:left;box-shadow:0 0 14px rgba(255,204,0,0.15);':'background:#0e1520;border:1px solid #1a2a3a;border-radius:10px;padding:10px 14px;margin-bottom:8px;text-align:left;';
       return `<div style="${style}">
-        ${isMain?'<div style="font-size:0.7em;color:#ffcc00;letter-spacing:1px;margin-bottom:2px;">★ HAUPTQUEST</div>':''}
+        ${isMain?'<div style="font-size:0.7em;color:#ffcc00;letter-spacing:1px;margin-bottom:2px;">★ HAUPTQUEST</div>':(isLeg?'<div style="font-size:0.7em;color:#ff6600;letter-spacing:1px;margin-bottom:2px;">★ LEGENDAERE BEDROHUNG</div>':'')}
         <div style="font-weight:700;color:#ddd;">${q.name}</div>
         <div style="font-size:0.85em;color:#889;margin:3px 0;">${q.desc}</div>
         <div style="font-size:0.8em;color:${color};">${statusTxt}</div>
@@ -7158,10 +7215,21 @@ const G = {
     requestAnimationFrame(frame);
   },
 
-  showEnding(){
-    const stats=`Orden gesammelt: 3/3<br>Pokemon gefangen: ${this.s.caughtCount||0}<br>Kaempfe gewonnen: ${this.s.battlesWon}<br>PokeCash: ${this.s.cash||0}`;
+  showWorldHealed(){
     this.playWorldCinematic({reverse:true,caption:'Die Welt wird repariert...'},()=>{
-      document.getElementById('ending-text').innerHTML=`Seraphina tritt zur Seite, und zum ersten Mal seit jener Nacht beruhrt die Naht kein Widerstand mehr.<br><br>Drei Anker, ein Wille - der Riss schliesst sich. Der Rauch uber dem Frostsee zieht endlich weiter. In der Schattenregion geht die Sonne auf. Zwei verlorene Regionen liegen wieder am Ende ihrer Strassen.<br><br>Chronist Aldo tragt einen Namen auf die Seite ein, die er jahrelang freigehalten hat. Deinen.<br><br>${stats}`;
+      this.s.quests=this.s.quests||{};
+      this.s.quests.qL='active';
+      this.saveGame();
+      document.getElementById('ending-text').innerHTML=`Seraphina tritt zur Seite, und zum ersten Mal seit jener Nacht beruhrt die Naht kein Widerstand mehr.<br><br>Drei Anker, ein Wille - der Riss schliesst sich. Der Rauch uber dem Frostsee zieht endlich weiter. In der Schattenregion geht die Sonne auf.<br><br>Doch kaum ist der letzte Riss geschlossen, dringt ein gewaltiges Bruellen durch die Stille. Legendaere Pokemon - aufgeschreckt durch das Heilen der Welt - bedrohen nun die vier Regionen!<br><br><b>Lavados</b> terrorisiert das Heimatdorf.<br><b>Arktos</b> bedroht die Schattenregion.<br><b>Zapdos</b> wuetet in der Frostregion.<br><b>Dragoran</b> herrscht ueber die Pokemon-Liga.<br><br>Reise in jede Region und bezwinge sie alle, um ein wahrer Held zu werden!`;
+      document.getElementById('ending-screen').classList.add('on');
+    });
+  },
+  showEnding(){
+    this.s.flags.legendaryHero=true;
+    this.saveGame();
+    const stats=`Legendaere bezwungen: 4/4<br>Pokemon gefangen: ${this.s.caughtCount||0}<br>Kaempfe gewonnen: ${this.s.battlesWon}<br>PokeCash: ${this.s.cash||0}`;
+    this.playWorldCinematic({reverse:true,caption:'Du bist der wahre Held!'},()=>{
+      document.getElementById('ending-text').innerHTML=`Alle legendaeren Pokemon sind bezwungen. Die Regionen sind endlich frei.<br><br>Die Menschen jubeln dir zu. Chronist Aldo tragt deinen Namen auf die Seite ein, die er jahrelang freigehalten hat.<br><br>Du bist nicht nur Pokemon-Meister - du bist ${heroName()}, Beschuetzer aller vier Regionen!<br><br>${stats}`;
       document.getElementById('ending-screen').classList.add('on');
     });
   },
@@ -7212,6 +7280,8 @@ const G = {
       inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:d.flags||{},quests:d.quests||{},dex:d.dex||{},
       inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
     if(!this.s.quests.q0){this.s.quests.q0=(this.s.flags.badgeR1&&this.s.flags.badgeR2&&this.s.flags.badgeR3&&this.s.flags.champion)?'completed':'active';}
+    if(this.s.flags.champion&&!this.s.quests.qL){this.s.quests.qL=allLegendsCaught(this.s)?'completed':'active';}
+    if(allLegendsCaught(this.s)&&!this.s.flags.legendaryHero){this.s.flags.legendaryHero=true;}
     this.s.team.forEach(p=>this.rcP(p));
     const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
     this.upgradeMap(this.s.map,region,sx,sy,this.s.mw,this.s.mh);
