@@ -24,7 +24,7 @@ body.d3 #scr-battle { background: transparent; }
 body.d3 .battle-bg-clouds { display: none; }
 body.d3 #scr-battle.on { justify-content: flex-end; padding-bottom: max(6px, env(safe-area-inset-bottom)); }
 body.d3 #scr-battle .b-sprite { display: none; }
-body.d3 #scr-battle .b-field { position: fixed; left: 0; right: 0; top: max(8px, env(safe-area-inset-top)); margin: 0; padding: 0 10px; flex-direction: row-reverse; align-items: flex-start; z-index: 4; pointer-events: none; }
+body.d3 #scr-battle .b-field { position: fixed; left: 0; right: 0; top: max(8px, env(safe-area-inset-top)); margin: 0; padding: 0 10px; align-items: flex-start; z-index: 4; pointer-events: none; }
 body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
 .scr { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
 .scr.on { display: flex; flex-direction: column; align-items: center; justify-content: center; overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -2933,8 +2933,8 @@ const IROOMS={
     "###############",
     "#ppp.....bbbb.#",
     "#.............#",
-    "#..CCC...1....#",
-    "#........p....#",
+    "#....p.1.p....#",
+    "#...CCCCC.....#",
     "#..xx.........#",
     "#..xx....TT...#",
     "#........cc...#",
@@ -5486,7 +5486,15 @@ const G = {
     if(nx<0||nx>=this.s.mw||ny<0||ny>=this.s.mh){this.renderWorld();return;}
     const tile=this.s.map[ny][nx];
     const walkable=this.s.inHouse?IW.has(tile):TW.has(tile);
-    if(!walkable){this.renderWorld();return;}
+    if(!walkable){
+      // Gegen Theke, Kasse oder Heilstation zu laufen bedeutet "bedien mich" - genau
+      // wie das Anrempeln einer Figur. Sonst haengt die Bedienung an einer Taste,
+      // die man vor der Theke erst suchen muss.
+      const fu=this.s.inHouse?furnAt(tile):null;
+      this.renderWorld();
+      if(fu&&fu.svc)this.interact();
+      return;
+    }
     if((this.s.currentNpcs||[]).some(n=>n.x===nx&&n.y===ny)){this.renderWorld();this.interact();return;}
     this.s.px=nx;this.s.py=ny;
     if(!this.s.inHouse&&DOOR_HOUSE[tile]){this.enterHouse(DOOR_HOUSE[tile]);return;}
