@@ -283,7 +283,7 @@ body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
   </div>
   <div id="scr-world" class="scr">
     <div id="hud">
-      <div class="hud-l"><span id="h-trainer"></span><span id="h-house" style="color:#ffcc00;font-size:0.8em;margin-left:6px;"></span><div class="hud-pokemon"><span id="h-poke"></span><div class="hud-hp-bar"><div class="hud-hp-fill" id="h-hp-fill"></div></div><span id="h-hp-text" style="font-size:0.75em;color:#889;margin-left:4px;"></span></div></div>
+      <div class="hud-l"><span id="h-trainer"></span><span id="h-house" style="color:#ffcc00;font-size:0.8em;margin-left:6px;"></span><span id="h-clock" style="color:#9ab;font-size:0.8em;margin-left:8px;"></span><div class="hud-pokemon"><span id="h-poke"></span><div class="hud-hp-bar"><div class="hud-hp-fill" id="h-hp-fill"></div></div><span id="h-hp-text" style="font-size:0.75em;color:#889;margin-left:4px;"></span></div></div>
       <div class="hud-r"><span class="potion-ct" id="h-potions"></span><span id="h-cash" style="color:#ffd860;font-weight:600;"></span><span id="h-badges" style="color:#e0a020;font-weight:600;"></span><span id="h-battles" style="color:#556;font-size:0.8em;"></span><button class="hud-btn" onclick="G.openTeam()">Team</button><button class="hud-btn" onclick="G.openPotions()">Heilen</button><button class="hud-btn" onclick="G.openQuests()">Quests</button><button class="hud-btn" onclick="G.openDex()">Dex</button><button class="hud-btn" id="h-3d" onclick="G.toggle3D()" title="Ansicht umschalten">2D</button></div>
     </div>
     <canvas id="world-canvas"></canvas>
@@ -3500,6 +3500,66 @@ const ENV3 = {
 // sRGB-Raum geholt, beleuchtet, in einen HDR-Puffer geschrieben und erst ganz am
 // Ende durch Belichtung, ACES-Tonemapping und sRGB-Kodierung auf den Schirm
 // gebracht. Genau das trennt ein flaches Browserbild von einem Spielbild.
+// ===== Tageszeit =====
+// Die Uhr laeuft mit: ein voller Tag dauert rund sechzehn Minuten Spielzeit.
+// Sonnenstand, Himmel, Nebel und Farbkorrektur werden daraus berechnet, statt
+// je Tageszeit eine eigene Tabelle zu pflegen. Nachts kommen andere Arten heraus.
+const DAY_MIN = 1440, DAY_SPEED = 1.5;
+function nightOf(e){
+  const s = (c, f, a) => [c[0]*f + a[0], c[1]*f + a[1], c[2]*f + a[2]];
+  return {
+    skyT:[0.02,0.03,0.11], fog:[0.05,0.07,0.17],
+    amb: s(e.amb, 0.40, [0.04,0.05,0.12]),
+    sun: s(e.sun, 0.18, [0.06,0.10,0.20]),
+    sunC:[0.80,0.86,1.00],
+    dir:[0.38,0.70,-0.60],
+    cloud:(e.cloud === undefined ? 0.5 : e.cloud) * 0.55,
+    grade:{exp:1.78, bloom:0.58, vig:0.48, sat:0.86},
+  };
+}
+function duskOf(e){
+  return {
+    skyT:[0.32,0.20,0.34], fog:[0.86,0.52,0.32],
+    amb:[e.amb[0]*0.9+0.06, e.amb[1]*0.72, e.amb[2]*0.66],
+    sun:[1.00,0.62,0.30], sunC:[1.00,0.66,0.34],
+    dir:[-0.86,0.26,0.44],
+    cloud:(e.cloud === undefined ? 0.5 : e.cloud) * 1.1,
+    grade:{exp:1.34, bloom:0.72, vig:0.42, sat:1.20},
+  };
+}
+const ENV_KEYS = ['skyT','fog','amb','sun','sunC','dir'];
+function mixEnv(a, b, k){
+  const o = {};
+  for (const key of ENV_KEYS) {
+    const x = a[key] || a.sun, y = b[key] || b.sun;
+    o[key] = [x[0]+(y[0]-x[0])*k, x[1]+(y[1]-x[1])*k, x[2]+(y[2]-x[2])*k];
+  }
+  const ca = a.cloud === undefined ? 0.5 : a.cloud, cb = b.cloud === undefined ? 0.5 : b.cloud;
+  o.cloud = ca + (cb - ca) * k;
+  const ga = a.grade || {}, gb = b.grade || {};
+  const gm = (p, d) => (ga[p] === undefined ? d : ga[p]) + ((gb[p] === undefined ? d : gb[p]) - (ga[p] === undefined ? d : ga[p])) * k;
+  o.grade = {exp:gm('exp',1.2), bloom:gm('bloom',0.28), vig:gm('vig',0.3), sat:gm('sat',1.1)};
+  return o;
+}
+// 0 = tiefe Nacht, 1 = heller Mittag; dazwischen liegen Daemmerungsfenster.
+function dayPhase(clock){
+  const h = (clock / 60) % 24;
+  if (h >= 8 && h < 17) return {k:1, dusk:0};
+  if (h >= 5 && h < 8)  return {k:(h-5)/3, dusk:Math.sin((h-5)/3*Math.PI)};
+  if (h >= 17 && h < 20) return {k:1-(h-17)/3, dusk:Math.sin((h-17)/3*Math.PI)};
+  return {k:0, dusk:0};
+}
+function clockLabel(clock){
+  const m = Math.floor(clock) % DAY_MIN;
+  const h = Math.floor(m/60), mi = Math.floor(m%60);
+  return (h<10?'0':'')+h+':'+(mi<10?'0':'')+mi;
+}
+function clockIcon(clock){
+  const h = (clock/60)%24;
+  return h>=8&&h<17 ? '☀️' : (h>=5&&h<20 ? '\u{1F305}' : '\u{1F319}');
+}
+function isNight(s){ const h=((s&&s.clock||0)/60)%24; return h<5.5||h>=19.5; }
+
 const VS_FULL = `#version 300 es
 precision highp float;
 out vec2 vT;
@@ -5407,7 +5467,7 @@ const R3 = {
     this.syncMap();
 
     const inH = !!s.inHouse;
-    const env = inH ? ENV3.in : (ENV3[s.region] || ENV3.r1);
+    const env = inH ? ENV3.in : G.envNow(s.region || 'r1');
     const pitch = inH ? 0.72 : 0.63;
     const fovy = this.fov(inH ? 54 : 58);
     const far = 90;
@@ -5456,11 +5516,14 @@ const R3 = {
     // Schattenkarte um den Blickpunkt: draussen weiter Radius, drinnen eng
     const shR = inH ? Math.max(s.mw, s.mh) * 0.62 + 3 : 26;
     this.setLightCam(cx, 0.4, cz, shR, env);
+    const roam = (!inH && s.roamers) ? s.roamers.filter(r =>
+      Math.abs(r.x - px) < 24 && Math.abs(r.z - pz) < 24) : [];
     const shOk = this.shadowPass(() => {
       gl.useProgram(this.pShadow.p);
       for (const c of list) if (c.count) { gl.bindVertexArray(c.vao); gl.drawArrays(gl.TRIANGLES, 0, c.count); }
       gl.useProgram(this.pShadowA.p);
       for (const c of list) if (c.aCount) { gl.bindVertexArray(c.vao); gl.drawArrays(gl.TRIANGLES, c.count, c.aCount); }
+      for (const r of roam) this.shadowModel(r.def, r.x, 0, r.z, this.roamScale(r), r.yaw, {phase: r.phase});
     });
 
     this.beginFrame();
@@ -5480,6 +5543,7 @@ const R3 = {
     gl.depthMask(false);
     for (const n of npcs) this.blob(n.x + 0.5, n.y + 0.5, 0.78, 0.8);
     this.blob(px, pz, 0.82, 0.9);
+    for (const r of roam) this.blob(r.x, r.z, 0.62, 0.6);
     gl.depthMask(true);
     // Die steile Innenkamera staucht senkrechte Billboards. Statt sie zur Kamera zu
     // kippen - dann wuerden Figuren an der Rueckwand in die Wand ragen - werden sie
@@ -5503,9 +5567,57 @@ const R3 = {
     this.sprite(hero, px, -0.05, pz, 1.26, hk, {alpha: 0.55, shade: [1.45, 1.55, 1.85]});
     gl.depthFunc(gl.LESS); gl.depthMask(true);
     gl.disable(gl.BLEND);
+    if (roam.length) {
+      this.beginModels(env, fogN, fogF, shOk);
+      for (const r of roam) this.drawModel(r.def, r.x, 0, r.z, this.roamScale(r), r.yaw, {phase: r.phase});
+    }
+    const dark = 1 - dayPhase((G.s.clock) || 0).k;
+    if (!inH && dark > 0.05) {
+      // Additiv, ohne Tiefenschreiben: das Licht liegt vor der Fassade
+      this.beginSprites(env, fogN, fogF);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+      gl.depthMask(false);
+      const t = this.glowTex(), a = dark * 0.85;
+      for (const d of this.litDoors(s, px, pz))
+        this.sprite(t, d[0], 1.05, d[1] + 0.35, 2.6, 2.6,
+          {anchor: 0.5, alpha: a, shade: [1, 1, 1], up: [0, 1, 0]});
+      gl.depthMask(true);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.disable(gl.BLEND);
+    }
     gl.bindVertexArray(null);
     this.endFrame(env.grade);
   },
+
+  // Bei Dunkelheit brennt in den Haeusern Licht. Die Tuerfelder in Sichtweite
+  // werden alle halbe Sekunde eingesammelt, nicht in jedem Bild.
+  litDoors(s, px, pz) {
+    if (this.frameNo === this._doorF && this._doors) return this._doors;
+    this._doorF = this.frameNo;
+    const out = [], R = 22;
+    const x0 = Math.max(0, (px|0) - R), x1 = Math.min(s.mw - 1, (px|0) + R);
+    const z0 = Math.max(0, (pz|0) - R), z1 = Math.min(s.mh - 1, (pz|0) + R);
+    for (let z = z0; z <= z1; z++) {
+      const row = s.map[z]; if (!row) continue;
+      for (let x = x0; x <= x1; x++) if (DOOR_HOUSE[row[x]] !== undefined) out.push([x + 0.5, z + 0.5]);
+    }
+    this._doors = out;
+    return out;
+  },
+
+  glowTex() {
+    return this.sprTex('ui:glow', 64, (c, s) => {
+      const g = c.createRadialGradient(s/2, s/2, 0, s/2, s/2, s/2);
+      g.addColorStop(0, 'rgba(255,226,150,0.95)');
+      g.addColorStop(0.45, 'rgba(255,190,90,0.34)');
+      g.addColorStop(1, 'rgba(255,170,60,0)');
+      c.clearRect(0, 0, s, s); c.fillStyle = g; c.fillRect(0, 0, s, s);
+    });
+  },
+
+  // Staerkere Arten sind auch draussen sichtbar groesser - das ist die Warnung,
+  // bevor man hineinlaeuft.
+  roamScale(r) { return 0.46 + (r.def.tier || 1) * 0.105; },
 
   evict() {
     const gl = this.gl, cut = this.frameNo - 900, dead = [];
@@ -5800,13 +5912,14 @@ const G = {
       const onWorld = this.s && document.getElementById('scr-world').classList.contains('on');
       if (this.d3 && R3.ok) {
         if (onWorld && !this.s.inBattle) {
-          this.stepView(dt); R3.drawWorld(dt);
+          this.tickClock(dt); this.stepView(dt); this.syncRoamers(dt); R3.drawWorld(dt);
           if (this.frame % 5 === 0) this.renderMM();
         } else if (this.s && this.s.inBattle && document.getElementById('scr-battle').classList.contains('on')) {
           R3.drawBattle(dt);
         }
-      } else if (onWorld && !this.s.inBattle && this.frame % 8 === 0) {
-        this.renderWorld();
+      } else if (onWorld && !this.s.inBattle) {
+        this.tickClock(dt); this.syncRoamers(dt);
+        if (this.frame % 8 === 0) this.renderWorld();
       }
       requestAnimationFrame(loop);
     };
@@ -6342,6 +6455,16 @@ const G = {
       }
     }}
 
+    // Streifende Pokemon in der Welt
+    (this.s.roamers||[]).forEach(r=>{
+      const nvx=r.x-0.5-cx, nvy=r.z-0.5-cy;
+      if(nvx>=-1&&nvx<vw&&nvy>=-1&&nvy<vh){
+        const d=r.def, sz=TILE*(0.62+(d.tier||1)*0.06);
+        const pc=Sprites.getTile('roam_'+d.id,TILE,(c,s2)=>Sprites.drawCreature(c,s2,d.t,d.tier||1,Sprites.seedFromId(d.id)));
+        ctx.drawImage(pc,nvx*TILE+(TILE-sz)/2,nvy*TILE+(TILE-sz)/2-TILE*0.12,sz,sz);
+      }
+    });
+
     // Ruhende Pokemon auf den Liegen im Pokemon-Center
     (this.s.roomPets||[]).forEach(pt=>{
       const nvx=pt.x-cx,nvy=pt.y-cy;
@@ -6374,6 +6497,23 @@ const G = {
     const ppx=(this.s.px-cx)*TILE;
     const ppy=(this.s.py-cy)*TILE;
     Sprites.drawCharacter(ctx, ppx, ppy, TILE, 0, f, this.s.char.hair);
+
+    // Tageszeit als Farbschleier - die 2D-Ansicht soll dieselbe Uhr zeigen
+    if(!this.s.inHouse){
+      const ph=dayPhase(this.s.clock||0);
+      if(ph.k<0.999){
+        const night=(1-ph.k);
+        ctx.globalCompositeOperation='multiply';
+        ctx.fillStyle=`rgba(${Math.round(90+120*ph.k)},${Math.round(105+120*ph.k)},${Math.round(170+80*ph.k)},${0.20+night*0.55})`;
+        ctx.fillRect(0,0,c.width,c.height);
+        if(ph.dusk>0.02){
+          ctx.globalCompositeOperation='overlay';
+          ctx.fillStyle=`rgba(255,150,60,${ph.dusk*0.35})`;
+          ctx.fillRect(0,0,c.width,c.height);
+        }
+        ctx.globalCompositeOperation='source-over';
+      }
+    }
 
     this.renderMM();
   },
@@ -6422,6 +6562,7 @@ const G = {
     this.refreshPot();
     const a=this.s.team[this.s.active];
     document.getElementById('h-trainer').textContent=`${this.s.char.spr} ${this.s.char.nm}`;
+    this.updateClockHud();
     document.getElementById('h-poke').textContent=a?`${a.spr} ${a.nm} Lv.${a.lv}`:'';
     const fl=document.getElementById('h-hp-fill');
     if(a){const p=Math.max(0,a.hp/a.mhp*100);fl.style.width=p+'%';fl.style.background=p>50?'#40a040':p>25?'#b0a020':'#c03030';document.getElementById('h-hp-text').textContent=`${a.hp}/${a.mhp}`;}
@@ -6493,6 +6634,8 @@ const G = {
       return;
     }
     if((this.s.currentNpcs||[]).some(n=>n.x===nx&&n.y===ny)){this.renderWorld();this.interact();return;}
+    const roam=this.roamerAt(nx,ny);
+    if(roam){this.renderWorld();this.startRoamBattle(roam);return;}
     this.s.px=nx;this.s.py=ny;
     if(!this.s.inHouse&&DOOR_HOUSE[tile]){this.enterHouse(DOOR_HOUSE[tile]);return;}
     if(this.s.inHouse&&tile===T.EXITDOOR){this.exitHouse();return;}
@@ -6533,6 +6676,7 @@ const G = {
     this.s.map=inter.map;this.s.mw=inter.w;this.s.mh=inter.h;
     this.s.px=inter.entryX;this.s.py=inter.entryY;
     this.s.inHouse=houseId;
+    this.s.roamers=[];
     this.s.inHouseStyle=HOUSE_STYLE[houseId]||'house';
     this.s.currentNpcs=inter.npcs;
     this.s.roomPets=this.mkRoomPets(inter);
@@ -6620,6 +6764,104 @@ const G = {
   wildTier(){const w=this.s.battlesWon,r=Math.random();let t;if(w<5)t=1;else if(w<12)t=r<.65?1:2;else if(w<25)t=r<.2?1:r<.75?2:3;else if(w<45)t=r<.05?1:r<.35?2:r<.8?3:4;else t=r<.3?3:4;
     if(this.s.region==='r2')t=Math.min(4,t+1); else if(this.s.region==='r3')t=Math.min(4,t+2); else if(this.s.region==='r4')t=4;
     return t;},
+  // ===== Streifende Pokemon =====
+  // Statt nur unsichtbarer Zufallstreffer im hohen Gras laufen Pokemon jetzt
+  // sichtbar durch die Welt. Man sieht, was einen erwartet, kann ausweichen oder
+  // gezielt hingehen - und die Landschaft wirkt bewohnt statt leer.
+  ROAM_MAX: 9, ROAM_R: 17,
+
+  // Tageslicht der Region zur aktuellen Uhrzeit. Wird je Bild einmal gemischt und
+  // gepuffert, damit die Interpolation nicht in jedem Zeichenaufruf neu laeuft.
+  envNow(region){
+    const base = ENV3[region] || ENV3.r1;
+    const c = (this.s && this.s.clock) || 0;
+    if (this._envK && this._envK.r === region && Math.abs(this._envK.c - c) < 0.5) return this._envK.e;
+    const ph = dayPhase(c);
+    let e = mixEnv(nightOf(base), base, ph.k);
+    if (ph.dusk > 0.01) e = mixEnv(e, duskOf(base), ph.dusk * 0.85);
+    this._envK = {r:region, c, e};
+    return e;
+  },
+
+  tickClock(dt){
+    if(!this.s || this.s.inBattle) return;
+    this.s.clock = ((this.s.clock || 0) + dt * DAY_SPEED) % DAY_MIN;
+    if (this.frame % 15 === 0) this.updateClockHud();
+  },
+
+  updateClockHud(){
+    const el = document.getElementById('h-clock');
+    if (el && this.s) el.textContent = clockIcon(this.s.clock||0) + ' ' + clockLabel(this.s.clock||0);
+  },
+
+  roamSpawnTile(){
+    const s=this.s;
+    for(let k=0;k<40;k++){
+      const a=Math.random()*Math.PI*2, r=6+Math.random()*(this.ROAM_R-6);
+      const x=Math.round(s.px+Math.cos(a)*r), y=Math.round(s.py+Math.sin(a)*r);
+      if(x<1||y<1||x>=s.mw-1||y>=s.mh-1)continue;
+      const t=s.map[y][x];
+      if(t!==T.TALL&&t!==T.GRASS&&t!==T.FLOWER)continue;
+      if((s.roamers||[]).some(o=>o.gx===x&&o.gy===y))continue;
+      if(Math.abs(x-s.px)<3&&Math.abs(y-s.py)<3)continue;
+      return {x,y,tall:t===T.TALL};
+    }
+    return null;
+  },
+
+  syncRoamers(dt){
+    const s=this.s;
+    if(!s||s.inHouse||s.inBattle){ if(s) s.roamers=[]; return; }
+    s.roamers=s.roamers||[];
+    // Zu weit entfernte verschwinden wieder, damit die Liste kurz bleibt
+    s.roamers=s.roamers.filter(r=>Math.abs(r.gx-s.px)<this.ROAM_R+7&&Math.abs(r.gy-s.py)<this.ROAM_R+7);
+    while(s.roamers.length<this.ROAM_MAX){
+      const sp=this.roamSpawnTile(); if(!sp)break;
+      let tier=this.wildTier();
+      // Nachts traut sich Staerkeres heraus - das ist der Grund, tagsueber zu reisen
+      if(isNight(this.s)&&Math.random()<0.45) tier=Math.min(4,tier+1);
+      let pool=DB.filter(d=>d.tier===tier);
+      if(isNight(this.s)){
+        const nocturnal=pool.filter(d=>d.t==='ghost'||d.t==='poison'||d.t==='psychic'||d.t==='dragon');
+        if(nocturnal.length&&Math.random()<0.5) pool=nocturnal;
+      }
+      const def=pool[Math.floor(Math.random()*pool.length)];
+      // Im hohen Gras traut sich staerkeres Getier heraus
+      s.roamers.push({def, gx:sp.x, gy:sp.y, x:sp.x+0.5, z:sp.y+0.5,
+        tx:sp.x+0.5, tz:sp.y+0.5, lv:Math.max(2, this.wildLv()+(sp.tall?1:0)),
+        yaw:Math.random()*6.283, phase:Math.random()*6.283, wait:Math.random()*2});
+    }
+    for(const r of s.roamers){
+      r.wait-=dt;
+      if(r.wait<=0){
+        r.wait=0.9+Math.random()*2.2;
+        const d=[[1,0],[-1,0],[0,1],[0,-1]][Math.floor(Math.random()*4)];
+        const nx=r.gx+d[0], ny=r.gy+d[1];
+        const t=(s.map[ny]||[])[nx];
+        // Nur ueber begehbaren Grund und nie auf das Feld des Spielers
+        if(t!==undefined&&TW.has(t)&&t!==T.BRIDGE&&!(nx===s.px&&ny===s.py)&&
+           !s.roamers.some(o=>o!==r&&o.gx===nx&&o.gy===ny)){
+          r.gx=nx; r.gy=ny; r.tx=nx+0.5; r.tz=ny+0.5;
+          r.yaw=Math.atan2(d[0], d[1]);
+        }
+      }
+      const k=Math.min(1, dt*4.2);
+      r.x+=(r.tx-r.x)*k; r.z+=(r.tz-r.z)*k;
+    }
+  },
+
+  // Auf ein streifendes Pokemon zuzulaufen loest den Kampf mit genau diesem aus.
+  roamerAt(x,y){ return (this.s.roamers||[]).find(r=>r.gx===x&&r.gy===y); },
+
+  startRoamBattle(r){
+    this.s.roamers=this.s.roamers.filter(o=>o!==r);
+    Au.enc(); this.s.inBattle=true; this.battleBusy=false; this.s.trainerBattle=false;
+    this.s.enemy=this.mkP(r.def, r.lv); this.markSeen(this.s.enemy);
+    const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
+    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();Au.cry(this.s.enemy);
+      this.bl(`${this.s.enemy.nm} (Lv.${this.s.enemy.lv}) stellt sich dir!`);this.rBA();},350);},400);
+  },
+
   spawnW(){const t=this.wildTier();const pool=DB.filter(d=>d.tier===t);return this.mkP(pool[Math.floor(Math.random()*pool.length)],this.wildLv());},
   markSeen(mon){this.s.dex=this.s.dex||{};if(this.s.dex[mon.id]!=='caught')this.s.dex[mon.id]='seen';},
 
@@ -6956,7 +7198,7 @@ const G = {
     const map=inH?this.s.outdoorPos.map:this.s.map,mw=inH?this.s.outdoorPos.mw:this.s.mw,mh=inH?this.s.outdoorPos.mh:this.s.mh;
     const px=inH?this.s.outdoorPos.px:this.s.px,py=inH?this.s.outdoorPos.py:this.s.py;
     const regions={...(this.s.regions||{}),[this.s.region]:{map,mw,mh,px,py,randomTrainers:this.s.randomTrainers,outposts:this.s.outposts,arenaGate:this.s.arenaGate}};
-    localStorage.setItem('pkmn2',JSON.stringify({char:this.s.char,team:this.s.team,active:this.s.active,potions:this.s.potions,cash:this.s.cash,lastPD:this.s.lastPD,battlesWon:this.s.battlesWon,caughtCount:this.s.caughtCount,region:this.s.region,regions,flags:this.s.flags,quests:this.s.quests,dex:this.s.dex}));
+    localStorage.setItem('pkmn2',JSON.stringify({clock:this.s.clock,char:this.s.char,team:this.s.team,active:this.s.active,potions:this.s.potions,cash:this.s.cash,lastPD:this.s.lastPD,battlesWon:this.s.battlesWon,caughtCount:this.s.caughtCount,region:this.s.region,regions,flags:this.s.flags,quests:this.s.quests,dex:this.s.dex}));
   }catch(e){}},
   loadGame(){try{const r=localStorage.getItem('pkmn2');if(!r)return false;const d=JSON.parse(r);if(!d.char||!d.team)return false;
     let region,regions;
@@ -6965,7 +7207,7 @@ const G = {
     else return false;
     const snap=regions[region];
     if(!snap)return false;
-    this.s={char:d.char,team:d.team,active:d.active||0,potions:d.potions!==undefined?d.potions:5,cash:d.cash||0,lastPD:d.lastPD||null,battlesWon:d.battlesWon||0,caughtCount:d.caughtCount||0,
+    this.s={clock:d.clock||480,char:d.char,team:d.team,active:d.active||0,potions:d.potions!==undefined?d.potions:5,cash:d.cash||0,lastPD:d.lastPD||null,battlesWon:d.battlesWon||0,caughtCount:d.caughtCount||0,
       region,regions,px:snap.px,py:snap.py,map:snap.map,mw:snap.mw,mh:snap.mh,randomTrainers:snap.randomTrainers||[],outposts:snap.outposts||[],arenaGate:snap.arenaGate||null,
       inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:d.flags||{},quests:d.quests||{},dex:d.dex||{},
       inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
@@ -6981,7 +7223,7 @@ const G = {
     this.s.currentNpcs=this.s.worldNpcs;
     return true;}catch(e){return false;}},
 
-  startNewGame(){Au.cl();this.s={char:this._cc,team:[this.mkP(this._sc,5)],active:0,potions:5,cash:50,lastPD:new Date().toDateString(),battlesWon:0,caughtCount:0,region:'r1',regions:{},px:0,py:0,map:[],mw:0,mh:0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:{},quests:{q0:'active'},dex:{},randomTrainers:[],outposts:[],arenaGate:null,inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
+  startNewGame(){Au.cl();this.s={clock:480,char:this._cc,team:[this.mkP(this._sc,5)],active:0,potions:5,cash:50,lastPD:new Date().toDateString(),battlesWon:0,caughtCount:0,region:'r1',regions:{},px:0,py:0,map:[],mw:0,mh:0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:{},quests:{q0:'active'},dex:{},randomTrainers:[],outposts:[],arenaGate:null,inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
     this.s.dex[this._sc.id]='caught';
     this.genWorld('r1');
     this.playWorldCinematic({reverse:false,caption:'Eine neue Welt entsteht...'},()=>{
