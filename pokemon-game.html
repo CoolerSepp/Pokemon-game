@@ -16,6 +16,16 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; -webkit-user-select: none; user-select: none; }
 #game { width: 100vw; height: 100vh; position: relative; }
+#gl3d { position: absolute; inset: 0; width: 100%; height: 100%; display: none; z-index: 0; }
+#gl3d.on { display: block; }
+body.d3 #world-canvas { display: none; }
+body.d3 #scr-world.on { justify-content: flex-start; }
+body.d3 #scr-battle { background: transparent; }
+body.d3 .battle-bg-clouds { display: none; }
+body.d3 #scr-battle.on { justify-content: flex-end; padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+body.d3 #scr-battle .b-sprite { display: none; }
+body.d3 #scr-battle .b-field { position: fixed; left: 0; right: 0; top: max(8px, env(safe-area-inset-top)); margin: 0; padding: 0 10px; flex-direction: row-reverse; align-items: flex-start; z-index: 4; pointer-events: none; }
+body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
 .scr { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
 .scr.on { display: flex; flex-direction: column; align-items: center; justify-content: center; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
@@ -237,6 +247,7 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
 </head>
 <body>
 <div id="game">
+<canvas id="gl3d"></canvas>
   <div id="transition"></div>
   <div id="world-cinematic">
     <canvas id="world-cinematic-canvas"></canvas>
@@ -273,7 +284,7 @@ body { background: #0a0a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Gen
   <div id="scr-world" class="scr">
     <div id="hud">
       <div class="hud-l"><span id="h-trainer"></span><span id="h-house" style="color:#ffcc00;font-size:0.8em;margin-left:6px;"></span><div class="hud-pokemon"><span id="h-poke"></span><div class="hud-hp-bar"><div class="hud-hp-fill" id="h-hp-fill"></div></div><span id="h-hp-text" style="font-size:0.75em;color:#889;margin-left:4px;"></span></div></div>
-      <div class="hud-r"><span class="potion-ct" id="h-potions"></span><span id="h-cash" style="color:#ffd860;font-weight:600;"></span><span id="h-badges" style="color:#e0a020;font-weight:600;"></span><span id="h-battles" style="color:#556;font-size:0.8em;"></span><button class="hud-btn" onclick="G.openTeam()">Team</button><button class="hud-btn" onclick="G.openPotions()">Heilen</button><button class="hud-btn" onclick="G.openQuests()">Quests</button><button class="hud-btn" onclick="G.openDex()">Dex</button></div>
+      <div class="hud-r"><span class="potion-ct" id="h-potions"></span><span id="h-cash" style="color:#ffd860;font-weight:600;"></span><span id="h-badges" style="color:#e0a020;font-weight:600;"></span><span id="h-battles" style="color:#556;font-size:0.8em;"></span><button class="hud-btn" onclick="G.openTeam()">Team</button><button class="hud-btn" onclick="G.openPotions()">Heilen</button><button class="hud-btn" onclick="G.openQuests()">Quests</button><button class="hud-btn" onclick="G.openDex()">Dex</button><button class="hud-btn" id="h-3d" onclick="G.toggle3D()" title="Ansicht umschalten">2D</button></div>
     </div>
     <canvas id="world-canvas"></canvas>
   </div>
@@ -2887,10 +2898,1057 @@ function placeOutposts(m,region,sx,sy,W,H,villR){
   return out;
 }
 
+// ===================== 3D RENDERER (WebGL2) =====================
+// The world is the same tile map as before; it is turned into real geometry here.
+// Ground, water, rocks and buildings are solid meshes, while trees, grass, people
+// and creatures stay flat sprites standing upright in the scene, which keeps the
+// existing hand-drawn art usable and the frame budget small enough for phones.
+
+const M4 = {
+  mul(o, a, b) {
+    for (let c = 0; c < 4; c++) {
+      const b0=b[c*4], b1=b[c*4+1], b2=b[c*4+2], b3=b[c*4+3];
+      o[c*4  ]=a[0]*b0+a[4]*b1+a[8] *b2+a[12]*b3;
+      o[c*4+1]=a[1]*b0+a[5]*b1+a[9] *b2+a[13]*b3;
+      o[c*4+2]=a[2]*b0+a[6]*b1+a[10]*b2+a[14]*b3;
+      o[c*4+3]=a[3]*b0+a[7]*b1+a[11]*b2+a[15]*b3;
+    }
+    return o;
+  },
+  persp(o, fovy, asp, n, f) {
+    const t = 1/Math.tan(fovy/2);
+    o.fill(0); o[0]=t/asp; o[5]=t; o[11]=-1; o[10]=(f+n)/(n-f); o[14]=(2*f*n)/(n-f);
+    return o;
+  },
+  lookAt(o, ex,ey,ez, cx,cy,cz) {
+    let zx=ex-cx, zy=ey-cy, zz=ez-cz;
+    let l=Math.hypot(zx,zy,zz)||1; zx/=l; zy/=l; zz/=l;
+    let xx=zz, xy=0, xz=-zx;
+    l=Math.hypot(xx,xy,xz); if(l<1e-5){xx=1;xy=0;xz=0;l=1;} xx/=l; xy/=l; xz/=l;
+    const yx=zy*xz-zz*xy, yy=zz*xx-zx*xz, yz=zx*xy-zy*xx;
+    o[0]=xx; o[1]=yx; o[2]=zx; o[3]=0;
+    o[4]=xy; o[5]=yy; o[6]=zy; o[7]=0;
+    o[8]=xz; o[9]=yz; o[10]=zz; o[11]=0;
+    o[12]=-(xx*ex+xy*ey+xz*ez);
+    o[13]=-(yx*ex+yy*ey+yz*ez);
+    o[14]=-(zx*ex+zy*ey+zz*ez);
+    o[15]=1;
+    return o;
+  },
+};
+
+const ENV3 = {
+  r1:{skyT:[0.44,0.68,0.92], fog:[0.72,0.84,0.92], amb:[0.56,0.58,0.60], sun:[0.66,0.63,0.52], dir:[-0.42,0.80,0.43]},
+  r2:{skyT:[0.07,0.04,0.15], fog:[0.14,0.09,0.26], amb:[0.34,0.30,0.48], sun:[0.40,0.30,0.62], dir:[ 0.40,0.72,0.57]},
+  r3:{skyT:[0.52,0.70,0.86], fog:[0.84,0.91,0.95], amb:[0.64,0.68,0.74], sun:[0.52,0.56,0.66], dir:[-0.30,0.82,0.49]},
+  r4:{skyT:[0.86,0.66,0.28], fog:[0.90,0.82,0.60], amb:[0.60,0.55,0.42], sun:[0.74,0.64,0.40], dir:[ 0.34,0.76,0.55]},
+  in:{skyT:[0.03,0.03,0.05], fog:[0.05,0.05,0.08], amb:[0.62,0.58,0.52], sun:[0.44,0.38,0.30], dir:[-0.35,0.86,0.36]},
+};
+
+const VS_WORLD = `#version 300 es
+precision highp float;
+in vec3 aPos; in vec3 aNrm; in vec2 aUV; in float aLayer; in float aSway;
+uniform mat4 uVP; uniform float uTime; uniform vec3 uCam;
+out vec3 vNrm; out vec2 vUV; out vec3 vW; flat out float vLayer; flat out float vSway;
+void main(){
+  vec3 p = aPos; vec3 n = aNrm;
+  if (aSway > 0.5 && (aSway < 1.5 || aSway > 2.5)) {
+    // aNrm carries the standing point and half width of a camera-facing plane
+    vec3 toCam = normalize(vec3(uCam.x - aNrm.x, 0.0, uCam.z - aNrm.z));
+    p.xz = vec2(aNrm.x, aNrm.z) + vec2(-toCam.z, toCam.x) * ((aUV.x - 0.5) * aNrm.y * 2.0);
+    n = normalize(toCam * 0.42 + vec3(0.0, 0.9, 0.0));
+    float top = clamp(1.0 - aUV.y, 0.0, 1.0);
+    float amp = aSway < 1.5 ? 0.10 : (aSway > 3.5 ? 0.0 : 0.07);
+    float spd = aSway < 1.5 ? 2.5 : 1.05;
+    p.x += sin(uTime*spd + aNrm.x*2.1 + aNrm.z*1.7) * amp * top;
+    p.z += cos(uTime*spd*0.85 + aNrm.x*1.3) * amp * 0.6 * top;
+  } else if (aSway > 1.5) {
+    float a = aPos.x*1.9 + uTime*1.7, b = aPos.z*2.3 + uTime*1.25;
+    p.y += sin(a)*0.055 + sin(b)*0.04;
+    n = normalize(vec3(-cos(a)*0.135, 1.0, -cos(b)*0.115));
+  }
+  vW = p; vNrm = n; vUV = aUV; vLayer = aLayer; vSway = aSway;
+  gl_Position = uVP * vec4(p, 1.0);
+}`;
+
+const FS_WORLD = `#version 300 es
+precision highp float; precision highp sampler2DArray;
+in vec3 vNrm; in vec2 vUV; in vec3 vW; flat in float vLayer; flat in float vSway;
+uniform sampler2DArray uTex;
+uniform vec3 uLight, uSun, uAmb, uFog, uEye, uFwd;
+uniform vec2 uFogR; uniform float uTime;
+out vec4 outC;
+void main(){
+  bool water = vSway > 1.5 && vSway < 2.5;
+  vec4 t;
+  if (water) {
+    vec2 a = vUV + vec2(uTime*0.021, uTime*0.015);
+    vec2 b = vUV*1.41 - vec2(uTime*0.017, uTime*0.024);
+    t = (texture(uTex, vec3(a, vLayer)) + texture(uTex, vec3(b, vLayer))) * 0.5;
+  } else {
+    t = texture(uTex, vec3(vUV, vLayer));
+  }
+#ifdef AT
+  if (t.a < 0.42) discard;
+#endif
+  vec3 n = normalize(gl_FrontFacing ? vNrm : -vNrm);
+  float d = max(dot(n, uLight), 0.0);
+  float wrap = dot(n, uLight)*0.5 + 0.5;
+  vec3 col = t.rgb * (uAmb + uSun*(d*0.72 + wrap*0.28));
+  if (water) {
+    vec3 v = normalize(uEye - vW);
+    col = mix(col, uFog * 1.06, pow(1.0 - max(dot(n, v), 0.0), 3.0) * 0.5);
+    col += uSun * pow(max(dot(n, normalize(v + uLight)), 0.0), 40.0) * 1.1;
+  }
+  float f = clamp((dot(vW - uEye, uFwd) - uFogR.x) / max(uFogR.y - uFogR.x, 0.001), 0.0, 1.0);
+  outC = vec4(mix(col, uFog, f), 1.0);
+}`;
+
+const VS_SPR = `#version 300 es
+precision highp float;
+in vec2 aC;
+uniform mat4 uVP; uniform vec3 uPos, uRight, uUp; uniform vec2 uSize; uniform float uAnchor;
+out vec2 vUV; out vec3 vW;
+void main(){
+  vec3 w = uPos + uRight*(aC.x*uSize.x) + uUp*((aC.y - uAnchor)*uSize.y);
+  vW = w; vUV = vec2(aC.x + 0.5, 1.0 - aC.y);
+  gl_Position = uVP * vec4(w, 1.0);
+}`;
+
+const FS_SPR = `#version 300 es
+precision highp float;
+in vec2 vUV; in vec3 vW;
+uniform sampler2D uTex;
+uniform vec3 uFog, uEye, uFlash, uShade, uFwd;
+uniform vec2 uFogR; uniform float uFlashAmt, uAlpha, uFogOn;
+out vec4 outC;
+void main(){
+  vec4 t = texture(uTex, vUV);
+  if (t.a < 0.28) discard;
+  vec3 c = mix(t.rgb * uShade, uFlash, uFlashAmt);
+  float f = clamp((dot(vW - uEye, uFwd) - uFogR.x) / max(uFogR.y - uFogR.x, 0.001), 0.0, 1.0) * uFogOn;
+  outC = vec4(mix(c, uFog, f), t.a * uAlpha);
+}`;
+
+const VS_SKY = `#version 300 es
+precision highp float;
+out vec2 vP;
+void main(){
+  vec2 p = vec2((gl_VertexID == 1) ? 3.0 : -1.0, (gl_VertexID == 2) ? 3.0 : -1.0);
+  vP = p; gl_Position = vec4(p, 1.0, 1.0);
+}`;
+
+const FS_SKY = `#version 300 es
+precision highp float;
+in vec2 vP;
+uniform vec3 uTop, uBot; uniform float uHorizon;
+out vec4 outC;
+void main(){
+  float k = smoothstep(uHorizon - 1.15, uHorizon + 0.95, vP.y);
+  vec3 c = mix(uBot, uTop, k);
+  c += uBot * 0.10 * exp(-abs(vP.y - uHorizon) * 3.5);
+  outC = vec4(c, 1.0);
+}`;
+
+const R3 = {
+  ok:false, gl:null, cv:null, CH:16, TEXS:64, TEXN:352,
+  chunks:new Map(), mapToken:null, regionToken:null, mipDirty:false,
+  layers:null, nLayer:0, spr:new Map(), time:0, dpr:1,
+  vp:new Float32Array(16), proj:new Float32Array(16), view:new Float32Array(16),
+  eye:[0,0,0], right:[1,0,0], scratch:null, sn:0,
+  battle:null, bfx:{player:null,enemy:null}, bpos:{player:[-3.9,0,0.8],enemy:[5.4,0,-3.4]},
+
+  init() {
+    const cv = document.getElementById('gl3d');
+    if (!cv) return false;
+    let gl = null;
+    try {
+      gl = cv.getContext('webgl2', {antialias:true, alpha:false, depth:true, powerPreference:'high-performance'});
+    } catch { }
+    if (!gl) return false;
+    this.cv = cv; this.gl = gl;
+    try {
+      const WA = ['aPos', 'aNrm', 'aUV', 'aLayer', 'aSway'];
+      this.pWorld = this.prog(VS_WORLD, FS_WORLD, WA);
+      this.pWorldA = this.prog(VS_WORLD, FS_WORLD.replace('#version 300 es', '#version 300 es\n#define AT 1'), WA);
+      this.pSpr = this.prog(VS_SPR, FS_SPR, ['aC']);
+      this.pSky = this.prog(VS_SKY, FS_SKY);
+      this.initTexArray();
+      this.initQuad();
+    } catch { return false; }
+    this.scratch = new Float32Array(1 << 20);
+    this.scratch2 = new Float32Array(1 << 19);
+    this.emptyVao = gl.createVertexArray();
+    gl.enable(gl.DEPTH_TEST);
+    gl.disable(gl.CULL_FACE);
+    gl.clearColor(0, 0, 0, 1);
+    this.ok = true;
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+    return true;
+  },
+
+  prog(vsSrc, fsSrc, attrs) {
+    const gl = this.gl;
+    const mk = (type, src) => {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+      return s;
+    };
+    const p = gl.createProgram();
+    gl.attachShader(p, mk(gl.VERTEX_SHADER, vsSrc));
+    gl.attachShader(p, mk(gl.FRAGMENT_SHADER, fsSrc));
+    (attrs || []).forEach((n, i) => gl.bindAttribLocation(p, i, n));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    const u = {};
+    const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+    for (let i = 0; i < n; i++) { const nm = gl.getActiveUniform(p, i).name.replace('[0]',''); u[nm] = gl.getUniformLocation(p, nm); }
+    return {p, u};
+  },
+
+  initTexArray() {
+    const gl = this.gl, s = this.TEXS;
+    this.tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.tex);
+    this.TEXN = Math.min(this.TEXN, gl.getParameter(gl.MAX_ARRAY_TEXTURE_LAYERS));
+    gl.texStorage3D(gl.TEXTURE_2D_ARRAY, Math.log2(s) + 1, gl.RGBA8, s, s, this.TEXN);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    // Each layer holds one whole tile, so repeating never samples a neighbour's pixels.
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    const af = gl.getExtension('EXT_texture_filter_anisotropic');
+    if (af) gl.texParameterf(gl.TEXTURE_2D_ARRAY, af.TEXTURE_MAX_ANISOTROPY_EXT,
+      Math.min(8, gl.getParameter(af.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
+    this.layers = Object.create(null); this.nLayer = 0;
+  },
+
+  initQuad() {
+    const gl = this.gl;
+    this.quadVao = gl.createVertexArray();
+    gl.bindVertexArray(this.quadVao);
+    const b = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, b);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-0.5,0, 0.5,0, 0.5,1, -0.5,0, 0.5,1, -0.5,1]), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 8, 0);
+    gl.bindVertexArray(null);
+  },
+
+  resize() {
+    if (!this.ok) return;
+    const cv = this.cv;
+    this.dpr = Math.min(window.devicePixelRatio || 1, matchMedia('(pointer: coarse)').matches ? 1.75 : 2);
+    const w = Math.max(1, Math.round(window.innerWidth * this.dpr));
+    const h = Math.max(1, Math.round(window.innerHeight * this.dpr));
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  },
+
+  // ---- texture array layers -------------------------------------------------
+  layer(key, drawFn) {
+    const have = this.layers[key];
+    if (have !== undefined) return have;
+    if (this.nLayer >= this.TEXN) return 0;
+    const s = this.TEXS;
+    const c = document.createElement('canvas'); c.width = c.height = s;
+    drawFn(c.getContext('2d'), s);
+    const gl = this.gl, i = this.nLayer++;
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.tex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, i, s, s, 1, gl.RGBA, gl.UNSIGNED_BYTE, c);
+    this.layers[key] = i; this.mipDirty = true;
+    return i;
+  },
+
+  regFn(region, base) {
+    const suf = region === 'r2' ? 'Shadow' : region === 'r3' ? 'Frost' : region === 'r4' ? 'Champ' : '';
+    return Sprites[base + suf] || Sprites[base];
+  },
+
+  terrainLayer(region, kind) {
+    return this.layer('t:' + region + ':' + kind, (c, s) => {
+      const S = Sprites;
+      if (kind === 'grass') this.regFn(region,'grassTile').call(S, c, s, 0);
+      else if (kind === 'dark') { this.regFn(region,'grassTile').call(S, c, s, -18); c.fillStyle='rgba(0,0,0,0.10)'; c.fillRect(0,0,s,s); }
+      else if (kind === 'water') this.regFn(region,'waterTile').call(S, c, s, 0);
+      else if (kind === 'tree') this.regFn(region,'treeTile').call(S, c, s);
+      else if (kind === 'path') this.regFn(region,'pathTile').call(S, c, s);
+      else if (kind === 'sand') this.regFn(region,'sandTile').call(S, c, s);
+      else if (kind === 'bridge') this.regFn(region,'bridgeTile').call(S, c, s);
+      else if (kind === 'floor') this.regFn(region,'floorTile').call(S, c, s);
+      else if (kind === 'iwall') this.regFn(region,'interiorWallTile').call(S, c, s);
+      else if (kind === 'exit') this.regFn(region,'doorTile').call(S, c, s, true);
+      else if (kind.startsWith('flower')) { const v = +kind.slice(6); this.regFn(region,'flowerTile').call(S, c, s, v, v*3); }
+      else if (kind.startsWith('decor')) {
+        const v = +kind.slice(5);
+        c.save(); c.translate(s*0.5, s); c.scale(1.4, 1.4); c.translate(-s*0.5, -s*0.84);
+        this.regFn(region,'drawDecor').call(S, c, 0, 0, s, v); c.restore();
+      }
+      else if (kind === 'blade') this.bladeTex(c, s, region);
+      else if (kind === 'stone') this.stoneTex(c, s, region);
+    });
+  },
+
+  bladeTex(c, s, region) {
+    c.clearRect(0, 0, s, s);
+    const cols = region === 'r2' ? ['#3a2e5e','#4c3c76','#2c2250']
+               : region === 'r3' ? ['#9dbecb','#bad6de','#83a6b6']
+               : region === 'r4' ? ['#a8882c','#c6a642','#8a6c1c']
+               : ['#2a6e22','#379231','#22701e'];
+    for (let i = 0; i < 22; i++) {
+      const x = ((i * 97 + 13) % 100) / 100 * s;
+      const h = s * (0.45 + ((i * 53) % 45) / 100);
+      const lean = (((i * 31) % 20) - 10) / 100 * s;
+      c.fillStyle = cols[i % cols.length];
+      c.beginPath();
+      c.moveTo(x - s * 0.028, s);
+      c.lineTo(x + s * 0.028, s);
+      c.lineTo(x + lean, s - h);
+      c.closePath(); c.fill();
+    }
+  },
+
+  stoneTex(c, s, region) {
+    const pal = BPAL[region] || BPAL.r1;
+    c.fillStyle = pal.stone; c.fillRect(0, 0, s, s);
+    for (let i = 0; i < 26; i++) {
+      const x = (i * 41 + 7) % s, y = (i * 67 + 11) % s;
+      c.fillStyle = i % 2 ? pal.stoneD : Sprites.shade(pal.stone, 22);
+      c.fillRect(x, y, 3 + (i % 3), 2 + (i % 2));
+    }
+    c.strokeStyle = pal.stoneD; c.lineWidth = Math.max(1, s * 0.02);
+    c.beginPath();
+    c.moveTo(0, s * 0.34); c.lineTo(s * 0.42, s * 0.34); c.lineTo(s * 0.42, s);
+    c.moveTo(0, s * 0.7); c.lineTo(s, s * 0.7);
+    c.moveTo(s * 0.72, s * 0.7); c.lineTo(s * 0.72, s * 0.34); c.lineTo(s, s * 0.34);
+    c.stroke();
+  },
+
+
+  // ---- building surfaces ----------------------------------------------------
+  roofLayer(style) {
+    return this.layer('br:' + style, (c, s) => {
+      const st = BSTYLE[style] || BSTYLE.house;
+      c.fillStyle = st.roof; c.fillRect(0, 0, s, s);
+      const rows = 5, rh = s / rows;
+      for (let r = 0; r < rows; r++) {
+        c.fillStyle = r % 2 ? st.rd : Sprites.shade(st.roof, -12);
+        c.fillRect(0, r * rh + rh * 0.78, s, rh * 0.22);
+        for (let k = 0; k < 4; k++) {
+          c.fillStyle = 'rgba(0,0,0,0.12)';
+          c.fillRect(((k * s / 4) + (r % 2 ? s / 8 : 0)) % s, r * rh, Math.max(1, s * 0.016), rh * 0.78);
+        }
+      }
+      c.fillStyle = 'rgba(255,255,255,0.10)'; c.fillRect(0, 0, s, s * 0.08);
+    });
+  },
+
+  wallLayer(style, region) {
+    return this.layer('bw:' + style + ':' + region, (c, s) => {
+      const st = BSTYLE[style] || BSTYLE.house, pal = BPAL[region] || BPAL.r1;
+      const k = st.wall;
+      if (k === 'stone' || k === 'column') {
+        c.fillStyle = pal.stone; c.fillRect(0, 0, s, s);
+        c.strokeStyle = pal.stoneD; c.lineWidth = Math.max(1, s * 0.022);
+        for (let r = 0; r < 4; r++) {
+          c.beginPath(); c.moveTo(0, s * (r + 1) / 4); c.lineTo(s, s * (r + 1) / 4); c.stroke();
+          const off = r % 2 ? s / 4 : 0;
+          for (let q = 0; q < 2; q++) { const x = (off + q * s / 2) % s; c.beginPath(); c.moveTo(x, s * r / 4); c.lineTo(x, s * (r + 1) / 4); c.stroke(); }
+        }
+      } else if (k === 'timber' || k === 'log') {
+        c.fillStyle = pal.wall; c.fillRect(0, 0, s, s);
+        c.fillStyle = Sprites.shade(pal.door, 20);
+        for (let r = 0; r < 5; r++) c.fillRect(0, s * r / 5 + s * 0.02, s, s * 0.055);
+        c.fillRect(s * 0.06, 0, s * 0.06, s); c.fillRect(s * 0.88, 0, s * 0.06, s);
+      } else if (k === 'brick') {
+        c.fillStyle = '#8d4f3a'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#6d3a28';
+        for (let r = 0; r < 6; r++) { c.fillRect(0, s * r / 6 + s * 0.13, s, s * 0.022); const off = r % 2 ? s / 6 : 0; for (let q = 0; q < 3; q++) c.fillRect((off + q * s / 3) % s, s * r / 6, s * 0.022, s * 0.14); }
+      } else if (k === 'metal') {
+        c.fillStyle = '#c3ccd4'; c.fillRect(0, 0, s, s);
+        c.fillStyle = '#a4b0ba'; for (let q = 0; q < 6; q++) c.fillRect(q * s / 6, 0, s * 0.035, s);
+        c.fillStyle = '#8e9aa4'; c.fillRect(0, s * 0.46, s, s * 0.04);
+      } else if (k === 'clinic' || k === 'display') {
+        c.fillStyle = k === 'clinic' ? '#f2f5f8' : pal.wall; c.fillRect(0, 0, s, s);
+        c.fillStyle = st.roof; c.fillRect(0, 0, s, s * 0.1);
+        c.fillStyle = 'rgba(0,0,0,0.06)'; c.fillRect(0, s * 0.62, s, s * 0.02);
+      } else {
+        c.fillStyle = pal.wall; c.fillRect(0, 0, s, s);
+        c.fillStyle = pal.ln;
+        for (let i = 0; i < 14; i++) c.fillRect((i * 43 + 5) % s, (i * 29 + 7) % s, 3, 2);
+      }
+      // one window per wall panel keeps facades from reading as blank boxes
+      const wx = s * 0.26, wy = s * 0.2, ww = s * 0.48, wh = s * 0.36;
+      c.fillStyle = pal.winD; c.fillRect(wx - s * 0.03, wy - s * 0.03, ww + s * 0.06, wh + s * 0.06);
+      const g = c.createLinearGradient(wx, wy, wx + ww, wy + wh);
+      g.addColorStop(0, pal.winL); g.addColorStop(1, pal.win);
+      c.fillStyle = g; c.fillRect(wx, wy, ww, wh);
+      c.fillStyle = 'rgba(255,255,255,0.22)';
+      c.beginPath(); c.moveTo(wx, wy + wh); c.lineTo(wx + ww * 0.6, wy); c.lineTo(wx + ww, wy); c.lineTo(wx + ww * 0.35, wy + wh); c.closePath(); c.fill();
+      c.fillStyle = pal.winD; c.fillRect(wx + ww / 2 - s * 0.015, wy, s * 0.03, wh); c.fillRect(wx, wy + wh / 2 - s * 0.015, ww, s * 0.03);
+    });
+  },
+
+  doorLayer(style, region) {
+    return this.layer('bd:' + style + ':' + region, (c, s) => {
+      const st = BSTYLE[style] || BSTYLE.house, pal = BPAL[region] || BPAL.r1;
+      c.fillStyle = Sprites.shade(pal.wall, -26); c.fillRect(0, 0, s, s);
+      const dx = s * 0.14, dw = s * 0.72;
+      if (st.door === 'glass' || st.door === 'auto' || st.door === 'slide') {
+        c.fillStyle = pal.winD; c.fillRect(dx - s * 0.03, 0, dw + s * 0.06, s);
+        const g = c.createLinearGradient(dx, 0, dx + dw, s);
+        g.addColorStop(0, pal.winL); g.addColorStop(0.6, pal.win); g.addColorStop(1, pal.winD);
+        c.fillStyle = g; c.fillRect(dx, s * 0.04, dw, s * 0.96);
+        c.fillStyle = pal.winD; c.fillRect(dx + dw / 2 - s * 0.02, 0, s * 0.04, s);
+      } else if (st.door === 'gate' || st.door === 'grand') {
+        c.fillStyle = pal.stoneD; c.fillRect(dx - s * 0.05, 0, dw + s * 0.1, s);
+        c.fillStyle = st.door === 'grand' ? '#c8a02c' : Sprites.shade(pal.door, -6);
+        c.beginPath(); c.moveTo(dx, s); c.lineTo(dx, s * 0.3); c.quadraticCurveTo(s * 0.5, -s * 0.12, dx + dw, s * 0.3); c.lineTo(dx + dw, s); c.closePath(); c.fill();
+        c.strokeStyle = 'rgba(0,0,0,0.35)'; c.lineWidth = Math.max(1, s * 0.02);
+        for (let i = 1; i < 5; i++) { c.beginPath(); c.moveTo(dx + dw * i / 5, s * 0.16); c.lineTo(dx + dw * i / 5, s); c.stroke(); }
+      } else {
+        c.fillStyle = pal.doorD; c.fillRect(dx - s * 0.045, 0, dw + s * 0.09, s);
+        c.fillStyle = pal.door; c.fillRect(dx, s * 0.04, dw, s * 0.96);
+        c.fillStyle = pal.doorD;
+        c.fillRect(dx + s * 0.06, s * 0.14, dw - s * 0.12, s * 0.03);
+        c.fillRect(dx + s * 0.06, s * 0.52, dw - s * 0.12, s * 0.03);
+      }
+      c.fillStyle = pal.knob;
+      c.beginPath(); c.arc(dx + dw * 0.84, s * 0.56, s * 0.045, 0, Math.PI * 2); c.fill();
+    });
+  },
+
+  signLayer(style) {
+    return this.layer('bs:' + style, (c, s) => {
+      const st = BSTYLE[style] || BSTYLE.house;
+      c.clearRect(0, 0, s, s);
+      c.fillStyle = st.rd; c.fillRect(s * 0.06, s * 0.14, s * 0.88, s * 0.72);
+      c.fillStyle = Sprites.shade(st.roof, -8); c.fillRect(s * 0.1, s * 0.18, s * 0.8, s * 0.64);
+      if (st.emb) Sprites.bEmblem(c, s, st.emb, st);
+    });
+  },
+
+
+  intLayer(part, style, region) {
+    return this.layer('i:' + part + ':' + style + ':' + region, (c, s) => {
+      const st = BSTYLE[style] || BSTYLE.house, pal = BPAL[region] || BPAL.r1;
+      if (part === 'fl') Sprites.bFloor(c, s, st, pal); else Sprites.bIWall(c, s, st, pal);
+    });
+  },
+
+  // ---- mesh primitives ------------------------------------------------------
+  v(x, y, z, nx, ny, nz, u, vv, l, w) {
+    const alpha = this.tgt === 1;
+    const a = alpha ? this.scratch2 : this.scratch;
+    let i = alpha ? this.sn2 : this.sn;
+    if (i + 10 > a.length) return;
+    a[i]=x; a[i+1]=y; a[i+2]=z; a[i+3]=nx; a[i+4]=ny; a[i+5]=nz; a[i+6]=u; a[i+7]=vv; a[i+8]=l; a[i+9]=w;
+    if (alpha) this.sn2 = i + 10; else this.sn = i + 10;
+  },
+  poly4(p, uv, n, l, w) {
+    const o = [0,1,2,0,2,3];
+    for (let i = 0; i < 6; i++) { const k = o[i]; this.v(p[k][0],p[k][1],p[k][2], n[0],n[1],n[2], uv[k][0],uv[k][1], l, w); }
+  },
+  tri(p, uv, n, l, w) {
+    for (let i = 0; i < 3; i++) this.v(p[i][0],p[i][1],p[i][2], n[0],n[1],n[2], uv[i][0],uv[i][1], l, w);
+  },
+  flat(x, y, z, w1, d1, l, sway, ru, rv) {
+    ru = ru || 1; rv = rv || 1;
+    this.poly4([[x,y,z],[x+w1,y,z],[x+w1,y,z+d1],[x,y,z+d1]],
+      [[0,0],[ru,0],[ru,rv],[0,rv]], [0,1,0], l, sway || 0);
+  },
+  wallSeg(ax, az, bx, bz, y0, y1, n, l, ru, rv, sway) {
+    this.poly4([[ax,y0,az],[bx,y0,bz],[bx,y1,bz],[ax,y1,az]],
+      [[0,rv],[ru,rv],[ru,0],[0,0]], n, l, sway || 0);
+  },
+  box(x0, y0, z0, x1, y1, z1, l, ru, rv) {
+    this.wallSeg(x0,z1, x1,z1, y0,y1, [0,0,1], l, ru, rv);
+    this.wallSeg(x1,z0, x0,z0, y0,y1, [0,0,-1], l, ru, rv);
+    this.wallSeg(x0,z0, x0,z1, y0,y1, [-1,0,0], l, ru, rv);
+    this.wallSeg(x1,z1, x1,z0, y0,y1, [1,0,0], l, ru, rv);
+    this.flat(x0, y1, z0, x1-x0, z1-z0, l, 0, ru, ru);
+  },
+  // Water sits below the land, so every shore edge gets a bank to close the gap.
+  shore(x, z, y, l) {
+    const s = G.s, wet = t => t === T.WATER || t === T.BRIDGE;
+    if (!wet((s.map[z-1] || [])[x])) this.wallSeg(x + 1, z, x, z, y, 0, [0,0,-1], l, 1, 0.34);
+    if (!wet((s.map[z+1] || [])[x])) this.wallSeg(x, z + 1, x + 1, z + 1, y, 0, [0,0,1], l, 1, 0.34);
+    if (!wet(s.map[z][x-1])) this.wallSeg(x, z, x, z + 1, y, 0, [-1,0,0], l, 1, 0.34);
+    if (!wet(s.map[z][x+1])) this.wallSeg(x + 1, z + 1, x + 1, z, y, 0, [1,0,0], l, 1, 0.34);
+  },
+
+  billboard(cx, cz, w, h, y0, l, sway) {
+    this.tgt = 1;
+    const hw = w * 0.5;
+    this.poly4([[cx-hw,y0,cz],[cx+hw,y0,cz],[cx+hw,y0+h,cz],[cx-hw,y0+h,cz]],
+      [[0,1],[1,1],[1,0],[0,0]], [cx, hw, cz], l, sway);
+    this.tgt = 0;
+  },
+
+  // ---- world chunks ---------------------------------------------------------
+  hash(x, z) { let h = (x * 73856093) ^ (z * 19349663); h = (h ^ (h >>> 13)) >>> 0; return h; },
+
+  upload() {
+    const gl = this.gl, n1 = this.sn, n2 = this.sn2;
+    const data = new Float32Array(n1 + n2);
+    data.set(this.scratch.subarray(0, n1), 0);
+    data.set(this.scratch2.subarray(0, n2), n1);
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    [[0,3,0],[1,3,12],[2,2,24],[3,1,32],[4,1,36]].forEach(([loc, sz, off]) => {
+      gl.enableVertexAttribArray(loc);
+      gl.vertexAttribPointer(loc, sz, gl.FLOAT, false, 40, off);
+    });
+    gl.bindVertexArray(null);
+    return {vao, buf, count: n1 / 10, aCount: n2 / 10};
+  },
+
+  beginMesh() { this.sn = 0; this.sn2 = 0; this.tgt = 0; },
+
+  drawMesh(m) {
+    const gl = this.gl;
+    gl.bindVertexArray(m.vao);
+    if (m.count) { gl.useProgram(this.pWorld.p); gl.drawArrays(gl.TRIANGLES, 0, m.count); }
+    if (m.aCount) { gl.useProgram(this.pWorldA.p); gl.drawArrays(gl.TRIANGLES, m.count, m.aCount); }
+  },
+
+  buildChunk(cx, cz) {
+    const s = G.s, CH = this.CH;
+    const region = s.region || 'r1';
+    const inHouse = !!s.inHouse;
+    const style = s.inHouseStyle || 'house';
+    this.beginMesh();
+
+    const Lg = this.terrainLayer(region, 'grass');
+    const Ld = this.terrainLayer(region, 'dark');
+    const Lw = this.terrainLayer(region, 'water');
+    const Lt = this.terrainLayer(region, 'tree');
+    const Lb = this.terrainLayer(region, 'blade');
+    const Ls = this.terrainLayer(region, 'stone');
+    const Lp = this.terrainLayer(region, 'path');
+    const Lsa = this.terrainLayer(region, 'sand');
+    const Lbr = this.terrainLayer(region, 'bridge');
+
+    const x0 = cx * CH, z0 = cz * CH;
+    const x1 = Math.min(x0 + CH, s.mw), z1 = Math.min(z0 + CH, s.mh);
+
+    for (let z = z0; z < z1; z++) {
+      const row = s.map[z]; if (!row) continue;
+      for (let x = x0; x < x1; x++) {
+        const t = row[x];
+        if (t === undefined) continue;
+        const h = this.hash(x, z);
+
+        if (inHouse) {
+          const wh = (z === s.mh - 1) ? 0.8 : 1.38;
+          if (t === T.FLOOR) this.flat(x, 0, z, 1, 1, this.intLayer('fl', style, region));
+          else if (t === T.IWALL) { this.flat(x, 0, z, 1, 1, this.intLayer('fl', style, region)); this.box(x, 0, z, x+1, wh, z+1, this.intLayer('iw', style, region), 1, wh); }
+          else if (t === T.EXITDOOR) {
+            this.flat(x, 0, z, 1, 1, this.intLayer('fl', style, region));
+            this.wallSeg(x, z + 0.02, x + 1, z + 0.02, 0, wh, [0,0,1], this.terrainLayer(region, 'exit'), 1, 1);
+          }
+          continue;
+        }
+
+        if (t === T.GRASS) {
+          this.flat(x, 0, z, 1, 1, Lg);
+          if (h % 100 < 5) this.billboard(x + 0.5, z + 0.5, 0.58, 0.58, 0, this.terrainLayer(region, 'decor' + (h % 3)), 4);
+        } else if (t === T.TALL) {
+          this.flat(x, 0, z, 1, 1, Ld);
+          for (let k = 0; k < 3; k++) {
+            const jx = x + 0.2 + ((h >>> (k*3)) % 60) / 100, jz = z + 0.2 + ((h >>> (k*3+2)) % 60) / 100;
+            this.billboard(jx, jz, 0.72, 0.42 + ((h >>> k) % 15) / 100, 0, Lb, 1);
+          }
+        } else if (t === T.WATER) {
+          this.flat(x, -0.2, z, 1, 1, Lw, 2);
+          this.shore(x, z, -0.24, Lsa);
+        } else if (t === T.TREE) {
+          this.flat(x, 0, z, 1, 1, Lg);
+          const sc = 0.86 + (h % 30) / 100;
+          this.billboard(x + 0.5, z + 0.5, 1.45 * sc, 2.15 * sc, 0, Lt, 3);
+        } else if (t === T.ROCK) {
+          this.flat(x, 0, z, 1, 1, Lg);
+          const hh = 0.78 + (h % 26) / 100, m = 0.03 + (h % 5) / 100;
+          this.box(x + m, 0, z + m, x + 1 - m, hh, z + 1 - m, Ls, 1, 1);
+        } else if (t === T.PATH) {
+          this.flat(x, 0.005, z, 1, 1, Lp);
+        } else if (t === T.SAND) {
+          this.flat(x, 0.002, z, 1, 1, Lsa);
+        } else if (t === T.FLOWER) {
+          this.flat(x, 0.004, z, 1, 1, this.terrainLayer(region, 'flower' + ((x * 7 + z * 13) % 5)));
+        } else if (t === T.BRIDGE) {
+          this.flat(x, -0.2, z, 1, 1, Lw, 2);
+          this.shore(x, z, -0.24, Lsa);
+          this.flat(x, 0.14, z, 1, 1, Lbr);
+          this.wallSeg(x, z, x + 1, z, 0.0, 0.14, [0,0,-1], Lbr, 1, 0.2);
+          this.wallSeg(x + 1, z + 1, x, z + 1, 0.0, 0.14, [0,0,1], Lbr, 1, 0.2);
+        } else if (DOOR_HOUSE[t] !== undefined) {
+          this.building(x, z, t, region);
+        }
+      }
+    }
+
+    const m = this.upload(); m.used = 0; return m;
+  },
+
+  building(dx, dz, doorTile, region) {
+    const style = DOOR_STYLE[doorTile] || 'house';
+    const RL = this.roofLayer(style), WL = this.wallLayer(style, region);
+    const DL = this.doorLayer(style, region), SL = this.signLayer(style);
+    const PL = this.terrainLayer(region, 'path');
+    const x0 = dx - 1, x1 = dx + 2, z0 = dz - 1, z1 = dz + 1;
+    const H = 1.72, RH = 1.0, OV = 0.24, AH = 1.24, AD = 0.5;
+    const a0 = dx, a1 = dx + 1, az = z1 - AD;
+
+    this.wallSeg(x1, z0, x0, z0, 0, H, [0,0,-1], WL, 3, 1.7);
+    this.wallSeg(x0, z0, x0, z1, 0, H, [-1,0,0], WL, 2, 1.7);
+    this.wallSeg(x1, z1, x1, z0, 0, H, [1,0,0], WL, 2, 1.7);
+    this.wallSeg(x0, z1, a0, z1, 0, H, [0,0,1], WL, 1, 1.7);
+    this.wallSeg(a1, z1, x1, z1, 0, H, [0,0,1], WL, 1, 1.7);
+    this.wallSeg(a0, z1, a1, z1, AH, H, [0,0,1], WL, 1, 0.6);
+
+    // recessed entrance so the walk-in tile is not swallowed by the facade
+    this.flat(a0, 0.02, az, 1, AD, PL);
+    this.wallSeg(a0, az, a0, z1, 0, AH, [1,0,0], WL, 0.5, 1.3);
+    this.wallSeg(a1, z1, a1, az, 0, AH, [-1,0,0], WL, 0.5, 1.3);
+    this.poly4([[a0,AH,az],[a1,AH,az],[a1,AH,z1],[a0,AH,z1]], [[0,0],[1,0],[1,0.5],[0,0.5]], [0,-1,0], WL, 0);
+    this.wallSeg(a0, az, a1, az, 0, AH, [0,0,1], DL, 1, 1);
+    this.tgt = 1;
+    this.poly4([[a0+0.06,AH+0.06,z1+0.02],[a1-0.06,AH+0.06,z1+0.02],[a1-0.06,H-0.05,z1+0.02],[a0+0.06,H-0.05,z1+0.02]],
+      [[0,1],[1,1],[1,0],[0,0]], [0,0,1], SL, 0);
+    this.tgt = 0;
+
+    const ry = H - 0.07, py = H + RH, mz = dz;
+    const nS = [0, 1.22, 1.10], nN = [0, 1.22, -1.10];
+    this.poly4([[x0-OV,ry,z1+OV],[x1+OV,ry,z1+OV],[x1+OV,py,mz],[x0-OV,py,mz]],
+      [[0,1.3],[3.4,1.3],[3.4,0],[0,0]], nS, RL, 0);
+    this.poly4([[x1+OV,ry,z0-OV],[x0-OV,ry,z0-OV],[x0-OV,py,mz],[x1+OV,py,mz]],
+      [[0,1.3],[3.4,1.3],[3.4,0],[0,0]], nN, RL, 0);
+    this.tri([[x0,ry,z0],[x0,ry,z1],[x0,py,mz]], [[0,1],[2,1],[1,0]], [-1,0,0], WL, 0);
+    this.tri([[x1,ry,z1],[x1,ry,z0],[x1,py,mz]], [[0,1],[2,1],[1,0]], [1,0,0], WL, 0);
+  },
+
+  chunkKey(cx, cz) { return cx * 8192 + cz; },
+
+  getChunk(cx, cz) {
+    const k = this.chunkKey(cx, cz);
+    let c = this.chunks.get(k);
+    if (!c) { c = this.buildChunk(cx, cz); this.chunks.set(k, c); }
+    return c;
+  },
+
+  dropChunks() {
+    const gl = this.gl;
+    this.chunks.forEach(c => { gl.deleteVertexArray(c.vao); gl.deleteBuffer(c.buf); });
+    this.chunks.clear();
+    if (this.ground) { gl.deleteVertexArray(this.ground.vao); gl.deleteBuffer(this.ground.buf); this.ground = null; }
+  },
+
+  syncMap() {
+    const s = G.s;
+    const tok = s.map;
+    const reg = (s.region || 'r1') + (s.inHouse ? ':' + s.inHouse : '');
+    if (tok !== this.mapToken || reg !== this.regionToken) {
+      this.dropChunks();
+      this.mapToken = tok; this.regionToken = reg;
+    }
+  },
+
+  // ---- sprite textures ------------------------------------------------------
+  sprTex(key, size, drawFn) {
+    let e = this.spr.get(key);
+    if (e) { e.used = this.frameNo; return e; }
+    const c = document.createElement('canvas'); c.width = c.height = size;
+    drawFn(c.getContext('2d'), size);
+    const gl = this.gl, tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    e = {tex, used: this.frameNo};
+    this.spr.set(key, e);
+    if (this.spr.size > 110) {
+      let oldK = null, oldU = Infinity;
+      this.spr.forEach((val, k) => { if (val.used < oldU) { oldU = val.used; oldK = k; } });
+      if (oldK !== null && oldK !== key) { gl.deleteTexture(this.spr.get(oldK).tex); this.spr.delete(oldK); }
+    }
+    return e;
+  },
+
+  folkTex(region, hair, shirt, frame) {
+    return this.sprTex('fk:' + region + ':' + hair + ':' + shirt + ':' + frame, 128, (c, s) => {
+      c.clearRect(0, 0, s, s);
+      if (region === 'r2') Sprites.drawShadowFolk(c, 0, 0, s, frame, shirt, hair);
+      else if (region === 'r3') Sprites.drawFrostFolk(c, 0, 0, s, frame, shirt, hair);
+      else if (region === 'r4') Sprites.drawChampionFolk(c, 0, 0, s, frame, shirt, hair);
+      else Sprites.drawCharacter(c, 0, 0, s, 0, frame, hair, shirt);
+    });
+  },
+
+  heroTex(hair, step) {
+    return this.sprTex('hr:' + hair + ':' + step, 128, (c, s) => {
+      c.clearRect(0, 0, s, s);
+      Sprites.drawCharacter(c, 0, 0, s, 0, step * 6.98, hair);
+    });
+  },
+
+  monTex(mon) {
+    return this.sprTex('mn:' + mon.id + ':' + mon.t + ':' + (mon.tier || 1), 256, (c, s) => {
+      Sprites.drawCreature(c, s, mon.t, mon.tier || 1, Sprites.seedFromId(mon.id));
+    });
+  },
+
+  blobTex() {
+    return this.sprTex('ui:blob', 64, (c, s) => {
+      const g = c.createRadialGradient(s/2, s/2, 0, s/2, s/2, s/2);
+      g.addColorStop(0, 'rgba(0,0,0,0.42)'); g.addColorStop(0.55, 'rgba(0,0,0,0.24)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = g; c.fillRect(0, 0, s, s);
+    });
+  },
+
+  markTex() {
+    return this.sprTex('ui:mk', 64, (c, s) => {
+      c.clearRect(0, 0, s, s);
+      c.fillStyle = '#ffcc00'; c.strokeStyle = '#141414'; c.lineWidth = s * 0.05;
+      c.beginPath(); c.arc(s/2, s*0.4, s*0.3, 0, Math.PI*2); c.fill(); c.stroke();
+      c.beginPath(); c.moveTo(s*0.37, s*0.62); c.lineTo(s*0.63, s*0.62); c.lineTo(s/2, s*0.9); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = '#141414'; c.font = 'bold ' + Math.floor(s*0.42) + 'px sans-serif';
+      c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('!', s/2, s*0.41);
+    });
+  },
+
+  // ---- frustum --------------------------------------------------------------
+  planes(m) {
+    const p = this.pl || (this.pl = [[],[],[],[],[],[]]);
+    for (let i = 0; i < 3; i++) {
+      const s = i * 2;
+      for (let k = 0; k < 4; k++) { p[s][k] = m[k*4+3] + m[k*4+i]; p[s+1][k] = m[k*4+3] - m[k*4+i]; }
+    }
+    return p;
+  },
+  boxIn(p, x0, y0, z0, x1, y1, z1) {
+    for (let i = 0; i < 6; i++) {
+      const a = p[i];
+      const x = a[0] > 0 ? x1 : x0, y = a[1] > 0 ? y1 : y0, z = a[2] > 0 ? z1 : z0;
+      if (a[0]*x + a[1]*y + a[2]*z + a[3] < 0) return false;
+    }
+    return true;
+  },
+
+  // ---- camera & frame -------------------------------------------------------
+  aspect() { return this.cv.width / Math.max(1, this.cv.height); },
+
+  // A portrait phone would otherwise see a keyhole of the world, so the vertical
+  // opening widens as the screen gets narrower.
+  fov(baseDeg) {
+    const a = this.aspect();
+    return Math.min(76, baseDeg + (a < 1.2 ? (1.2 - a) * 22 : 0)) * Math.PI / 180;
+  },
+
+  setCam(ex, ey, ez, tx, ty, tz, fovy, far) {
+    const asp = this.aspect();
+    M4.persp(this.proj, fovy, asp, 0.1, far);
+    M4.lookAt(this.view, ex, ey, ez, tx, ty, tz);
+    M4.mul(this.vp, this.proj, this.view);
+    this.eye = [ex, ey, ez];
+    this.fwd = [-this.view[2], -this.view[6], -this.view[10]];
+    const rx = this.view[0], rz = this.view[8], rl = Math.hypot(rx, rz) || 1;
+    this.right = [rx/rl, 0, rz/rl];
+  },
+
+  project(x, y, z) {
+    const v = this.vp;
+    const cw = v[3]*x + v[7]*y + v[11]*z + v[15];
+    if (cw <= 0.0001) return null;
+    const cx = v[0]*x + v[4]*y + v[8]*z + v[12];
+    const cy = v[1]*x + v[5]*y + v[9]*z + v[13];
+    return {x: (cx/cw*0.5 + 0.5) * this.cv.clientWidth, y: (0.5 - cy/cw*0.5) * this.cv.clientHeight};
+  },
+
+  sky(env, pitch, fovy) {
+    const gl = this.gl, P = this.pSky;
+    gl.useProgram(P.p);
+    gl.bindVertexArray(this.emptyVao);
+    gl.depthMask(false); gl.disable(gl.DEPTH_TEST);
+    gl.uniform3fv(P.u.uTop, env.skyT); gl.uniform3fv(P.u.uBot, env.fog);
+    gl.uniform1f(P.u.uHorizon, Math.max(-1.5, Math.min(1.5, Math.tan(pitch) / Math.tan(fovy/2))));
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.enable(gl.DEPTH_TEST); gl.depthMask(true);
+  },
+
+  beginWorld(env, fogNear, fogFar) {
+    const gl = this.gl;
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.tex);
+    const d = env.dir, dl = Math.hypot(d[0], d[1], d[2]);
+    for (const P of [this.pWorld, this.pWorldA]) {
+      gl.useProgram(P.p);
+      gl.uniform1i(P.u.uTex, 0);
+      gl.uniformMatrix4fv(P.u.uVP, false, this.vp);
+      gl.uniform1f(P.u.uTime, this.time);
+      gl.uniform3fv(P.u.uCam, this.eye);
+      gl.uniform3f(P.u.uLight, d[0]/dl, d[1]/dl, d[2]/dl);
+      gl.uniform3fv(P.u.uSun, env.sun);
+      gl.uniform3fv(P.u.uAmb, env.amb);
+      gl.uniform3fv(P.u.uFog, env.fog);
+      gl.uniform3fv(P.u.uEye, this.eye);
+      gl.uniform3fv(P.u.uFwd, this.fwd);
+      gl.uniform2f(P.u.uFogR, fogNear, fogFar);
+    }
+  },
+
+  beginSprites(env, fogNear, fogFar, fogOn) {
+    const gl = this.gl, P = this.pSpr;
+    gl.useProgram(P.p);
+    gl.bindVertexArray(this.quadVao);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.uniformMatrix4fv(P.u.uVP, false, this.vp);
+    gl.uniform3fv(P.u.uFog, env.fog);
+    gl.uniform3fv(P.u.uEye, this.eye);
+    gl.uniform3fv(P.u.uFwd, this.fwd);
+    gl.uniform2f(P.u.uFogR, fogNear, fogFar);
+    gl.uniform1f(P.u.uFogOn, fogOn === undefined ? 1 : fogOn);
+    gl.uniform1i(P.u.uTex, 0);
+    const l = env.amb, s = env.sun;
+    this.spriteShade = [Math.min(1.35, l[0]+s[0]*0.7), Math.min(1.35, l[1]+s[1]*0.7), Math.min(1.35, l[2]+s[2]*0.7)];
+  },
+
+  sprite(t, x, y, z, w, h, o) {
+    const gl = this.gl, P = this.pSpr;
+    o = o || {};
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, t.tex);
+    gl.uniform3f(P.u.uPos, x, y, z);
+    gl.uniform3fv(P.u.uRight, o.right || this.right);
+    gl.uniform3fv(P.u.uUp, o.up || [0, 1, 0]);
+    gl.uniform2f(P.u.uSize, w, h);
+    gl.uniform1f(P.u.uAnchor, o.anchor || 0);
+    gl.uniform1f(P.u.uAlpha, o.alpha === undefined ? 1 : o.alpha);
+    gl.uniform1f(P.u.uFlashAmt, o.flash || 0);
+    gl.uniform3fv(P.u.uFlash, o.flashCol || [1, 0.35, 0.3]);
+    gl.uniform3fv(P.u.uShade, o.shade || this.spriteShade);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  },
+
+  blob(x, z, r, a) {
+    this.sprite(this.blobTex(), x, 0.035, z, r, r,
+      {right: [1,0,0], up: [0,0,1], anchor: 0.5, alpha: a === undefined ? 0.85 : a, shade: [1,1,1]});
+  },
+
+  groundPlane(region) {
+    if (this.ground) return this.ground;
+    const s = G.s;
+    this.beginMesh();
+    const pad = 120, W = s.mw, H = s.mh, D = 0.34;
+    const L = this.terrainLayer(region, 'grass'), B = this.terrainLayer(region, 'sand');
+    this.flat(-pad, -D, -pad, W + pad*2, H + pad*2, L, 0, W + pad*2, H + pad*2);
+    this.wallSeg(W, 0, 0, 0, -D, 0, [0,0,-1], B, W, D);
+    this.wallSeg(0, H, W, H, -D, 0, [0,0,1], B, W, D);
+    this.wallSeg(0, 0, 0, H, -D, 0, [-1,0,0], B, H, D);
+    this.wallSeg(W, H, W, 0, -D, 0, [1,0,0], B, H, D);
+    this.ground = this.upload();
+    return this.ground;
+  },
+
+  // ---- overworld frame ------------------------------------------------------
+  drawWorld(dt) {
+    if (!this.ok || !G.s) return;
+    const gl = this.gl, s = G.s;
+    this.frameNo = (this.frameNo || 0) + 1;
+    this.time += dt;
+    this.resize();
+    this.syncMap();
+
+    const inH = !!s.inHouse;
+    const env = inH ? ENV3.in : (ENV3[s.region] || ENV3.r1);
+    const pitch = inH ? 1.05 : 0.63;
+    const dist = inH ? 8.4 : 11.4;
+    const fovy = this.fov(inH ? 54 : 58);
+    const far = inH ? 60 : 90;
+    const px = G.v3x, pz = G.v3z;
+    const cx = inH ? s.mw / 2 : px, cz = inH ? s.mh / 2 : pz;
+    this.setCam(cx, Math.sin(pitch)*dist + 0.5, cz + Math.cos(pitch)*dist, cx, inH ? 0.3 : 1.0, cz, fovy, far);
+    const fogN = inH ? 40 : 21, fogF = inH ? 90 : 40;
+
+    const CH = this.CH, rad = inH ? 2 : 4;
+    const pcx = Math.floor(px / CH), pcz = Math.floor(pz / CH);
+    const maxCx = Math.ceil(s.mw / CH), maxCz = Math.ceil(s.mh / CH);
+    const pl = this.planes(this.vp);
+    const list = [];
+    for (let dz = -rad; dz <= rad; dz++) for (let dx = -rad; dx <= rad; dx++) {
+      const cx = pcx + dx, cz = pcz + dz;
+      if (cx < 0 || cz < 0 || cx >= maxCx || cz >= maxCz) continue;
+      if (!this.boxIn(pl, cx*CH - 2, -0.6, cz*CH - 2, cx*CH + CH + 2, 3.4, cz*CH + CH + 2)) continue;
+      const c = this.getChunk(cx, cz); c.used = this.frameNo;
+      if (c.count || c.aCount) list.push(c);
+    }
+    if (this.frameNo % 240 === 0) this.evict();
+    if (this.mipDirty) { gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.tex); gl.generateMipmap(gl.TEXTURE_2D_ARRAY); this.mipDirty = false; }
+
+    gl.viewport(0, 0, this.cv.width, this.cv.height);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.disable(gl.BLEND);
+    this.sky(env, pitch, fovy);
+    this.beginWorld(env, fogN, fogF);
+    gl.useProgram(this.pWorld.p);
+    for (const c of list) if (c.count) { gl.bindVertexArray(c.vao); gl.drawArrays(gl.TRIANGLES, 0, c.count); }
+    if (!inH) { const g = this.groundPlane(s.region || 'r1'); gl.bindVertexArray(g.vao); gl.drawArrays(gl.TRIANGLES, 0, g.count); }
+    gl.useProgram(this.pWorldA.p);
+    for (const c of list) if (c.aCount) { gl.bindVertexArray(c.vao); gl.drawArrays(gl.TRIANGLES, c.count, c.aCount); }
+
+    const region = s.region || 'r1';
+    const npcs = (s.currentNpcs || []).filter(n => Math.abs(n.x + 0.5 - px) < 30 && Math.abs(n.y + 0.5 - pz) < 30);
+    this.beginSprites(env, fogN, fogF);
+    gl.depthMask(false);
+    for (const n of npcs) this.blob(n.x + 0.5, n.y + 0.5, 0.78, 0.8);
+    this.blob(px, pz, 0.82, 0.9);
+    gl.depthMask(true);
+    for (const n of npcs) {
+      this.sprite(this.folkTex(region, n.hair, n.shirt, 0), n.x + 0.5, -0.05, n.y + 0.5, 1.22, 1.22);
+      this.sprite(this.markTex(), n.x + 0.5, 1.32 + Math.sin(this.time * 2.4 + n.x) * 0.06, n.y + 0.5, 0.46, 0.46, {shade: [1,1,1]});
+    }
+    const hero = this.heroTex(s.char.hair, G.walkPhase | 0);
+    this.sprite(hero, px, -0.05, pz, 1.26, 1.26);
+    gl.depthFunc(gl.GREATER); gl.depthMask(false);
+    this.sprite(hero, px, -0.05, pz, 1.26, 1.26, {alpha: 0.55, shade: [1.45, 1.55, 1.85]});
+    gl.depthFunc(gl.LESS); gl.depthMask(true);
+    gl.disable(gl.BLEND);
+    gl.bindVertexArray(null);
+  },
+
+  evict() {
+    const gl = this.gl, cut = this.frameNo - 900, dead = [];
+    this.chunks.forEach((c, k) => { if ((c.used || 0) < cut) dead.push(k); });
+    dead.forEach(k => { const c = this.chunks.get(k); gl.deleteVertexArray(c.vao); gl.deleteBuffer(c.buf); this.chunks.delete(k); });
+  },
+
+  // ---- battle stage ---------------------------------------------------------
+  buildBattle(region) {
+    if (this.battle && this.battle.region === region) return this.battle;
+    const gl = this.gl;
+    if (this.battle) { gl.deleteVertexArray(this.battle.vao); gl.deleteBuffer(this.battle.buf); }
+    this.beginMesh();
+    const Lg = this.terrainLayer(region, 'grass'), Lsa = this.terrainLayer(region, 'sand');
+    const Lt = this.terrainLayer(region, 'tree'), Ls = this.terrainLayer(region, 'stone');
+    const Lb = this.terrainLayer(region, 'blade');
+    this.flat(-46, 0, -46, 92, 92, Lg, 0, 92, 92);
+
+    const cxp = 0.1, czp = -0.25, rx = 9.2, rz = 6.6, N = 34;
+    for (let i = 0; i < N; i++) {
+      const a0 = i / N * Math.PI * 2, a1 = (i + 1) / N * Math.PI * 2;
+      const p0 = [cxp + Math.cos(a0)*rx, 0.014, czp + Math.sin(a0)*rz];
+      const p1 = [cxp + Math.cos(a1)*rx, 0.014, czp + Math.sin(a1)*rz];
+      this.tri([[cxp, 0.014, czp], p0, p1],
+        [[cxp/3, czp/3], [p0[0]/3, p0[2]/3], [p1[0]/3, p1[2]/3]], [0,1,0], Lsa, 0);
+    }
+    for (let i = 0; i < 44; i++) {
+      const h = this.hash(i * 17, i * 29);
+      const a = i / 44 * Math.PI * 2 + (h % 40) / 400;
+      const r = 12.5 + (h % 900) / 100;
+      const sc = 0.85 + (h % 40) / 100;
+      this.billboard(cxp + Math.cos(a)*r, czp + Math.sin(a)*r * 0.85, 1.5*sc, 2.3*sc, 0, Lt, 3);
+    }
+    for (let i = 0; i < 26; i++) {
+      const h = this.hash(i * 53 + 7, i * 11 + 3);
+      const a = i / 26 * Math.PI * 2 + 0.3, r = 10.4 + (h % 220) / 100;
+      const bx = cxp + Math.cos(a)*r, bz = czp + Math.sin(a)*r * 0.85;
+      if (i % 4 === 0) this.box(bx - 0.42, 0, bz - 0.42, bx + 0.42, 0.62 + (h % 30)/100, bz + 0.42, Ls, 1, 1);
+      else this.billboard(bx, bz, 0.9, 0.5, 0, Lb, 1);
+    }
+
+    this.battle = this.upload(); this.battle.region = region;
+    return this.battle;
+  },
+
+  battleFx(side, kind) {
+    this.bfx[side] = {kind, t0: performance.now(), dur: kind === 'hit' ? 400 : 450};
+  },
+
+  fxOf(side) {
+    const f = this.bfx[side];
+    if (!f) return null;
+    const t = (performance.now() - f.t0) / f.dur;
+    if (t >= 1) { this.bfx[side] = null; return null; }
+    return {t, kind: f.kind};
+  },
+
+  monPos(side) {
+    const b = this.bpos[side], f = this.fxOf(side);
+    let x = b[0], y = 0, z = b[2], flash = 0;
+    if (f && f.kind === 'hit') {
+      const k = (1 - f.t);
+      x += Math.sin(f.t * 46) * 0.24 * k;
+      y += Math.abs(Math.sin(f.t * 20)) * 0.1 * k;
+      flash = k * 0.55;
+    } else if (f && f.kind) {
+      const o = this.bpos[side === 'player' ? 'enemy' : 'player'];
+      const k = Math.sin(f.t * Math.PI);
+      x += (o[0] - b[0]) * 0.24 * k;
+      z += (o[2] - b[2]) * 0.24 * k;
+      y += k * 0.28;
+    }
+    return {x, y, z, flash};
+  },
+
+  drawBattle(dt) {
+    if (!this.ok || !G.s || !G.s.enemy) return;
+    const gl = this.gl, s = G.s;
+    this.frameNo = (this.frameNo || 0) + 1;
+    this.time += dt;
+    this.resize();
+    const region = s.region || 'r1';
+    const env = ENV3[region] || ENV3.r1;
+    const st = this.buildBattle(region);
+    if (this.mipDirty) { gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.tex); gl.generateMipmap(gl.TEXTURE_2D_ARRAY); this.mipDirty = false; }
+
+    const fovy = this.fov(50);
+    // narrow screens pull the two fighters together so both stay in frame
+    const k = Math.max(0, Math.min(1, (this.aspect() - 0.6) / 0.8));
+    const lerp = (a, b) => [a[0] + (b[0]-a[0])*k, 0, a[2] + (b[2]-a[2])*k];
+    this.bpos.player = lerp([-1.9,0,1.6], [-3.9,0,0.8]);
+    this.bpos.enemy = lerp([2.6,0,-3.0], [5.4,0,-3.4]);
+    this.setCam(-4.3, 5.3, 9.5, 0.4, 0.5, -1.3, fovy, 140);
+    const fogN = 15, fogF = 34;
+
+    gl.viewport(0, 0, this.cv.width, this.cv.height);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.disable(gl.BLEND);
+    this.sky(env, 0.24, fovy);
+    this.beginWorld(env, fogN, fogF);
+    this.drawMesh(st);
+
+    const pm = s.team[s.active], em = s.enemy;
+    const pp = this.monPos('player'), ep = this.monPos('enemy');
+    this.beginSprites(env, fogN, fogF);
+    gl.depthMask(false);
+    this.blob(pp.x, pp.z, 2.2, 0.85); this.blob(ep.x, ep.z, 1.9, 0.8);
+    gl.depthMask(true);
+    if (pm) this.sprite(this.monTex(pm), pp.x, pp.y, pp.z, 2.9, 2.9, {flash: pp.flash, alpha: pm.hp > 0 ? 1 : 0.35});
+    this.sprite(this.monTex(em), ep.x, ep.y, ep.z, 2.6, 2.6, {flash: ep.flash, alpha: em.hp > 0 ? 1 : 0.35});
+    gl.disable(gl.BLEND);
+    gl.bindVertexArray(null);
+    this.bScreen = {
+      player: this.project(pp.x, pp.y + 2.9, pp.z),
+      enemy: this.project(ep.x, ep.y + 2.6, ep.z),
+    };
+  },
+};
+
 // ===================== GAME =====================
 const G = {
   s:null, canvas:null, ctx:null, mmC:null, mmX:null, mmBase:null, mmSrc:null, mmRegion:null,
   lastMove:0, moveDelay:120, battleBusy:false, frame:0,
+  d3:false, v3x:0, v3z:0, walkPhase:0,
   tileCache:{}, waterCache:[], tallCache:[],
 
   init() {
@@ -2899,6 +3957,9 @@ const G = {
     this.ctx=this.canvas.getContext('2d');
     this.mmC=document.getElementById('minimap');
     this.mmX=this.mmC.getContext('2d');
+    this.d3 = R3.init();
+    if (this.d3 && localStorage.getItem('pk_view') === '2d') this.d3 = false;
+    document.body.classList.toggle('d3', this.d3);
     this.initParticles(); this.initKeys();
     window.addEventListener('resize',()=>{if(this.s&&!this.s.inBattle)this.renderWorld();});
     document.addEventListener('click',()=>Au.res(),{once:true});
@@ -2908,6 +3969,8 @@ const G = {
       b.onclick=()=>this.resumeGame(); document.getElementById('title-btns').appendChild(b);
       document.getElementById('title-stats').textContent=`${this.s.team.length} Pokemon, ${this.s.battlesWon} Kampfe`;
     }
+    const b3 = document.getElementById('h-3d');
+    if (b3) { if (R3.ok) b3.textContent = '2D'; else b3.style.display = 'none'; }
     this.initCharGrid(); this.initStarterGrid();
     // pre-cache static tiles
     this.precacheTiles();
@@ -3004,14 +4067,48 @@ const G = {
   },
 
   startAnimLoop() {
-    const loop = () => {
+    let prev = performance.now();
+    const loop = (now) => {
+      const dt = Math.min(0.06, (now - prev) / 1000); prev = now;
       this.frame++;
-      if (this.s && !this.s.inBattle && document.getElementById('scr-world').classList.contains('on')) {
-        if (this.frame % 8 === 0) this.renderWorld();
+      const onWorld = this.s && document.getElementById('scr-world').classList.contains('on');
+      if (this.d3 && R3.ok) {
+        if (onWorld && !this.s.inBattle) {
+          this.stepView(dt); R3.drawWorld(dt);
+          if (this.frame % 5 === 0) this.renderMM();
+        } else if (this.s && this.s.inBattle && document.getElementById('scr-battle').classList.contains('on')) {
+          R3.drawBattle(dt);
+        }
+      } else if (onWorld && !this.s.inBattle && this.frame % 8 === 0) {
+        this.renderWorld();
       }
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
+  },
+
+  // The logical position stays on the tile grid; only the drawn position glides,
+  // so movement reads as walking without touching any of the game rules.
+  stepView(dt) {
+    const tx = this.s.px + 0.5, tz = this.s.py + 0.5;
+    const dx = tx - this.v3x, dz = tz - this.v3z;
+    if (Math.abs(dx) > 3 || Math.abs(dz) > 3) { this.v3x = tx; this.v3z = tz; this.walkPhase = 0; return; }
+    const k = 1 - Math.exp(-dt / 0.07);
+    this.v3x += dx * k; this.v3z += dz * k;
+    this.walkPhase = (Math.abs(dx) + Math.abs(dz) > 0.03) ? (this.walkPhase + dt * 9) % 6 : 0;
+  },
+
+  snapView() { if (this.s) { this.v3x = this.s.px + 0.5; this.v3z = this.s.py + 0.5; } },
+
+  toggle3D() {
+    if (!R3.ok) return;
+    Au.cl();
+    this.d3 = !this.d3;
+    document.body.classList.toggle('d3', this.d3);
+    try { localStorage.setItem('pk_view', this.d3 ? '3d' : '2d'); } catch { }
+    document.getElementById('gl3d').classList.toggle('on', this.d3 && !!this.s);
+    const b = document.getElementById('h-3d'); if (b) b.textContent = this.d3 ? '2D' : '3D';
+    if (this.d3) this.snapView(); else this.renderWorld();
   },
 
   initParticles() {
@@ -3024,6 +4121,7 @@ const G = {
     setTimeout(()=>{document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');
     if(id==='scr-world'){this.mmC.style.display='block';document.getElementById('mob-ctrl').classList.add('vis');}
     else{this.mmC.style.display='none';document.getElementById('mob-ctrl').classList.remove('vis');}
+    document.getElementById('gl3d').classList.toggle('on', this.d3 && R3.ok && (id==='scr-world'||id==='scr-battle'));
     setTimeout(()=>tr.classList.remove('on'),50);},300);
   },
 
@@ -3426,6 +4524,7 @@ const G = {
 
   // Rendering
   renderWorld() {
+    if (this.d3 && R3.ok) { this.renderMM(); return; }
     const c=this.canvas;
     c.width=window.innerWidth;
     c.height=window.innerHeight-44;
@@ -3797,9 +4896,9 @@ const G = {
   tM(a,d){return(TE[a]&&TE[a][d]!==undefined)?TE[a][d]:1;},
   cD(atk,def,move,at,dt,lv){const m=this.tM(at,dt);const cr=Math.random()<0.0625?1.5:1;const rn=0.85+Math.random()*0.15;const b=Math.floor(((2*lv/5+2)*atk*move.pow/def)/50+2);return{dmg:Math.max(1,Math.floor(b*m*cr*rn)),mult:m,crit:cr>1};},
 
-  sDmg(side,dmg,cr,hl){const el=document.createElement('div');el.className='dmg-popup';el.textContent=(hl?'+':'-')+dmg;el.style.color=hl?'#44dd44':(cr?'#ff4444':'#ffffff');if(cr)el.style.fontSize='2.2em';const tg=document.getElementById(side==='player'?'b-p-spr':'b-e-spr');const r=tg.getBoundingClientRect();el.style.left=r.left+r.width/2-20+'px';el.style.top=r.top-10+'px';document.body.appendChild(el);setTimeout(()=>el.remove(),1000);},
+  sDmg(side,dmg,cr,hl){const el=document.createElement('div');el.className='dmg-popup';el.textContent=(hl?'+':'-')+dmg;el.style.color=hl?'#44dd44':(cr?'#ff4444':'#ffffff');if(cr)el.style.fontSize='2.2em';let ax,ay;const pr=(this.d3&&R3.ok&&R3.bScreen)?R3.bScreen[side]:null;if(pr){ax=pr.x;ay=pr.y;}else{const tg=document.getElementById(side==='player'?'b-p-spr':'b-e-spr');const r=tg.getBoundingClientRect();ax=r.left+r.width/2;ay=r.top+10;}el.style.left=(ax-20)+'px';el.style.top=(ay-10)+'px';document.body.appendChild(el);setTimeout(()=>el.remove(),1000);},
 
-  aS(side,cls){const el=document.getElementById(side==='player'?'b-p-spr':'b-e-spr');el.classList.remove('hit','atk','atk-left');void el.offsetWidth;el.classList.add(cls);setTimeout(()=>el.classList.remove(cls),500);},
+  aS(side,cls){if(this.d3&&R3.ok){R3.battleFx(side,cls);return;}const el=document.getElementById(side==='player'?'b-p-spr':'b-e-spr');el.classList.remove('hit','atk','atk-left');void el.offsetWidth;el.classList.add(cls);setTimeout(()=>el.classList.remove(cls),500);},
 
   async bAtk(mi){if(this.s.battleOver||this.battleBusy)return;this.battleBusy=true;
     const p=this.s.team[this.s.active],e=this.s.enemy,pm=p.moves[mi];
