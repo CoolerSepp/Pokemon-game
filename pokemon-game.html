@@ -3625,9 +3625,11 @@ const IEXTRA={
   house2:[{name:'Grossvater Ewald',shirt:'#7a6a50',hair:'#d8d8d0',
     hero:['Grossvater Ewald: Setz dich, {H}, das Sofa haelt noch.','Der Fluss ist zurueck an seinem alten Platz. Ich hoere ihn nachts wieder. Schoen ist das.'],
     lines:['Grossvater Ewald: Setz dich ruhig, das Sofa haelt noch.','Frueher lief hier ein Fluss vorbei. Heute liegt er zwei Taler weiter. Merkwuerdige Zeiten.']}],
-  home:[{name:'Mutter Ida',shirt:'#c06090',hair:'#8a5a30',
-    hero:['Mutter Ida: {H}! Hast du auch genug gegessen?','Das Haus bleibt stehen, wo es steht. Das sage ich jetzt ohne Zusatz.'],
-    lines:['Mutter Ida: Hast du auch genug gegessen?','Nimm dir Zeit fuer die Reise. Das Haus bleibt stehen, wo es steht. Hoffentlich.']}],
+  home:[{name:'Nachbarskind Jonte',shirt:'#4090b0',hair:'#3a2a1a',
+    hero:['Nachbarskind Jonte: {H} wohnt hier! Also, hat hier gewohnt. Fast dasselbe.',
+      'Ich erzaehle das in der Schule jeden Tag. Die glauben mir immer noch nicht.'],
+    lines:['Nachbarskind Jonte: Ich darf hier warten, bis meine Mutter mich abholt.',
+      'Gehst du wirklich auf Reisen? Dann nimm genug Baelle mit. Sagt jedenfalls mein Vater.']}],
   shop:[{name:'Kundin Berit',shirt:'#40a0a0',hair:'#503020',
     hero:['Kundin Berit: {H} steht neben mir an der Kasse. Das glaubt mir daheim keiner.','Die Preise sind gefallen, seit die Lieferungen wieder durchkommen.'],
     lines:['Kundin Berit: Die Traenke sind hier guenstiger als im Basar.','Stell dich einfach an die Kasse, dann bedient sie dich.']}],
@@ -3658,6 +3660,88 @@ const TILE=32;
 function villRFor(region){ return region==='r2'?18:(region==='r3'?13:(region==='r4'?8:9)); }
 
 // ===================== TOWN & MAP BUILDING =====================
+// Deterministischer Zufall: derselbe Startwert liefert immer dieselbe Folge.
+// Damit ist die ganze Welt reproduzierbar statt bei jedem Spielstart neu.
+function mkRng(seed){
+  let s=(seed>>>0)||1;
+  return ()=>{ s=(Math.imul(s,1664525)+1013904223)>>>0; return s/4294967296; };
+}
+
+// ===================== BAUPLAN DER REGIONEN =====================
+// Jede Region hat drei Doerfer an fest eingetragenen Stellen. Die Koordinaten
+// sind Anteile der Kartengroesse, die Gebaeude stehen als Versatz zum Dorfkern.
+// Jedes Dorf traegt genau eine Arena; die dritte bekommt zusaetzlich das
+// Labyrinth-Gelaende mit Torwache. Nichts hiervon ist zufaellig.
+//   doors: [Tuerkachel, dx, dy]
+// Wird erhoeht, sobald sich das Kartenformat aendert. Aeltere Staende werden dann
+// verworfen, statt sie auf eine Welt zu zwingen, in die sie nicht passen.
+const SAVE_VERSION=3;
+const REGION_PLAN={
+  r1:{seed:114001,W:230,H:210,start:0,trainers:26,tierBonus:0,
+    towns:[
+      {key:'auenhain',r:13,cx:0.18,cy:0.68,doors:[
+        [T.DOOR_LAB,-7,-7],[T.DOOR_CENTER,0,-7],[T.DOOR_RIVAL,7,-7],
+        [T.DOOR_V1,-7,5],[T.DOOR_SHOP,0,5],[T.DOOR_ARENA1,7,5]]},
+      {key:'muhlbach',r:12,cx:0.54,cy:0.22,doors:[
+        [T.DOOR_CENTER,-6,-6],[T.DOOR_SHOP2,0,-6],[T.DOOR_V2,6,-6],
+        [T.DOOR_ARENA2,0,5]]},
+      {key:'ahornfurt',r:12,cx:0.84,cy:0.70,doors:[
+        [T.DOOR_CENTER,-6,-6],[T.DOOR_SHOP,0,-6],[T.DOOR_V3,6,-6]]},
+    ],
+    roads:[[0,1],[1,2],[0,2]],
+    edgeRoads:[[0.02,0.68,0.18,0.68],[0.84,0.70,0.98,0.70],[0.54,0.02,0.54,0.22]]},
+
+  r2:{seed:225002,W:215,H:200,start:0,trainers:22,tierBonus:1,
+    towns:[
+      {key:'dammerstein',r:13,cx:0.20,cy:0.30,doors:[
+        [T.DOOR_CENTER,-7,-7],[T.DOOR_ELDER2,0,-7],[T.DOOR_SHOP2,7,-7],
+        [T.DOOR_ARENA1,0,5]]},
+      {key:'rabenfels',r:12,cx:0.60,cy:0.72,doors:[
+        [T.DOOR_CENTER,-6,-6],[T.DOOR_V5,0,-6],[T.DOOR_V4,6,-6],
+        [T.DOOR_ARENA2,0,5]]},
+      {key:'nachtwacht',r:12,cx:0.86,cy:0.26,doors:[
+        [T.DOOR_CENTER,-6,-6],[T.DOOR_SHOP2,0,-6],[T.DOOR_V6,6,-6]]},
+    ],
+    roads:[[0,1],[1,2],[0,2]],
+    edgeRoads:[[0.02,0.30,0.20,0.30],[0.86,0.26,0.98,0.26]]},
+
+  r3:{seed:336003,W:215,H:205,start:0,trainers:22,tierBonus:2,
+    towns:[
+      {key:'firnau',r:13,cx:0.22,cy:0.72,doors:[
+        [T.DOOR_CENTER,-7,-7],[T.DOOR_F1,0,-7],[T.DOOR_F2,7,-7],
+        [T.DOOR_ARENA1,0,5]]},
+      {key:'gletscherhalt',r:12,cx:0.56,cy:0.24,doors:[
+        [T.DOOR_CENTER,-6,-6],[T.DOOR_F3,0,-6],[T.DOOR_F4,6,-6],
+        [T.DOOR_ARENA2,0,5]]},
+      {key:'eiswacht',r:12,cx:0.86,cy:0.70,doors:[
+        [T.DOOR_CENTER,-6,-6],[T.DOOR_F5,0,-6],[T.DOOR_F2,6,-6]]},
+    ],
+    roads:[[0,1],[1,2],[0,2]],
+    edgeRoads:[[0.02,0.72,0.22,0.72],[0.86,0.70,0.98,0.70]]},
+
+  r4:{seed:447004,W:200,H:195,start:0,trainers:16,tierBonus:3,
+    towns:[
+      {key:'goldbruck',r:12,cx:0.22,cy:0.28,doors:[
+        [T.DOOR_CENTER,-6,-6],[T.DOOR_LSHOP,0,-6],[T.DOOR_V1,6,-6],
+        [T.DOOR_ARENA1,0,5]]},
+      {key:'siegespforte',r:12,cx:0.58,cy:0.74,doors:[
+        [T.DOOR_CENTER,-6,-6],[T.DOOR_LSHOP,0,-6],[T.DOOR_V2,6,-6],
+        [T.DOOR_ARENA2,0,5]]},
+      {key:'plateau',r:13,cx:0.86,cy:0.26,doors:[
+        [T.DOOR_LLORE,-7,-7],[T.DOOR_LIGA,0,-7],[T.DOOR_CENTER,7,-7]]},
+    ],
+    roads:[[0,1],[1,2],[0,2]],
+    edgeRoads:[[0.02,0.28,0.22,0.28]]},
+};
+
+// Wo ein Dorf auf der Karte liegt - dieselbe Rechnung wie beim Bauen.
+function townPos(region,idx){
+  const p=REGION_PLAN[region]||REGION_PLAN.r1;
+  const t=p.towns[Math.max(0,Math.min(p.towns.length-1,idx))];
+  return {x:Math.round(t.cx*p.W),y:Math.round(t.cy*p.H),r:t.r};
+}
+function startTownPos(region){ const p=REGION_PLAN[region]||REGION_PLAN.r1; return townPos(region,p.start); }
+
 const ARENA_DOOR={r1:T.DOOR_ARENA1,r2:T.DOOR_ARENA2,r3:T.DOOR_ARENA3};
 // Arena grounds are a walled compound: the door sits at the top, a maze fills the
 // space below it, and the single gap in the outer wall is the guarded gate.
@@ -3769,11 +3853,18 @@ function carveRoad(m,x1,y1,x2,y2,W,H){
 // conductors above all) would otherwise end up walled inside a house, which silently
 // cuts off travel to the next region.
 let reservedPts=[];
+// Wo feste Figuren stehen. Die Bahnsteige liegen direkt neben dem Startdorf,
+// nicht am Kartenrand - so ist der Weg dorthin kurz und immer begehbar.
+function stationX(region,sx,dir){
+  const r=startTownPos(region).r;
+  return sx+dir*(r+5);
+}
 function fixedNpcSpots(region,sx,sy,W){
-  if(region==='r2') return [{x:12,y:sy},{x:sx,y:sy-2}];
-  if(region==='r3') return [{x:sx,y:sy-2},{x:W-12,y:sy}];
-  if(region==='r4') return [{x:sx,y:sy-2}];
-  return [{x:sx,y:sy-2},{x:sx-8,y:sy},{x:sx+8,y:sy},{x:W-12,y:sy}];
+  const out=[];
+  if(region!=='r1') out.push({x:stationX(region,sx,-1),y:sy});
+  if(region!=='r4') out.push({x:stationX(region,sx,1),y:sy});
+  if(region==='r1') out.push({x:sx,y:sy-2},{x:sx-8,y:sy},{x:sx+8,y:sy});
+  return out;
 }
 function isReserved(x,y){
   for(const p of reservedPts){ if(Math.abs(p.x-x)<=1&&Math.abs(p.y-y)<=1) return true; }
@@ -6515,69 +6606,15 @@ const G = {
   // never end up stranded on water or an isolated patch of land (bridges over water
   // where the corridor crosses it). Re-run on every load/region-switch so existing
   // save files get repaired retroactively, not just freshly generated maps.
+  // Freier Weg vom Dorfrand zu den Bahnsteigen. Gebaeude werden umgangen, Wasser
+  // wird ueberbrueckt - die Strecke ist damit nie abgeschnitten.
   fixConductorCorridor(m,region,sx,sy,W,H,villR) {
-    // Never pave over a building: a structure standing on this row always has a
-    // cleared plaza around it, so the corridor is walked around rather than through.
     const lay=x=>{ if(x<0||x>=W)return; if(isBuildTile(m[sy][x])||inNoCarve(x,sy))return;
       m[sy][x]=(m[sy][x]===T.WATER)?T.BRIDGE:T.PATH; };
-    if(region==='r2'){ for(let x=12;x<=sx-villR;x++) lay(x); }
-    else { for(let x=sx+villR;x<=W-12;x++) lay(x); }
+    if(region!=='r1'){ const tx=stationX(region,sx,-1); for(let x=tx-1;x<=sx-villR;x++) lay(x); }
+    if(region!=='r4'){ const tx=stationX(region,sx,1); for(let x=sx+villR;x<=tx+1;x++) lay(x); }
   },
 
-  // Bring maps written by older versions up to the current town layout: the arena
-  // relocated onto its own grounds outside the village, a Pokemon-Center in the
-  // village, and outlying homesteads across the map. Runs on every load and region
-  // switch, so an existing save is repaired in place rather than being thrown away.
-  upgradeMap(m,region,sx,sy,W,H) {
-    const findTile=tile=>{for(let y=0;y<m.length;y++){const x=m[y].indexOf(tile);if(x!==-1)return {x,y};}return null;};
-    const villR=villRFor(region);
-    reservedPts=fixedNpcSpots(region,sx,sy,W);
-    noCarveRects=[];
-    const keep=findTileAny(m,[T.DOOR_ARENA1,T.DOOR_ARENA2,T.DOOR_ARENA3]);
-    if(keep&&this.s.arenaGate){
-      const kb=arenaBounds(keep.x,keep.y);
-      noCarveRects=[{x0:kb.left,x1:kb.right,y0:kb.top,y1:kb.bot}];
-    }
-
-    const ad=ARENA_DOOR[region];
-    if(ad&&!this.s.arenaGate){
-      // No recorded gate means the arena predates the walled grounds: clear the old
-      // building and lay out proper grounds for it.
-      const cur=findTile(ad);
-      if(cur){
-        for(let dy=-1;dy<=0;dy++)for(let dx=-1;dx<=1;dx++){
-          const ny=cur.y+dy,nx=cur.x+dx;
-          if(ny>=0&&ny<H&&nx>=0&&nx<W)m[ny][nx]=T.PATH;
-        }
-      }
-      const spot=pickBuildSpot(m,sx,sy,W,H,arenaOffsets(villR),5,(x,y)=>arenaFits(x,y,W,H));
-      if(spot){
-        const built=buildArenaCompound(m,spot.x,spot.y,ad,W,H);
-        noCarveRects=[{x0:built.bounds.left,x1:built.bounds.right,y0:built.bounds.top,y1:built.bounds.bot}];
-        carveArenaRoad(m,sx,sy,spot.x,spot.y,W,H);
-        this.s.arenaGate=built.gate;
-        if(!reachableMask(m,sx,sy,W,H)[(built.gate.y+1)*W+built.gate.x])
-          carveArenaRoad(m,sx,sy,spot.x,spot.y,W,H);
-      } else if(cur){
-        placeBuilding(m,cur.x,cur.y,ad,W,H);
-      }
-    }
-
-    if(!findTile(T.DOOR_CENTER)){
-      const slots=[[0,-6],[0,-8],[0,5],[0,4],[-6,-6],[6,-6],[-8,-8],[8,-8],[-6,4],[6,4],[-8,5],[8,5],[0,-11],[0,9]];
-      for(const [ox,oy] of slots){
-        const x=sx+ox,y=sy+oy;
-        if(landScore(m,x,y,2,W,H)<0.95)continue;
-        carvePlaza(m,x,y,2,W,H);
-        placeBuilding(m,x,y,T.DOOR_CENTER,W,H);
-        break;
-      }
-    }
-
-    if(!(this.s.outposts||[]).length&&!OUT_DOORS.some(d=>findTile(d))){
-      this.s.outposts=placeOutposts(m,region,sx,sy,W,H,villR);
-    }
-  },
 
   // The gate keeper occupies the single opening in the arena wall, so an unbeaten
   // gate is a physical block, not just a refusal in a dialogue box.
@@ -6597,7 +6634,7 @@ const G = {
   // Rebuild world NPCs so a beaten gate keeper actually steps aside.
   rebuildNpcs() {
     if(!this.s||this.s.inHouse)return;
-    const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
+    const tp=startTownPos(this.s.region), sx=tp.x, sy=tp.y;
     this.s.worldNpcs=this.buildFixedNpcs(this.s.region,sx,sy,this.s.mw)
       .concat((this.s.randomTrainers||[]).map(buildRandomTrainerNpc));
     this.s.currentNpcs=this.s.worldNpcs;
@@ -6608,50 +6645,41 @@ const G = {
     return this.regionNpcs(region,sx,sy,mw).concat(gate?[gate]:[]);
   },
 
+  // Feste Figuren einer Region: die Schaffner an den Bahnsteigen, im Auental
+  // zusaetzlich die beiden Dorftrainer und die Wanderin.
   regionNpcs(region,sx,sy,mw) {
-    if(region==='r2'){
-      return [
-        {x:12,y:sy,name:'Schaffnerin Yara',shirt:'#204040',hair:'#e0d0a0',
-          lines:s=>yaraLines(s),
-          onEnd:()=>{ if(G.s.flags.badgeR2) G.startTrainJourney('r3'); }},
-        {x:sx,y:sy-2,name:'Schaffner Elrik',shirt:'#402040',hair:'#d0c0a0',
-          lines:s=>returnConductorLines(s),
-          onEnd:()=>{ G.startTrainJourney('r1'); }},
-      ];
+    const back={r2:{name:'Schaffner Elrik',shirt:'#402040',hair:'#d0c0a0',to:'r1'},
+                r3:{name:'Schaffner Juno',shirt:'#5090c0',hair:'#e0f0ff',to:'r2'},
+                r4:{name:'Schaffner Otto',shirt:'#902030',hair:'#f0c840',to:'r3'}}[region];
+    const fwd={r1:{name:'Schaffner Aldric',shirt:'#204040',hair:'#e0d0a0',to:'r2',lines:s=>conductorLines(s)},
+               r2:{name:'Schaffnerin Yara',shirt:'#204040',hair:'#e0d0a0',to:'r3',lines:s=>yaraLines(s)},
+               r3:{name:'Schaffnerin Nora',shirt:'#5090c0',hair:'#e0f0ff',to:'r4',lines:s=>noraLines(s)}}[region];
+    const list=[];
+    if(back) list.push({x:stationX(region,sx,-1),y:sy,name:back.name,shirt:back.shirt,hair:back.hair,
+      lines:s=>returnConductorLines(s),
+      onEnd:()=>{ G.startTrainJourney(back.to); }});
+    if(fwd) list.push({x:stationX(region,sx,1),y:sy,name:fwd.name,shirt:fwd.shirt,hair:fwd.hair,
+      lines:fwd.lines,
+      onEnd:()=>{ const s=G.s;
+        const st=questStatus('q5',s);
+        if(region==='r1'){ if(st==='none')startQuest('q5'); else if(st==='ready')completeQuest('q5'); }
+        if(trainUnlocked(s)) G.startTrainJourney(fwd.to);
+      }});
+    if(region==='r1'){
+      list.push(
+        {x:sx,y:sy-2,name:'Wanderin Mara',shirt:'#c0a020',hair:'#5a4020',lines:s=>wandererLines(s)},
+        {x:sx-8,y:sy,name:'Trainer Kevin',shirt:'#2050a0',hair:'#202020',
+          lines:s=>isHero(s)?hero('kevin'):(s.flags.t1Beaten
+            ?['Trainer Kevin: Du hast mich damals sauber geschlagen. Das sitzt immer noch.']
+            :['Trainer Kevin: Na, hast du Mut fuer einen Kampf?']),
+          onEnd:()=>{ if(!G.s.flags.t1Beaten) setTimeout(()=>G.startTrainerBattle('t1Beaten','Trainer Kevin',1,0),200); }},
+        {x:sx+8,y:sy,name:'Trainerin Julia',shirt:'#c04070',hair:'#804020',
+          lines:s=>isHero(s)?hero('julia'):(s.flags.t2Beaten
+            ?['Trainerin Julia: Respekt - du hast mich fair besiegt.']
+            :['Trainerin Julia: Ich fordere dich zu einem Kampf heraus!']),
+          onEnd:()=>{ if(!G.s.flags.t2Beaten) setTimeout(()=>G.startTrainerBattle('t2Beaten','Trainerin Julia',2,2),200); }});
     }
-    if(region==='r3'){
-      return [
-        {x:sx,y:sy-2,name:'Schaffner Juno',shirt:'#5090c0',hair:'#e0f0ff',
-          lines:s=>junoLines(s),
-          onEnd:()=>{ G.startTrainJourney('r2'); }},
-        {x:mw-12,y:sy,name:'Schaffnerin Nora',shirt:'#5090c0',hair:'#e0f0ff',
-          lines:s=>noraLines(s),
-          onEnd:()=>{ if(G.s.flags.badgeR1&&G.s.flags.badgeR2&&G.s.flags.badgeR3) G.startTrainJourney('r4'); }},
-      ];
-    }
-    if(region==='r4'){
-      return [
-        {x:sx,y:sy-2,name:'Schaffner Otto',shirt:'#902030',hair:'#f0c840',
-          lines:s=>returnLigaLines(s),
-          onEnd:()=>{ G.startTrainJourney('r3'); }},
-      ];
-    }
-    return [
-      {x:sx,y:sy-2,name:'Wanderin Mara',shirt:'#c0a020',hair:'#5a4020',lines:s=>wandererLines(s)},
-      {x:sx-8,y:sy,name:'Trainer Kevin',shirt:'#2050a0',hair:'#202020',
-        lines:s=>isHero(s)?hero('kevin'):(s.flags.t1Beaten?['Gut gekampft! Du bist wirklich stark geworden.']:['Na, hast du Mut fur einen Kampf?']),
-        onEnd:()=>{ if(!G.s.flags.t1Beaten) setTimeout(()=>G.startTrainerBattle('t1Beaten','Trainer Kevin',1,0),200); }},
-      {x:sx+8,y:sy,name:'Trainerin Julia',shirt:'#c04070',hair:'#804020',
-        lines:s=>isHero(s)?hero('julia'):(s.flags.t2Beaten?['Respekt, du hast mich fair besiegt!']:['Ich fordere dich zu einem Kampf heraus!']),
-        onEnd:()=>{ if(!G.s.flags.t2Beaten) setTimeout(()=>G.startTrainerBattle('t2Beaten','Trainerin Julia',2,2),200); }},
-      {x:mw-12,y:sy,name:'Schaffner Aldric',shirt:'#204040',hair:'#e0d0a0',
-        lines:s=>conductorLines(s),
-        onEnd:()=>{ const s=G.s; const st=questStatus('q5',s);
-          if(st==='none') startQuest('q5');
-          else if(st==='ready') completeQuest('q5');
-          else if(s.flags.hasKey) G.startTrainJourney('r2');
-        }},
-    ];
+    return list;
   },
 
   startTrainJourney(target) {
@@ -6677,7 +6705,7 @@ const G = {
   travelToRegion(target) {
     const cur=this.s.region;
     this.s.regions=this.s.regions||{};
-    this.s.regions[cur]={map:this.s.map,mw:this.s.mw,mh:this.s.mh,px:this.s.px,py:this.s.py,randomTrainers:this.s.randomTrainers,outposts:this.s.outposts,arenaGate:this.s.arenaGate};
+    this.s.regions[cur]={map:this.s.map,mw:this.s.mw,mh:this.s.mh,px:this.s.px,py:this.s.py,randomTrainers:this.s.randomTrainers,outposts:this.s.outposts,arenaGate:this.s.arenaGate,towns:this.s.towns};
     this.s.region=target;
     const snap=this.s.regions[target];
     if(!snap){
@@ -6687,12 +6715,10 @@ const G = {
       this.s.randomTrainers=snap.randomTrainers||[];
       this.s.outposts=snap.outposts||[];
       this.s.arenaGate=snap.arenaGate||null;
-      const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
-      this.upgradeMap(this.s.map,target,sx,sy,this.s.mw,this.s.mh);
+      const tp=startTownPos(target), sx=tp.x, sy=tp.y;
+      this.s.towns=snap.towns||null;
       registerOutpostQuests(target,this.s.outposts);
-      if(target!=='r4'){
-        this.fixConductorCorridor(this.s.map,target,sx,sy,this.s.mw,this.s.mh,villRFor(target));
-      }
+      this.fixConductorCorridor(this.s.map,target,sx,sy,this.s.mw,this.s.mh,tp.r);
       this.s.worldNpcs=this.buildFixedNpcs(target,sx,sy,this.s.mw).concat(this.s.randomTrainers.map(buildRandomTrainerNpc));
       this.s.currentNpcs=this.s.worldNpcs;
     }
@@ -6701,176 +6727,143 @@ const G = {
     setTimeout(()=>{this.renderWorld();this.updateHud();this.saveGame();},350);
   },
 
+  // ===== Weltbau =====
+  // Die Karte ist vollstaendig festgelegt: derselbe Startwert erzeugt immer
+  // dieselbe Landschaft, und die drei Doerfer einer Region stehen an fest
+  // eingetragenen Stellen. Nichts daran wird beim Spielstart ausgewuerfelt.
   genWorld(region) {
     region=region||'r1';
     this.s.region=region;
-    const sizes={r2:150,r3:165,r4:120};
-    const W=sizes[region]||200,H=sizes[region]||200;
+    const plan=REGION_PLAN[region]||REGION_PLAN.r1;
+    const W=plan.W,H=plan.H;
     this.s.mw=W;this.s.mh=H;
-    const seed = Math.floor(Math.random()*99999);
-    Noise.init(seed);
+    const rnd=mkRng(plan.seed);
+    Noise.init(plan.seed);
     const m=[];
 
+    // ---- Gelaende ----
     for(let y=0;y<H;y++){m[y]=[];for(let x=0;x<W;x++){
-      const e=Noise.octave(x*0.04,y*0.04,4,2,0.5);
-      const moist=Noise.octave(x*0.06+100,y*0.06+100,3,2,0.5);
-      const detail=Noise.octave(x*0.15,y*0.15,2,2,0.5);
-
-      if(e<-0.15) m[y][x]=T.WATER;
-      else if(e<-0.05) m[y][x]=T.SAND;
-      else if(e<0.25){
-        if(moist>0.1) m[y][x]=T.TALL;
-        else if(detail>0.3) m[y][x]=T.FLOWER;
+      const e=Noise.octave(x*0.035,y*0.035,4,2,0.5);
+      const moist=Noise.octave(x*0.055+100,y*0.055+100,3,2,0.5);
+      const detail=Noise.octave(x*0.14,y*0.14,2,2,0.5);
+      if(e<-0.16) m[y][x]=T.WATER;
+      else if(e<-0.06) m[y][x]=T.SAND;
+      else if(e<0.26){
+        if(moist>0.10) m[y][x]=T.TALL;
+        else if(detail>0.30) m[y][x]=T.FLOWER;
         else m[y][x]=T.GRASS;
-      } else if(e<0.4){
+      } else if(e<0.42){
         if(moist>0.15) m[y][x]=T.TREE;
         else m[y][x]=T.GRASS;
       } else {
-        if(detail>0.2) m[y][x]=T.ROCK;
-        else m[y][x]=T.TREE;
+        m[y][x]=detail>0.20?T.ROCK:T.TREE;
       }
     }}
 
-    // Paths using random walks
-    for(let p=0;p<20;p++){
-      let cx,cy;
-      if(p<2){cx=0;cy=Math.floor(Math.random()*H);}
-      else if(p<4){cx=Math.floor(Math.random()*W);cy=0;}
-      else{cx=Math.floor(Math.random()*W);cy=Math.floor(Math.random()*H);}
-      const tx=Math.floor(W/2)+Math.floor(Math.random()*20-10);
-      const ty=Math.floor(H/2)+Math.floor(Math.random()*20-10);
-      for(let i=0;i<300;i++){
-        if(cx>=0&&cx<W&&cy>=0&&cy<H){
-          m[cy][cx]=T.PATH;
-          if(cy>0&&Math.random()<0.3)m[cy-1][cx]=T.PATH;
-          if(cx>0&&Math.random()<0.3)m[cy][cx-1]=T.PATH;
-        }
-        if(Math.abs(cx-tx)+Math.abs(cy-ty)<3)break;
-        const dx=tx-cx,dy=ty-cy;
-        if(Math.random()<0.7){
-          cx+=dx>0?1:dx<0?-1:0;
-        } else {
-          cy+=dy>0?1:dy<0?-1:0;
-        }
-        if(Math.random()<0.15){cx+=Math.random()<0.5?1:-1;}
-        if(Math.random()<0.15){cy+=Math.random()<0.5?1:-1;}
-        cx=Math.max(0,Math.min(W-1,cx));
-        cy=Math.max(0,Math.min(H-1,cy));
+    // ---- Dorfplaetze freiraeumen ----
+    const towns=plan.towns.map(t=>({...t,x:Math.round(t.cx*W),y:Math.round(t.cy*H)}));
+    for(const t of towns){
+      for(let dy=-t.r;dy<=t.r;dy++)for(let dx=-t.r;dx<=t.r;dx++){
+        const ny=t.y+dy,nx=t.x+dx;
+        if(ny<3||ny>=H-3||nx<3||nx>=W-3)continue;
+        if(Math.abs(dx)>t.r-1&&Math.abs(dy)>t.r-1)continue;
+        m[ny][nx]=(Math.abs(dx)<=3||Math.abs(dy)<=3)?T.PATH:T.GRASS;
       }
     }
 
-    // Bridges
+    // ---- Strassen zwischen den Doerfern ----
+    // Fest verdrahtet, damit man jedes Dorf zu Fuss erreicht. Wasser unter der
+    // Strasse wird zur Bruecke, die Route bleibt also immer begehbar.
+    for(const [a,b] of plan.roads){
+      carveRoad(m,towns[a].x,towns[a].y,towns[b].x,towns[b].y,W,H);
+    }
+    // Zusaetzliche Landstrassen zu den Kartenraendern - sie geben der Welt Struktur
+    // und fuehren an den Gehoeften vorbei.
+    for(const r of (plan.edgeRoads||[])){
+      carveRoad(m,Math.round(r[0]*W),Math.round(r[1]*H),Math.round(r[2]*W),Math.round(r[3]*H),W,H);
+    }
+
+    // ---- Bruecken, wo Wege ins Wasser laufen ----
     for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
       if(m[y][x]===T.WATER){
         const adj=[m[y-1][x],m[y+1][x],m[y][x-1],m[y][x+1]];
-        if(adj.filter(t=>t===T.PATH).length>=2)m[y][x]=T.BRIDGE;
+        if(adj.filter(t=>t===T.PATH||t===T.BRIDGE).length>=2)m[y][x]=T.BRIDGE;
       }
     }
 
-    // Clear village around spawn (guarantees houses never land on water/trees)
-    const sx=Math.floor(W/2),sy=Math.floor(H/2);
-    const villR=villRFor(region);
-    for(let dy=-villR;dy<=villR;dy++)for(let dx=-villR;dx<=villR;dx++){
-      const ny=sy+dy,nx=sx+dx;
-      if(ny<3||ny>=H-3||nx<3||nx>=W-3)continue;
-      m[ny][nx]=(Math.abs(dx)<=3||Math.abs(dy)<=3)?T.PATH:T.GRASS;
+    const start=towns[plan.start];
+    const sx=start.x, sy=start.y;
+
+    // ---- Gebaeude der Doerfer ----
+    for(const t of towns){
+      for(const b of t.doors) placeBuilding(m,t.x+b[1],t.y+b[2],b[0],W,H);
     }
 
-    // Place houses (roof row above door row, door walkable path below)
-    const placeHouse=(doorX,doorY,doorTile)=>placeBuilding(m,doorX,doorY,doorTile,W,H);
-    if(region==='r2'){
-      // Larger village: two rows of three houses; the Center anchors the north row
-      placeHouse(sx-8,sy-8,T.DOOR_ELDER2);
-      placeHouse(sx,sy-8,T.DOOR_CENTER);
-      placeHouse(sx+8,sy-8,T.DOOR_V3);
-      placeHouse(sx-8,sy+5,T.DOOR_V4);
-      placeHouse(sx,sy+5,T.DOOR_SHOP2);
-      placeHouse(sx+8,sy+5,T.DOOR_V6);
-      placeHouse(sx-16,sy+5,T.DOOR_V5);
-    } else if(region==='r3'){
-      // Frost village: two rows of three houses
-      placeHouse(sx-8,sy-8,T.DOOR_F1);
-      placeHouse(sx,sy-8,T.DOOR_CENTER);
-      placeHouse(sx+8,sy-8,T.DOOR_F3);
-      placeHouse(sx-8,sy+5,T.DOOR_F4);
-      placeHouse(sx,sy+5,T.DOOR_F2);
-      placeHouse(sx+8,sy+5,T.DOOR_F5);
-    } else if(region==='r4'){
-      // Small, focused League grounds
-      placeHouse(sx-8,sy-6,T.DOOR_LLORE);
-      placeHouse(sx,sy-6,T.DOOR_LIGA);
-      placeHouse(sx+8,sy-6,T.DOOR_LSHOP);
-      placeHouse(sx,sy+5,T.DOOR_CENTER);
-    } else {
-      placeHouse(sx-6,sy-6,T.DOOR_LAB);
-      placeHouse(sx,sy-6,T.DOOR_CENTER);
-      placeHouse(sx+6,sy-6,T.DOOR_RIVAL);
-      placeHouse(sx-6,sy+4,T.DOOR_V1);
-      placeHouse(sx+6,sy+4,T.DOOR_V2);
-      placeHouse(sx,sy+4,T.DOOR_SHOP);
-    }
-
-    // Lay the conductor corridor first, so anything built afterwards sees it as
-    // terrain and its plaza keeps the route walkable instead of severing it.
-    if(region!=='r4') this.fixConductorCorridor(m,region,sx,sy,W,H,villR);
+    // Den Bahnsteigkorridor vor allem anderen anlegen, damit spaetere Bauten
+    // ihn als Gelaende sehen und die Strecke begehbar bleibt.
+    this.fixConductorCorridor(m,region,sx,sy,W,H,start.r);
     reservedPts=fixedNpcSpots(region,sx,sy,W);
     noCarveRects=[];
 
-    // The arena sits on its own grounds outside the village: a fixed ring of candidate
-    // sites is probed in a set order and the first solid-ground one wins, so it is
-    // never dumped in the village centre and never lands in water.
-    const arenaDoor=ARENA_DOOR[region];
-    let arenaSpot=null;
+    // ---- Arenagelaende der dritten Arena ----
+    // Die ersten beiden Arenen stehen mitten im Dorf. Die dritte liegt auf eigenem
+    // Gelaende mit Labyrinth und Torwache - als Abschluss der Region.
+    const last=towns[towns.length-1];
     this.s.arenaGate=null;
-    if(arenaDoor){
-      arenaSpot=pickBuildSpot(m,sx,sy,W,H,arenaOffsets(villR),5,(x,y)=>arenaFits(x,y,W,H));
-      if(arenaSpot){
-        const built=buildArenaCompound(m,arenaSpot.x,arenaSpot.y,arenaDoor,W,H);
-        noCarveRects=[{x0:built.bounds.left,x1:built.bounds.right,y0:built.bounds.top,y1:built.bounds.bot}];
-        carveArenaRoad(m,sx,sy,arenaSpot.x,arenaSpot.y,W,H);
-        this.s.arenaGate=built.gate;
-      }
+    let arenaSpot=null;
+    const arenaDoor=T.DOOR_ARENA3;
+    arenaSpot=pickBuildSpot(m,last.x,last.y,W,H,arenaOffsets(last.r),5,(x,y)=>arenaFits(x,y,W,H));
+    if(arenaSpot){
+      const built=buildArenaCompound(m,arenaSpot.x,arenaSpot.y,arenaDoor,W,H);
+      noCarveRects=[{x0:built.bounds.left,x1:built.bounds.right,y0:built.bounds.top,y1:built.bounds.bot}];
+      carveArenaRoad(m,last.x,last.y,arenaSpot.x,arenaSpot.y,W,H);
+      this.s.arenaGate=built.gate;
     }
 
-    // Outlying homesteads: quest-giving households spread across the whole map.
-    const outposts=placeOutposts(m,region,sx,sy,W,H,villR);
+    // ---- Gehoefte im Umland ----
+    const outposts=placeOutposts(m,region,sx,sy,W,H,start.r);
     this.s.outposts=outposts;
     registerOutpostQuests(region,outposts);
 
-    // A road hooked onto a stray path fragment can leave a building stranded on a
-    // disconnected patch, so verify every door and drive a direct road to the
-    // village for any that the player could not actually walk to.
+    // ---- Erreichbarkeit sicherstellen ----
     let reach=reachableMask(m,sx,sy,W,H);
     const strays=outposts.filter(o=>!reach[o.y*W+o.x]);
     if(strays.length)strays.forEach(o=>carveRoad(m,o.x,o.y+2,sx,sy,W,H));
-    // The arena is reached through its gate; the maze behind it is meant to be closed.
+    // Auch jedes Dorf muss zu Fuss erreichbar sein, nicht nur per Karte.
+    for(const t of towns){
+      if(t===start)continue;
+      if(!reach[t.y*W+t.x]) carveRoad(m,t.x,t.y,sx,sy,W,H);
+    }
     const gate=this.s.arenaGate;
-    if(gate&&!reach[(gate.y+1)*W+gate.x])carveArenaRoad(m,sx,sy,arenaSpot.x,arenaSpot.y,W,H);
-    if(strays.length||gate)reach=reachableMask(m,sx,sy,W,H);
+    if(gate&&!reach[(gate.y+1)*W+gate.x])carveArenaRoad(m,last.x,last.y,arenaSpot.x,arenaSpot.y,W,H);
+    reach=reachableMask(m,sx,sy,W,H);
 
-    // Scatter random trainers across the wider map (away from the village, further = stronger).
-    // Restricted to tiles actually connected to the village, so no challenger ends up
-    // marooned on an island the player can never walk to.
+    // ---- Trainer im Umland ----
+    // Positionen kommen aus demselben festen Startwert, sind also bei jedem
+    // Spielstart dieselben. Je weiter vom Startdorf, desto staerker.
     const randomTrainers=[];
     let attempts=0;
-    const numTrainers=region==='r2'?20:(region==='r3'?22:(region==='r4'?13:28));
-    const minDist=region==='r2'?16:(region==='r3'?18:(region==='r4'?9:11));
-    const tierBonus=region==='r2'?1:(region==='r3'?2:(region==='r4'?3:0));
-    while(randomTrainers.length<numTrainers&&attempts<1200){
+    const numTrainers=plan.trainers;
+    const tierBonus=plan.tierBonus;
+    while(randomTrainers.length<numTrainers&&attempts<4000){
       attempts++;
-      const rx=Math.floor(Math.random()*W),ry=Math.floor(Math.random()*H);
+      const rx=Math.floor(rnd()*W),ry=Math.floor(rnd()*H);
       const dist=Math.abs(rx-sx)+Math.abs(ry-sy);
-      if(dist<minDist)continue;
+      if(dist<10)continue;
       if(!reach[ry*W+rx])continue;
       const t=m[ry][rx];
       if(t!==T.GRASS&&t!==T.PATH&&t!==T.SAND)continue;
-      if(randomTrainers.some(o=>Math.abs(o.x-rx)+Math.abs(o.y-ry)<8))continue;
+      if(towns.some(tw=>Math.abs(tw.x-rx)+Math.abs(tw.y-ry)<tw.r+3))continue;
+      if(randomTrainers.some(o=>Math.abs(o.x-rx)+Math.abs(o.y-ry)<9))continue;
       const idx=randomTrainers.length;
-      const tier=Math.min(4,1+Math.floor(dist/40)+tierBonus);
-      randomTrainers.push({x:rx,y:ry,name:RANDOM_TRAINER_NAMES[idx%RANDOM_TRAINER_NAMES.length],shirt:RANDOM_SHIRTS[idx%RANDOM_SHIRTS.length],tier,idx});
+      // Stufe 4 ist ausgeschlossen: kein Trainer fuehrt ein legendaeres Pokemon.
+      const tier=Math.min(3,1+Math.floor(dist/45)+tierBonus);
+      randomTrainers.push({x:rx,y:ry,name:RANDOM_TRAINER_NAMES[idx%RANDOM_TRAINER_NAMES.length],
+        shirt:RANDOM_SHIRTS[idx%RANDOM_SHIRTS.length],tier,idx});
     }
 
     this.s.map=m;this.s.px=sx;this.s.py=sy;
+    this.s.towns=towns;
     this.s.randomTrainers=randomTrainers;
     this.s.worldNpcs=this.buildFixedNpcs(region,sx,sy,W).concat(randomTrainers.map(buildRandomTrainerNpc));
     this.s.currentNpcs=this.s.worldNpcs;
@@ -7988,10 +7981,13 @@ const G = {
     const inH=this.s.inHouse;
     const map=inH?this.s.outdoorPos.map:this.s.map,mw=inH?this.s.outdoorPos.mw:this.s.mw,mh=inH?this.s.outdoorPos.mh:this.s.mh;
     const px=inH?this.s.outdoorPos.px:this.s.px,py=inH?this.s.outdoorPos.py:this.s.py;
-    const regions={...(this.s.regions||{}),[this.s.region]:{map,mw,mh,px,py,randomTrainers:this.s.randomTrainers,outposts:this.s.outposts,arenaGate:this.s.arenaGate}};
-    localStorage.setItem('pkmn2',JSON.stringify({clock:this.s.clock,char:this.s.char,team:this.s.team,active:this.s.active,potions:this.s.potions,cash:this.s.cash,balls:this.s.balls,lastPD:this.s.lastPD,battlesWon:this.s.battlesWon,caughtCount:this.s.caughtCount,region:this.s.region,regions,flags:this.s.flags,quests:this.s.quests,dex:this.s.dex}));
+    const regions={...(this.s.regions||{}),[this.s.region]:{map,mw,mh,px,py,randomTrainers:this.s.randomTrainers,outposts:this.s.outposts,arenaGate:this.s.arenaGate,towns:this.s.towns}};
+    localStorage.setItem('pkmn2',JSON.stringify({v:SAVE_VERSION,clock:this.s.clock,char:this.s.char,team:this.s.team,active:this.s.active,potions:this.s.potions,cash:this.s.cash,balls:this.s.balls,lastPD:this.s.lastPD,battlesWon:this.s.battlesWon,caughtCount:this.s.caughtCount,region:this.s.region,regions,flags:this.s.flags,quests:this.s.quests,dex:this.s.dex}));
   }catch(e){}},
   loadGame(){try{const r=localStorage.getItem('pkmn2');if(!r)return false;const d=JSON.parse(r);if(!d.char||!d.team)return false;
+    // Die Welt wurde neu aufgebaut: Staende aelterer Fassungen passen nicht mehr
+    // auf die heutige Karte und werden darum nicht geladen.
+    if(d.v!==SAVE_VERSION)return false;
     let region,regions;
     if(d.regions){ region=d.region||'r1'; regions=d.regions; }
     else if(d.map){ region='r1'; regions={r1:{map:d.map,mw:d.mw,mh:d.mh,px:d.px,py:d.py,randomTrainers:d.randomTrainers||[],outposts:[],arenaGate:null}}; }
@@ -8006,12 +8002,9 @@ const G = {
     Object.keys(this.s.quests).forEach(k=>{ if(!QUESTS[k]) delete this.s.quests[k]; });
     if(allLegendsCaught(this.s)&&!this.s.flags.legendaryHero){this.s.flags.legendaryHero=true;}
     this.s.team.forEach(p=>this.rcP(p));
-    const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
-    this.upgradeMap(this.s.map,region,sx,sy,this.s.mw,this.s.mh);
+    const tp=startTownPos(region), sx=tp.x, sy=tp.y;
     registerAllOutpostQuests(this.s);
-    if(region!=='r4'){
-      this.fixConductorCorridor(this.s.map,region,sx,sy,this.s.mw,this.s.mh,villRFor(region));
-    }
+    this.fixConductorCorridor(this.s.map,region,sx,sy,this.s.mw,this.s.mh,tp.r);
     this.s.worldNpcs=this.buildFixedNpcs(region,sx,sy,this.s.mw).concat(this.s.randomTrainers.map(buildRandomTrainerNpc));
     this.s.currentNpcs=this.s.worldNpcs;
     return true;}catch(e){return false;}},
