@@ -113,6 +113,8 @@ body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
 #scr-battle.bg-champion { background: linear-gradient(180deg, #3a2450 0%, #6a4a18 48%, #2a1c10 100%); }
 #scr-battle.bg-legend { background: linear-gradient(180deg, #140a24 0%, #4a1c58 45%, #12060f 100%); }
 #scr-battle.bg-arena .battle-bg-clouds, #scr-battle.bg-champion .battle-bg-clouds { display: none; }
+/* Im 3D-Modus zeichnet die Szene selbst - das flaechige CSS-Muster muss weg. */
+body.d3 #scr-battle.bg-arena::after { display: none; }
 .battle-bg-clouds { position: absolute; top: 0; left: 0; width: 200%; height: 40%; background: repeating-linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 10%, transparent 20%); animation: cl 30s linear infinite; }
 @keyframes cl { 0%{transform:translateX(0)}100%{transform:translateX(-50%)} }
 .b-area { width: 100%; max-width: 700px; padding: 15px; z-index: 1; }
@@ -313,8 +315,8 @@ body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
       <div class="hud-l"><span id="h-trainer"></span><span id="h-house" style="color:#ffcc00;font-size:0.8em;margin-left:6px;"></span><span id="h-clock" style="color:#9ab;font-size:0.8em;margin-left:8px;"></span><div class="hud-pokemon"><span id="h-poke"></span><div class="hud-hp-bar"><div class="hud-hp-fill" id="h-hp-fill"></div></div><span id="h-hp-text" style="font-size:0.75em;color:#889;margin-left:4px;"></span></div></div>
       <div class="hud-r"><span class="potion-ct" id="h-potions"></span><span id="h-cash" style="color:#ffd860;font-weight:600;"></span><span id="h-badges" style="color:#e0a020;font-weight:600;"></span><span id="h-battles" style="color:#556;font-size:0.8em;"></span><button class="hud-btn" onclick="G.openTeam()">Team</button><button class="hud-btn" onclick="G.openPotions()">Heilen</button><button class="hud-btn" onclick="G.openQuests()">Quests</button><button class="hud-btn" onclick="G.openDex()">Dex</button><button class="hud-btn" id="h-3d" onclick="G.toggle3D()" title="Ansicht umschalten">2D</button></div>
     </div>
-    <div id="questbar"><span id="qb-icon">\u{1F4CD}</span><span id="qb-text"></span><span id="qb-where"></span></div>
-    <button id="furn-btn" onclick="G.showFurnInfo()"><span id="furn-btn-icon">\u{2139}\u{FE0F}</span><span id="furn-btn-label"></span></button>
+    <div id="questbar"><span id="qb-icon">📍</span><span id="qb-text"></span><span id="qb-where"></span></div>
+    <button id="furn-btn" onclick="G.showFurnInfo()"><span id="furn-btn-icon">ℹ️</span><span id="furn-btn-label"></span></button>
     <canvas id="world-canvas"></canvas>
   </div>
   <div id="scr-battle" class="scr">
@@ -2765,7 +2767,7 @@ function villagerLines2(s){
   const st=questStatus('q3',s);
   if(isHero(s)&&st==='none') return hero('tom','ask');
   if(st==='none') return ['Anwohner Tom: Im hohen Gras trifft man auf wilde Pokemon. Je weiter weg vom Dorf, desto stärker.',
-    'Deine Pokemon entwickeln sich uebrigens im Zehnerschritt: auf Level 10 und noch einmal auf Level 20.',
+    'Deine Pokemon entwickeln sich übrigens im Zehnerschritt: auf Level 10 und noch einmal auf Level 20.',
     'Bring eines auf Level 15, dann habe ich etwas für dich - und einen guten Rat dazu.'];
   if(isHero(s)&&st==='ready') return hero('tom','done');
   if(st==='ready') return ['Anwohner Tom: Level 15. Damit überstehst du die Straße nach Norden.',
@@ -2829,7 +2831,7 @@ function v5Lines(s){ if(isHero(s)) return hero('vala');
 function v6Lines(s){ if(isHero(s)) return hero('boris');
   return ['Schmied Boris: Vier Generationen Schmiede, und ich bin die fünfte.',
   'Ich mache keine Orden - die gibt es nur in den Arenen, und nur gegen einen gewonnenen Kampf.',
-  'Aber ruest dich aus, bevor du hingehst. Die Leiter führen immer zwei Pokemon.']; }
+  'Aber rüst dich aus, bevor du hingehst. Die Leiter führen immer zwei Pokemon.']; }
 function conductorLines(s){
   const st=questStatus('q5',s);
   if(isHero(s)&&st==='none') return hero('aldric','ask');
@@ -2873,21 +2875,21 @@ function friggaLines(s){
 function finnLines(s){
   const st=questStatus('q10',s);
   if(isHero(s)&&st==='none') return hero('finn','ask');
-  if(st==='none') return ['Kristallschurfer Finn: Ich schuerfe hier seit Jahren. Das Eis gibt Kristalle her, die es kaum geben duerfte.',
-    'In einem steckte ein Blatt. Gruen, frisch, mitten im Eis. Ich habe es bis heute nicht erklaeren können.',
+  if(st==='none') return ['Kristallschurfer Finn: Ich schürfe hier seit Jahren. Das Eis gibt Kristalle her, die es kaum geben dürfte.',
+    'In einem steckte ein Blatt. Grün, frisch, mitten im Eis. Ich habe es bis heute nicht erklären können.',
     'Bring ein Pokemon auf Level 35, dann zeige ich dir meinen besten Fund.'];
   if(isHero(s)&&st==='ready') return hero('finn','done');
   if(st==='ready') return ['Kristallschurfer Finn: Level 35. Da - der Fund gehört dir.','Halt ihn ins Licht, dann siehst du das Blatt.'];
   if(st==='active') return heroSay(s,'finn',[`Kristallschurfer Finn: Fortschritt: ${QUESTS.q10.progress(s)}.`]);
   if(isHero(s)) return hero('finn');
-  return ['Kristallschurfer Finn: Die tiefsten Höhlen bergen die wertvollsten Kristalle. Und die kaeltesten Überraschungen.'];
+  return ['Kristallschurfer Finn: Die tiefsten Höhlen bergen die wertvollsten Kristalle. Und die kältesten Überraschungen.'];
 }
 function runaLines(s){
   const st=questStatus('q11',s);
   if(isHero(s)&&st==='none') return hero('runa','ask');
-  if(st==='none') return ['Schneejagerin Runa: Ich jage nicht zum Toeten - ich zähle.',
+  if(st==='none') return ['Schneejagerin Runa: Ich jage nicht zum Töten - ich zähle.',
     'Fünfzehn verschiedene Arten im Pokedex, als gefangen eingetragen. Das ist meine Messlatte.',
-    'Wer das schafft, hat wirklich gesucht und nicht nur das Naechstbeste mitgenommen.'];
+    'Wer das schafft, hat wirklich gesucht und nicht nur das Nächstbeste mitgenommen.'];
   if(isHero(s)&&st==='ready') return hero('runa','done');
   if(st==='ready') return ['Schneejagerin Runa: Fünfzehn Arten. Sauber gezählt.','Dann stimmt es also, was sie über dich erzählen. Nimm das hier.'];
   if(st==='active') return heroSay(s,'runa',[`Schneejagerin Runa: Fortschritt: ${QUESTS.q11.progress(s)}.`]);
@@ -2897,10 +2899,10 @@ function runaLines(s){
 function bjornLines(s){ if(isHero(s)) return hero('bjorn');
   return ['Alter Fischer Bjorn: Ich sitze seit vierzig Jahren an diesem See.',
   'Wasser-Pokemon gibt es hier genug. Geduld braucht man trotzdem.',
-  'Im Basar gibt es Vorraete. Und im Center heilen sie umsonst - nutz das.']; }
+  'Im Basar gibt es Vorräte. Und im Center heilen sie umsonst - nutz das.']; }
 function nieveLines(s){ if(isHero(s)) return hero('nieve');
   return ['Handlerin Nieve: Willkommen! Ja, es ist kalt. Nein, daran gewöhnt man sich nicht.',
-  'Bälle, Heiltränke, stärkendes Futter - alles vorraetig. Selbst hier oben.']; }
+  'Bälle, Heiltränke, stärkendes Futter - alles vorrätig. Selbst hier oben.']; }
 // The arena gate: a keeper bars the only way in and only yields to someone who has
 // already proved themselves in the field, and then only after a fight.
 // Vor dem Gelaende der dritten Arena jeder Region steht eine Torwache. Sie
@@ -2915,7 +2917,7 @@ const GATES={
       demand:n=>[`Torwache Brunn: Erst die Pflicht: ${n} gewonnene Kämpfe. Du hast sie nicht.`,
         'Geh ins hohe Gras. Komm wieder, wenn du zählen kannst.'],
       ready:['Torwache Brunn: Die Zahlen stimmen. Jetzt der Rest.',
-        'Ich bin die Prüfung, nicht die Formalitaet. Stell dich auf.'],
+        'Ich bin die Prüfung, nicht die Formalität. Stell dich auf.'],
       done:['Torwache Brunn: Der Weg ist offen. Im Labyrinth hilft dir niemand mehr.',
         'Halte dich rechts, wenn du dich verirrst. Oder auch nicht - ich habe es selbst nie gemerkt.']},
   r2:{flag:'gateR2',name:'Torwache Skarn',shirt:'#4a2060',hair:'#101010',tier:3,lvBonus:5,need:45,
@@ -2930,7 +2932,7 @@ const GATES={
   r3:{flag:'gateR3',name:'Torwache Eisla',shirt:'#1a4a70',hair:'#e8f2ff',tier:3,lvBonus:8,need:75,
       place:'Kampfarena in Eiswacht',
       intro:['Torwache Eisla: Nicht weitergehen. Der Wind hier schneidet.',
-        'Das Gelände ist vereist, die Mauern sind von Jahr zu Jahr verschoben. Die alten Plaene stimmen laengst nicht mehr.',
+        'Das Gelände ist vereist, die Mauern sind von Jahr zu Jahr verschoben. Die alten Pläne stimmen längst nicht mehr.',
         'Wer da drin falsch abbiegt, findet lange nicht zurück. Ich lasse nur Leute rein, die etwas aushalten.'],
       demand:n=>[`Torwache Eisla: ${n} Siege, sonst nichts.`,
         'Meister Bruno nimmt keine Herausforderer an, die schon am Tor scheitern.'],
@@ -2938,7 +2940,7 @@ const GATES={
       done:['Torwache Eisla: Durch. Und wenn du drin bist: nicht stehenbleiben. Kälte holt Stehende zuerst.']},
   r4:{flag:'gateR4',name:'Torwache Aurel',shirt:'#c0a040',hair:'#6a5020',tier:3,lvBonus:12,need:110,
       place:'Psychoarena am Liga-Plateau',
-      intro:['Torwache Aurel: Das Liga-Plateau. Hoeher geht es in diesem Land nicht.',
+      intro:['Torwache Aurel: Das Liga-Plateau. Höher geht es in diesem Land nicht.',
         'Hinter mir liegt die letzte Arena vor dem Champion. Entsprechend streng ist das Tor.',
         'Meisterin Sibylle empfängt niemanden, den ich nicht gepruft habe.'],
       demand:n=>[`Torwache Aurel: ${n} gewonnene Kämpfe verlangt die Liga. Nicht ich - die Liga.`,
@@ -2971,15 +2973,15 @@ const ARENAS={
     {badge:'b_r1_2',type:'normal',name:'Feldarena',leader:'Meister Konrad',shirt:'#a8a878',hair:'#6a5a3a',town:'Muhlbach',
      team:[{id:'rattikarl',lv:14},{id:'kangama',lv:16}],
      intro:['Meister Konrad: Feldarena. Keine Tricks, keine Sonderrechte - nur solide Arbeit.',
-       'Normal-Pokemon haben keine Schwaechen ausser einer: Kampf-Typen.',
+       'Normal-Pokemon haben keine Schwächen ausser einer: Kampf-Typen.',
        'Und gegen Geister richte ich gar nichts aus. Merk dir das, es gilt auch für dich.',
        'Zwei Pokemon. Zeig mir Handwerk.'],
      done:['Meister Konrad: Feldorden. Verdient.',
        'Die dritte Arena steht in Ahornfurt am Fluss. Marina kämpft mit Wasser.']},
     {badge:'b_r1_3',type:'water',name:'Flussarena',leader:'Meisterin Marina',shirt:'#3070c0',hair:'#20506a',town:'Ahornfurt',
      team:[{id:'schillok',lv:18},{id:'starmie',lv:20}],
-     intro:['Meisterin Marina: Die Flussarena ist die letzte Huerde dieser Region.',
-       'Wasser loescht Feuer, unterspuelt Gestein und weicht Boden auf. Dafuer verliert es gegen Pflanze und Elektro.',
+     intro:['Meisterin Marina: Die Flussarena ist die letzte Hürde dieser Region.',
+       'Wasser löscht Feuer, unterspült Gestein und weicht Boden auf. Dafür verliert es gegen Pflanze und Elektro.',
        'Mit meinem Orden hast du alle drei aus dem Auental. Erst dann fährt dich der Zug weiter.',
        'Aber verdienen musst du ihn hier.'],
      done:['Meisterin Marina: Alle drei Orden des Auentals. Das schaffen die wenigsten im ersten Anlauf.',
@@ -2992,12 +2994,12 @@ const ARENAS={
        'Gift wirkt gegen Pflanze und sonst wenig - aber es hält aus, was andere umwirft.',
        'Boden- und Psycho-Pokemon sind meine Sorge. Deine auch, wenn du sie nicht dabei hast.',
        'Zwei Pokemon. Los.'],
-     done:['Meister Venor: Giftorden. Du haeltst mehr aus, als du aussiehst.',
-       'Rabenfels liegt noerdlich. Nyx führt die Geisterarena - und die ist unangenehmer.']},
+     done:['Meister Venor: Giftorden. Du hältst mehr aus, als du aussiehst.',
+       'Rabenfels liegt nördlich. Nyx führt die Geisterarena - und die ist unangenehmer.']},
     {badge:'b_r2_2',type:'ghost',name:'Geisterarena',leader:'Meisterin Nyx',shirt:'#504870',hair:'#d0c0e0',town:'Rabenfels',
      team:[{id:'traunmagil',lv:27},{id:'alpollo',lv:29}],
      intro:['Meisterin Nyx: Leise hereinkommen war gut. Leise wieder hinaus wird schwerer.',
-       'Geist-Attacken treffen Normal-Pokemon ueberhaupt nicht - und Normal trifft mich genauso wenig.',
+       'Geist-Attacken treffen Normal-Pokemon überhaupt nicht - und Normal trifft mich genauso wenig.',
        'Wer hier nur mit einem Allerweltsteam antritt, steht eine Stunde im Kreis.',
        'Unlicht räumt mich ab. Wenn du welche hast, jetzt wäre der Moment.'],
      done:['Meisterin Nyx: Geisterorden. Du hast das Richtige mitgebracht.',
@@ -3018,7 +3020,7 @@ const ARENAS={
        'Eis trifft Pflanze, Boden, Flug und Drache doppelt. Es hält dafür fast nichts aus.',
        'Feuer, Gestein, Kampf und Stahl - alles davon bricht mich.',
        'Zwei Pokemon. Zeig, ob du vorbereitet bist.'],
-     done:['Meisterin Elsa: Eisorden. Sauber gekaempft.',
+     done:['Meisterin Elsa: Eisorden. Sauber gekämpft.',
        'Gletscherhalt liegt höher im Gebirge. Granit wartet dort mit Gestein.']},
     {badge:'b_r3_2',type:'rock',name:'Felsarena',leader:'Meister Granit',shirt:'#a08838',hair:'#4a3a20',town:'Gletscherhalt',
      team:[{id:'onix',lv:40},{id:'rizeros',lv:42}],
@@ -3041,10 +3043,10 @@ const ARENAS={
     {badge:'b_r4_1',type:'fire',name:'Flammenarena',leader:'Meisterin Ignis',shirt:'#c04020',hair:'#8a2020',town:'Goldbruck',
      team:[{id:'glutexo',lv:49},{id:'vulnona',lv:51}],
      intro:['Meisterin Ignis: Goldbruck. Ab hier wird nichts mehr geschenkt.',
-       'Feuer verbrennt Pflanze und Eis. Wasser, Gestein und Boden loeschen es.',
+       'Feuer verbrennt Pflanze und Eis. Wasser, Gestein und Boden löschen es.',
        'Drei Arenen liegen zwischen dir und dem Champion. Ich bin die erste.',
        'Zwei Pokemon - und beide sind schneller, als du denkst.'],
-     done:['Meisterin Ignis: Flammenorden. Du gehörst tatsaechlich hierher.',
+     done:['Meisterin Ignis: Flammenorden. Du gehörst tatsächlich hierher.',
        'Volt führt die Blitzarena. Er ist der schnellste Leiter, den ich kenne.']},
     {badge:'b_r4_2',type:'electric',name:'Blitzarena',leader:'Meister Volt',shirt:'#e0c020',hair:'#3a3a20',town:'Siegespforte',
      team:[{id:'magneton',lv:53},{id:'elektek',lv:55}],
@@ -3056,7 +3058,7 @@ const ARENAS={
        'Bleibt Sibylle in der Psychoarena. Danach der Champion.']},
     {badge:'b_r4_3',type:'psychic',name:'Psychoarena',leader:'Meisterin Sibylle',shirt:'#e85878',hair:'#a040a0',town:'Liga-Plateau',
      team:[{id:'hypno',lv:57},{id:'simsala',lv:59}],
-     intro:['Meisterin Sibylle: Die letzte Arena vor dem Champion. Zwoelfte von zwölf.',
+     intro:['Meisterin Sibylle: Die letzte Arena vor dem Champion. Zwölfte von zwölf.',
        'Psycho schlägt Kampf und Gift. Unlicht-Attacken dagegen treffen mich hart.',
        'Ich verrate dir das, weil es den Kampf besser macht, nicht weil es ihn leichter macht.',
        'Zwei Pokemon. Und dann steht dir die Liga offen.'],
@@ -3175,7 +3177,7 @@ function ligaLines(s){
 function lloreLines(s){ if(isHero(s)) return hero('aldo');
   return ['Chronist Aldo: Willkommen in der Ruhmeshalle. Hier steht jeder Name, der je einen Liga-Titel geholt hat.',
   'Es sind weniger, als man denkt. Zwölf Arenen sieben gründlich aus.',
-  'Ich halte immer eine Seite frei. Man weiß nie, wer als Naechstes hereinkommt.',
+  'Ich halte immer eine Seite frei. Man weiß nie, wer als Nächstes hereinkommt.',
   'Vielleicht ja du.']; }
 function lshopLines(s){ if(isHero(s)) return hero('perle');
   return ['Handlerin Perle: Willkommen im Liga-Shop. Das beste Sortiment im ganzen Land.',
@@ -3214,7 +3216,7 @@ const HOUSES={
       s.flags.talkedMother=true;
       s.cash=(s.cash||0)+500;
       s.potions=(s.potions||0)+5;
-      G.popup('Reisegepaeck erhalten!<div class="lvl-sub">+500 PokeCash, +5 Heiltränke</div>','caught-popup',3200);
+      G.popup('Reisegepäck erhalten!<div class="lvl-sub">+500 PokeCash, +5 Heiltränke</div>','caught-popup',3200);
       Au.lv();
       G.updateHud(); G.refreshQuest(); G.saveGame();
     }}},
@@ -3266,17 +3268,17 @@ const OUT_MULT={r1:1,r2:1.9,r3:2.8,r4:3.6};
 const OUTPOST_DEFS=[
   {nm:'Waldhutte',npc:'Einsiedler Ansgar',shirt:'#5a6a3a',hair:'#c8c8c0',goal:'battles',amt:7,rp:2,rc:70,
    qn:'Wächter der Lichtung',
-   intro:['Einsiedler Ansgar: Selten kommt jemand so weit hinaus.','Ich lebe seit dreissig Jahren zwischen diesen Baeumen und kenne jede Art, die hier durchkommt.','Wer so weit hinausgeht, sollte etwas können. Beweise es mir.'],
+   intro:['Einsiedler Ansgar: Selten kommt jemand so weit hinaus.','Ich lebe seit dreissig Jahren zwischen diesen Bäumen und kenne jede Art, die hier durchkommt.','Wer so weit hinausgeht, sollte etwas können. Beweise es mir.'],
    wait:['Einsiedler Ansgar: Die Wildnis lugt nicht. Kämpfe weiter.'],
    done:['Einsiedler Ansgar: Du hast das Mark eines Wachters. Nimm das hier - du wirst es brauchen.'],
    hero:['Einsiedler Ansgar: {H}. Der Wald steht still und atmet ruhig.','Selten kommt jemand so weit hinaus. Bei dir freue ich mich darüber.'],
    heroAsk:['Einsiedler Ansgar: {H}, setz dich einen Moment.','Gewinne mir sieben Kämpfe da draußen - ich will wissen, wie stark die Wildnis heute noch ist.'],
-   after:['Einsiedler Ansgar: Hoer genau hin. Der Wald ist lauter, als die Leute im Dorf glauben.']},
+   after:['Einsiedler Ansgar: Hör genau hin. Der Wald ist lauter, als die Leute im Dorf glauben.']},
   {nm:'Fischerkate',npc:'Fischerin Marla',shirt:'#2a6a8a',hair:'#7a5a30',goal:'fangen',amt:5,rp:2,rc:80,
    qn:'Was das Wasser hergibt',
    intro:['Fischerin Marla: Vorsicht, die Netze liegen aus.','Seit der Zersplitterung steigen Pokemon aus Tiefen auf, die es fruher gar nicht gab.','Ich kann sie nicht alle katalogisieren. Fang du sie - für die Aufzeichnungen.'],
    wait:['Fischerin Marla: Noch nicht genug. Das Wasser ist geduldig, ich weniger.'],
-   done:['Fischerin Marla: Beeindruckend. Die Aufzeichnungen werden dich uberdauern.'],
+   done:['Fischerin Marla: Beeindruckend. Die Aufzeichnungen werden dich überdauern.'],
    hero:['Fischerin Marla: {H}! Die Netze sind voll und das Meer rauscht wieder vorwarts.','Meine Aufzeichnungen sind das erste Mal seit Jahren einfach nur langweilig. Wunderbar.'],
    heroAsk:['Fischerin Marla: {H}, hilf mir beim Katalog.','Fang fünf Pokemon - jetzt, wo man sie in Ruhe zählen kann.'],
    after:['Fischerin Marla: Manche Nachte hore ich das Meer ruckwarts rauschen. Frag nicht.']},
@@ -3318,15 +3320,15 @@ const OUTPOST_DEFS=[
    wait:['Wärterin Isolde: Noch zu viele draußen. Ich sehe sie im Lichtkegel.'],
    done:['Wärterin Isolde: Der Kegel ist ruhig heute Nacht. Das war lange nicht so.'],
    hero:['Wärterin Isolde: {H}. Und der Turm brennt immer noch.','Vierhundert Jahre schafft er auch noch, denke ich.'],
-   heroAsk:['Wärterin Isolde: {H}, eine letzte Wache halte ich noch.','Leiste mir Gesellschaft, indem du dich draußen bewaehrst.'],
-   after:['Wärterin Isolde: Wenn du die Liga erreichst - komm noch einmal vorbei und erzaehl davon.']},
+   heroAsk:['Wärterin Isolde: {H}, eine letzte Wache halte ich noch.','Leiste mir Gesellschaft, indem du dich draußen bewährst.'],
+   after:['Wärterin Isolde: Wenn du die Liga erreichst - komm noch einmal vorbei und erzähl davon.']},
   {nm:'Grenzposten',npc:'Grenzerin Vike',shirt:'#5a2a2a',hair:'#101010',goal:'level',amt:22,rp:5,rc:220,
    qn:'Bis hierher und weiter',
    intro:['Grenzerin Vike: Halt. Dahinter faltet sich das Land.','Ich lasse niemanden durch, der nicht bestehen würde. Das ist keine Schikane, das ist Statistik.','Bring mir ein Pokemon, das dieser Gegend gewachsen ist, dann offne ich den Weg.'],
    wait:['Grenzerin Vike: Nicht stark genug. Ich habe zu viele begraben, die es trotzdem versucht haben.'],
    done:['Grenzerin Vike: Durchgelassen. Und - komm zurück. Das sage ich sonst nie.'],
-   hero:['Grenzerin Vike: {H}! Die Faltung ist weg. Die Grenze ist wieder eine Linie im Gras.','Ich patrouilliere aus Gewohnheit. Es ist der schoenste Dienst meines Lebens.'],
-   heroAsk:['Grenzerin Vike: {H}, lauf die Grenze mit mir ab.','Zeig mir unterwegs, was du kannst - dann trage ich dich als Grenzgaengerin ein.'],
+   hero:['Grenzerin Vike: {H}! Die Faltung ist weg. Die Grenze ist wieder eine Linie im Gras.','Ich patrouilliere aus Gewohnheit. Es ist der schönste Dienst meines Lebens.'],
+   heroAsk:['Grenzerin Vike: {H}, lauf die Grenze mit mir ab.','Zeig mir unterwegs, was du kannst - dann trage ich dich als Grenzgängerin ein.'],
    after:['Grenzerin Vike: Die Faltung wandert. Jeden Tag ein Stuck naher. Beeil dich.']},
 ];
 function outQuestId(region,idx){ return 'o_'+(region||'r1')+'_'+idx; }
@@ -3403,7 +3405,7 @@ function buildRandomTrainerNpc(rt){
           ? [`${rt.name}: {H}! Von dir besiegt worden zu sein erzahle ich noch meinen Enkeln.`]
           : [`${rt.name}: {H}? Wirklich? Einmal gegen dich kampfen - bitte!`])
       : isLegendHunt(s)
-      ? (s.flags[flagId]?[`${rt.name}: Pass auf dich auf da draußen. Man hört von legendären Pokemon!`]:[`${rt.name}: Bevor du gegen das Legendaere antrittst - trainier erst mit mir!`])
+      ? (s.flags[flagId]?[`${rt.name}: Pass auf dich auf da draußen. Man hört von legendären Pokemon!`]:[`${rt.name}: Bevor du gegen das Legendäre antrittst - trainier erst mit mir!`])
       : (s.flags[flagId]?[`${rt.name}: Gut gekampft!`]:[`${rt.name}: Ich fordere dich zu einem Kampf heraus!`]),
     onEnd:()=>{ if(!G.s.flags[flagId]) setTimeout(()=>G.startTrainerBattle(flagId,rt.name,rt.tier,rt.tier*2),200); }};
 }
@@ -3491,7 +3493,7 @@ const IFCH={'.':T.FLOOR,'#':T.IWALL,'D':T.EXITDOOR,'=':T.RUG,'T':T.TABLE,'c':T.C
 // Moebeldaten: solide Kacheln blockieren, Servicetheken leiten zum Personal weiter.
 const FURN={
   [T.RUG]:    {nm:'Teppich',   walk:true, txt:'Ein weicher, abgetretener Teppich.',
-    use:'Reine Ausstattung. Man kann darüber laufen, mehr nicht - er daempft nur den Schritt.'},
+    use:'Reine Ausstattung. Man kann darüber laufen, mehr nicht - er dämpft nur den Schritt.'},
   [T.TABLE]:  {nm:'Tisch',     txt:'Auf dem Tisch liegen Krümel und eine halb gelesene Karte.',
     use:'Hier wird gegessen und geplant. Auf Karten wie dieser sind die Dörfer der Region eingezeichnet.'},
   [T.CHAIR]:  {nm:'Stuhl',     txt:'Ein schlichter Holzstuhl.',
@@ -3505,29 +3507,29 @@ const FURN={
   [T.TILL]:   {nm:'Kasse',     svc:true, txt:'Eine Registrierkasse klimpert erwartungsvoll.',
     use:'Der Verkaufstresen. Hier kaufst du Bälle, Heiltränke und Futter - und in manchen Läden neue Kleidung.'},
   [T.PLANT]:  {nm:'Zimmerpflanze', txt:'Eine erstaunlich gut gepflegte Topfpflanze.',
-    use:'Schmuck. Pflanzen-Pokemon fuehlen sich in solchen Räumen nachweislich wohler.'},
-  [T.BOOKS]:  {nm:'Bücherregal',  txt:'Baende über Pokemon-Kunde, dick mit Staub bedeckt.',
+    use:'Schmuck. Pflanzen-Pokemon fühlen sich in solchen Räumen nachweislich wohler.'},
+  [T.BOOKS]:  {nm:'Bücherregal',  txt:'Bände über Pokemon-Kunde, dick mit Staub bedeckt.',
     use:'Nachschlagewerke. Hier steht, welcher Typ gegen welchen stark ist - dasselbe, was dir der Pokedex zeigt.'},
   [T.STOVE]:  {nm:'Küchenzeile',  txt:'Es riecht nach Eintopf.',
     use:'Hier wird gekocht - für Menschen wie für Pokemon. Gutes Futter ist die halbe Ausbildung.'},
   [T.CRATE]:  {nm:'Kiste',     txt:'Gestapelte Kisten.',
-    use:'Lagergut. In Läden steht hier der Nachschub, im Labor Ausruestung für die Feldforschung.'},
+    use:'Lagergut. In Läden steht hier der Nachschub, im Labor Ausrüstung für die Feldforschung.'},
   [T.HEAL]:   {nm:'Heilstation', svc:true, txt:'Die Heilstation summt leise vor sich hin.',
     use:'Stellt dein ganzes Team wieder her - kostenlos, in jedem Pokemon-Center. Sprich Schwester Joy an.'},
-  [T.LAMP]:   {nm:'Stehlampe', txt:'Warmes Licht faellt in den Raum.',
+  [T.LAMP]:   {nm:'Stehlampe', txt:'Warmes Licht fällt in den Raum.',
     use:'Beleuchtung. Nachts brennt in bewohnten Häusern Licht - daran erkennst du von draußen, wo jemand zu Hause ist.'},
-  [T.STATUE]: {nm:'Statue',    txt:'Eine Statue frueherer Arenaleiter.',
+  [T.STATUE]: {nm:'Statue',    txt:'Eine Statue früherer Arenaleiter.',
     use:'Ein Denkmal. In jeder Arena steht eine - sie zeigt, welchem Typ die Halle gewidmet ist.'},
-  [T.ANVIL]:  {nm:'Amboss',    txt:'Der Amboss ist von tausend Schlaegen blank poliert.',
+  [T.ANVIL]:  {nm:'Amboss',    txt:'Der Amboss ist von tausend Schlägen blank poliert.',
     use:'Das Werkzeug des Schmieds. Orden werden hier nicht gemacht - die gibt es nur in den Arenen.'},
   [T.SOFA]:   {nm:'Sofa',      txt:'Ein durchgesessenes Sofa - erstaunlich bequem.',
-    use:'Sitzgelegenheit für Gaeste. In Wohnhaeusern der uebliche Platz für lange Gespraeche.'},
+    use:'Sitzgelegenheit für Gäste. In Wohnhäusern der übliche Platz für lange Gespräche.'},
   [T.PCDESK]: {nm:'Terminal',  txt:'Auf dem Bildschirm laufen Messreihen durch.',
     use:'Forschungsrechner des Labors. Hier wertet der Professor aus, welche Arten wo vorkommen.'},
   [T.BARREL]: {nm:'Fass',      txt:'Ein Fass mit Beerensaft.',
-    use:'Vorratsbehaelter. Beerensaft ist der Grundstoff für Heiltränke.'},
+    use:'Vorratsbehälter. Beerensaft ist der Grundstoff für Heiltränke.'},
   [T.SIGNI]:  {nm:'Aushang',   txt:'Ein Aushang mit den Hausregeln.',
-    use:'Hausordnung. Kurz gefasst: keine Kämpfe in Innenraeumen. Draußen im hohen Gras darfst du.'},
+    use:'Hausordnung. Kurz gefasst: keine Kämpfe in Innenräumen. Draußen im hohen Gras darfst du.'},
 };
 function furnAt(t){ return FURN[t]; }
 function isFurn(t){ return FURN[t]!==undefined; }
@@ -3667,7 +3669,7 @@ const IEXTRA={
     lines:['Kind Nele: Mama sagt, ich darf noch nicht ins hohe Gras.','Wenn ich groß bin, werde ich Champion. Ganz sicher!']}],
   house2:[{name:'Großvater Ewald',shirt:'#7a6a50',hair:'#d8d8d0',
     hero:['Großvater Ewald: Setz dich, {H}, das Sofa hält noch.','Der Fluss ist zurück an seinem alten Platz. Ich höre ihn nachts wieder. Schön ist das.'],
-    lines:['Großvater Ewald: Setz dich ruhig, das Sofa hält noch.','Früher lief hier ein Fluss vorbei. Heute liegt er zwei Taler weiter. Merkwuerdige Zeiten.']}],
+    lines:['Großvater Ewald: Setz dich ruhig, das Sofa hält noch.','Früher lief hier ein Fluss vorbei. Heute liegt er zwei Taler weiter. Merkwürdige Zeiten.']}],
   home:[{name:'Nachbarskind Jonte',shirt:'#4090b0',hair:'#3a2a1a',
     hero:['Nachbarskind Jonte: {H} wohnt hier! Also, hat hier gewohnt. Fast dasselbe.',
       'Ich erzähle das in der Schule jeden Tag. Die glauben mir immer noch nicht.'],
@@ -3675,7 +3677,7 @@ const IEXTRA={
       'Gehst du wirklich auf Reisen? Dann nimm genug Bälle mit. Sagt jedenfalls mein Vater.']}],
   shop:[{name:'Kundin Berit',shirt:'#40a0a0',hair:'#503020',
     hero:['Kundin Berit: {H} steht neben mir an der Kasse. Das glaubt mir daheim keiner.','Die Preise sind gefallen, seit die Lieferungen wieder durchkommen.'],
-    lines:['Kundin Berit: Die Tränke sind hier guenstiger als im Basar.','Stell dich einfach an die Kasse, dann bedient sie dich.']}],
+    lines:['Kundin Berit: Die Tränke sind hier günstiger als im Basar.','Stell dich einfach an die Kasse, dann bedient sie dich.']}],
   center:[{name:'Trainer Kalle',shirt:'#3060c0',hair:'#202020',
     hero:['Trainer Kalle: {H}! Mein Team ist in einer Viertelstunde wieder fit.','Früher hat das Tage gedauert. Man merkt richtig, dass die Welt wieder mitspielt.'],
     lines:['Trainer Kalle: Mein Team liegt seit einer Stunde auf den Liegen.','Schwester Joy heilt kostenlos - stell dich einfach an die Theke.']}],
@@ -3683,7 +3685,7 @@ const IEXTRA={
     hero:['Schiedsrichter Mirko: {H}! Deinen Kampf hier zähle ich bis heute nach.','Regeln sind Regeln - aber für dich mache ich das Tor jederzeit auf.'],
     lines:['Schiedsrichter Mirko: Regeln sind Regeln: ein Kampf, keine Ausreden.','Der Meister wartet vorne. Viel Glück.']}],
   lab:[{name:'Assistentin Mira',shirt:'#e8e8f0',hair:'#603020',
-    hero:['Assistentin Mira: {H}! Die Terminals rechnen wieder normale Werte.','Der Professor redet immer noch lang. Aber jetzt redet er froehlich.'],
+    hero:['Assistentin Mira: {H}! Die Terminals rechnen wieder normale Werte.','Der Professor redet immer noch lang. Aber jetzt redet er fröhlich.'],
     lines:['Assistentin Mira: Nicht an die Terminals kommen, die rechnen noch.','Der Professor redet gern lange. Bring Zeit mit.']}],
   liga:[{name:'Ordner Damian',shirt:'#c0a040',hair:'#302020',
     hero:['Ordner Damian: {H}! Der Teppich gehört praktisch dir.','Ich zeige Besuchern die Halle und erzähle jedes Mal deine Geschichte.'],
@@ -6280,13 +6282,16 @@ const R3 = {
       this.tri([[cxp, 0.016, czp], p0, p1],
         [[cxp/3, czp/3], [p0[0]/3, p0[2]/3], [p1[0]/3, p1[2]/3]], [0,1,0], Lsa, 0);
     }
-    // Umlaufende Mauer mit Pfeilern - schliesst die Halle sichtbar ab
-    const wr = 15.5, wN = 30;
-    for (let i = 0; i < wN; i++) {
-      const a = i / wN * Math.PI * 2;
-      const bx = cxp + Math.cos(a)*wr, bz = czp + Math.sin(a)*wr*0.88;
-      const tall = (i % 5 === 0);
-      this.box(bx - 0.75, 0, bz - 0.75, bx + 0.75, tall ? 3.4 : 2.1, bz + 0.75, Lw, 1, tall ? 3 : 2);
+    // Zwei ineinandergesetzte Mauerringe mit Pfeilern. Sie stehen dicht und hoch
+    // genug, dass man aus der Halle heraus keinen Himmel mehr sieht.
+    for (const ring of [{r: 15.0, n: 46, h: 5.2}, {r: 17.4, n: 54, h: 7.0}]) {
+      for (let i = 0; i < ring.n; i++) {
+        const a = i / ring.n * Math.PI * 2;
+        const bx = cxp + Math.cos(a)*ring.r, bz = czp + Math.sin(a)*ring.r*0.9;
+        const tall = (i % 6 === 0);
+        const h = ring.h + (tall ? 1.6 : 0);
+        this.box(bx - 0.9, 0, bz - 0.9, bx + 0.9, h, bz + 0.9, Lw, 1, Math.round(h));
+      }
     }
     this.battle = this.upload(); this.battle.region = key;
     return this.battle;
@@ -6605,7 +6610,7 @@ const G = {
   showScreen(id) {
     const tr=document.getElementById('transition'); tr.classList.add('on');
     setTimeout(()=>{document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');
-    if(id==='scr-world'){this.mmC.style.display='block';document.getElementById('mob-ctrl').classList.add('vis');}
+    if(id==='scr-world'){this.mmC.style.display=(this.s&&this.s.inHouse)?'none':'block';document.getElementById('mob-ctrl').classList.add('vis');}
     else{this.mmC.style.display='none';document.getElementById('mob-ctrl').classList.remove('vis');const tl=document.getElementById('tracker-label');if(tl)tl.style.display='none';
       const fb=document.getElementById('furn-btn');if(fb)fb.classList.remove('on');}
     document.getElementById('gl3d').classList.toggle('on', this.d3 && R3.ok && (id==='scr-world'||id==='scr-battle'));
@@ -7287,7 +7292,7 @@ const G = {
       w.textContent=st.where?'– '+st.where:'';
     } else {
       document.getElementById('qb-icon').textContent='\u{1F4AC}';
-      t.textContent='Rede mit den Leuten in den Doerfern - sie haben Arbeit für dich';
+      t.textContent='Rede mit den Leuten in den Dörfern - sie haben Arbeit für dich';
       w.textContent='– in jedem Haus';
     }
   },
@@ -7706,7 +7711,7 @@ const G = {
     const foes=a.team.map(t=>this.foeFrom(t)).filter(Boolean);
     if(!foes.length)return;
     this.beginBattle(foes,{trainer:true,gymFlag:a.badge,gymRegion:region,gymSlot:slot,
-      intro:`${a.leader} eroeffnet den Arenakampf um den ${a.name.replace('arena','orden')}!`});
+      intro:`${a.leader} eröffnet den Arenakampf um den ${a.name.replace('arena','orden')}!`});
   },
 
   startChampionBattle(){
@@ -8050,7 +8055,7 @@ const G = {
   showEnding(){
     this.s.flags.legendaryHero=true;
     this.saveGame();
-    const stats=`Legendaere gefangen: 4/4<br>Orden: 12/12<br>Pokemon gefangen: ${this.s.caughtCount||0}<br>Kämpfe gewonnen: ${this.s.battlesWon}<br>PokeCash: ${this.s.cash||0}`;
+    const stats=`Legendäre gefangen: 4/4<br>Orden: 12/12<br>Pokemon gefangen: ${this.s.caughtCount||0}<br>Kämpfe gewonnen: ${this.s.battlesWon}<br>PokeCash: ${this.s.cash||0}`;
     document.getElementById('ending-text').innerHTML=
       `<b>Alle vier legendären Pokemon sind gefangen.</b><br><br>Die Regionen sind wieder sicher, und in jedem Dorf weiß man, wem das zu verdanken ist.`
       +`<br><br>Chronist Aldo trägt deinen Namen auf der Seite ein, die er jahrelang freigehalten hat.`
@@ -8187,13 +8192,14 @@ const G = {
       randomTrainers:[],outposts:[],arenaGate:null,inHouse:null,outdoorPos:null,
       dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
     this.genWorld('r1');
+    // Noch vor dem Einblenden ins Elternhaus wechseln und neben dem Bett aufwachen,
+    // damit der Spieler nicht erst kurz die Landkarte zu sehen bekommt.
+    this.enterHouse('home');
+    this.wakeInBed();
     this.showScreen('scr-world');
     setTimeout(()=>{
-      // Direkt ins Elternhaus setzen und den Spieler neben dem Bett aufwachen lassen.
-      this.enterHouse('home');
-      this.wakeInBed();
-      this.renderWorld();this.updateHud();this.saveGame();
-      setTimeout(()=>this.popup('Du wachst zu Hause auf.<div class="lvl-sub">Sprich mit deiner Mutter, bevor du aufbrichst</div>','caught-popup',4200),700);
+      this.renderWorld();this.updateHud();this.refreshFurnBtn();this.saveGame();
+      setTimeout(()=>this.popup('Du wachst zu Hause auf.<div class="lvl-sub">Sprich mit deiner Mutter, bevor du aufbrichst</div>','caught-popup',4200),500);
     },350);},
 
   // Den Spieler auf ein freies Feld direkt neben dem Bett stellen.
