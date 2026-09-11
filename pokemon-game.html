@@ -3114,15 +3114,22 @@ function currentStep(s){
     return {id:'arena_'+a.badge,text:`Gewinne den Orden der ${a.name} (${TYPE_DE[a.type]||a.type})`,
       where:`in ${a.town}`,house:'arena'+slot};
   }
-  // Alle drei Orden der Region stehen. In der Liga-Region wartet der Champion,
-  // sonst geht es per Zug weiter - sobald genug Kaempfe gewonnen sind.
-  if(s.region==='r4'){
-    if(!f.champion) return {id:'champion',text:`Fordere ${CHAMPION.name} heraus`,where:'in der Liga-Halle',house:'liga'};
-  } else if(!trainUnlocked(s)){
-    const left=Math.max(0,TRAIN_NEED_WINS-s.battlesWon);
-    return {id:'wins',text:`Gewinne noch ${left} Kämpfe für die Weiterfahrt`,where:'überall in der Region'};
-  } else if(!f.champion){
-    return {id:'travel',text:`Fahre mit dem Zug weiter`,where:'am Bahnhof',station:true};
+  // Alle drei Orden dieser Region stehen. Jetzt zaehlt, welche Region als
+  // naechstes dran ist - und ob die Bahn einen schon fahren laesst.
+  const offen=REGION_ORDER.find(r=>!regionComplete(r,s));
+  if(!f.champion){
+    if(s.region==='r4'&&!offen)
+      return {id:'champion',text:`Fordere ${CHAMPION.name} heraus`,where:'in der Liga-Halle',house:'liga'};
+    if(!trainUnlocked(s)){
+      const left=Math.max(0,TRAIN_NEED_WINS-s.battlesWon);
+      return {id:'wins',text:`Gewinne noch ${left===1?'einen Kampf':left+' Kämpfe'} für die Weiterfahrt`,
+        where:'überall in der Region'};
+    }
+    const ziel=offen||'r4';
+    return {id:'travel',
+      text:offen?`Fahre mit dem Zug ${REGION_TO[ziel]}`
+                :`Fahre in die Liga-Region und fordere ${CHAMPION.name} heraus`,
+      where:'am Bahnhof',station:true};
   }
 
   // Nach dem Liga-Sieg: in jeder Region ein legendaeres Pokemon fangen.
