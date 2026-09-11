@@ -68,9 +68,16 @@ body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
 .t-ground{background:#b09030;color:#fff}.t-flying{background:#7868b0;color:#fff}.t-psychic{background:#e04868;color:#fff}
 .t-rock{background:#a08838;color:#fff}.t-ice{background:#60b8b8;color:#1a1a2e}.t-dragon{background:#5028e0;color:#fff}
 .t-ghost{background:#504870;color:#fff}.t-fighting{background:#903028;color:#fff}
+.t-dark{background:#3a3040;color:#fff}
 
 #scr-world { flex-direction: column; }
 #scr-world.on { display: flex; }
+#questbar { display: flex; align-items: center; gap: 8px; padding: 5px 12px; padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); background: linear-gradient(180deg, rgba(40,24,8,0.92), rgba(24,14,4,0.75)); border-bottom: 1px solid #6a4a18; font-size: 0.86em; z-index: 10; width: 100%; flex-shrink: 0; }
+#qb-icon { flex-shrink: 0; filter: drop-shadow(0 0 4px rgba(255,120,60,0.9)); animation: qbpulse 1.6s ease-in-out infinite; }
+#qb-text { color: #ffd880; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#qb-where { color: #b09a70; font-size: 0.88em; flex-shrink: 0; white-space: nowrap; }
+@keyframes qbpulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.55; transform: scale(0.88); } }
+@media (max-width: 560px) { #qb-where { display: none; } }
 #hud { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); background: linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.6)); z-index: 10; width: 100%; min-height: 40px; flex-shrink: 0; border-bottom: 1px solid #1a2a3a; flex-wrap: wrap; row-gap: 4px; }
 .hud-l, .hud-r { display: flex; align-items: center; gap: 10px; font-size: 0.85em; flex-wrap: wrap; row-gap: 4px; }
 .hud-pokemon { display: flex; align-items: center; gap: 4px; }
@@ -288,6 +295,7 @@ body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
       <div class="hud-l"><span id="h-trainer"></span><span id="h-house" style="color:#ffcc00;font-size:0.8em;margin-left:6px;"></span><span id="h-clock" style="color:#9ab;font-size:0.8em;margin-left:8px;"></span><div class="hud-pokemon"><span id="h-poke"></span><div class="hud-hp-bar"><div class="hud-hp-fill" id="h-hp-fill"></div></div><span id="h-hp-text" style="font-size:0.75em;color:#889;margin-left:4px;"></span></div></div>
       <div class="hud-r"><span class="potion-ct" id="h-potions"></span><span id="h-cash" style="color:#ffd860;font-weight:600;"></span><span id="h-badges" style="color:#e0a020;font-weight:600;"></span><span id="h-battles" style="color:#556;font-size:0.8em;"></span><button class="hud-btn" onclick="G.openTeam()">Team</button><button class="hud-btn" onclick="G.openPotions()">Heilen</button><button class="hud-btn" onclick="G.openQuests()">Quests</button><button class="hud-btn" onclick="G.openDex()">Dex</button><button class="hud-btn" id="h-3d" onclick="G.toggle3D()" title="Ansicht umschalten">2D</button></div>
     </div>
+    <div id="questbar"><span id="qb-icon">\u{1F4CD}</span><span id="qb-text"></span><span id="qb-where"></span></div>
     <canvas id="world-canvas"></canvas>
   </div>
   <div id="scr-battle" class="scr">
@@ -307,6 +315,7 @@ body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
   <div class="overlay" id="ov-battle-item"><div class="ov-title">Heiltrank einsetzen</div><p id="battle-item-info" style="color:#889;margin-bottom:10px;font-size:0.85em;"></p><div class="ov-grid" id="battle-item-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeBattleItem()">Abbrechen</button></div></div>
   <div class="overlay" id="ov-quests"><div class="ov-title">Quests</div><div id="quest-list" style="width:100%;max-width:600px;"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeQuests()">Schliessen</button></div></div>
   <div class="overlay" id="ov-dex"><div class="ov-title">Pokedex</div><p id="dex-info" style="color:#889;margin-bottom:10px;font-size:0.9em;"></p><div class="ov-grid" id="dex-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeDex()">Schliessen</button></div></div>
+  <div class="overlay" id="ov-ball"><div class="ov-title">Welchen Ball?</div><p id="ball-info" style="color:#889;margin-bottom:10px;font-size:0.85em;"></p><div class="ov-grid" id="ball-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeBall()">Abbrechen</button></div></div>
   <div class="overlay" id="ov-starter-pick" style="z-index:120;"><div class="ov-title">Wahle dein Starter-Pokemon</div><p style="color:#889;margin-bottom:12px;font-size:0.9em;">Dein erster Partner im Abenteuer</p><div class="ov-grid" id="ov-starter-grid"></div><div id="ov-starter-detail" style="margin-top:10px;font-size:0.85em;color:#bbc;"></div></div>
   <div class="overlay" id="ov-shop">
     <div class="ov-title">Pokemon-Laden</div>
@@ -654,7 +663,7 @@ const Sprites = {
   TYPE_COLORS: {
     fire:'#e05a2a', water:'#3a8fe0', grass:'#4caf4c', electric:'#e0c020', normal:'#a8a878',
     poison:'#9a3a9a', ground:'#c8a848', flying:'#8878c8', psychic:'#e85878', rock:'#b8a048',
-    ice:'#70c8c8', dragon:'#6038e8', ghost:'#6858a0', fighting:'#a03028'
+    ice:'#70c8c8', dragon:'#6038e8', ghost:'#6858a0', fighting:'#a03028', dark:'#4a4058'
   },
 
   seedFromId(id) {
@@ -671,7 +680,7 @@ const Sprites = {
     water:'quad', ground:'quad', rock:'quad', ice:'quad',
     grass:'bulb', poison:'bulb',
     flying:'wing', dragon:'wing',
-    ghost:'wisp',
+    ghost:'wisp', dark:'quad',
   },
 
   creatureFace(ctx, s, hx, hy, hr, dark, tier, mood) {
@@ -2162,6 +2171,7 @@ const Au = {
     dragon:  {w:'sawtooth',vib:15,vd:0.07,noise:0.30,mul:0.64,rasp:0.55},
     ghost:   {w:'sine',    vib:42,vd:0.20,noise:0.16,mul:0.86,rasp:0.2},
     fighting:{w:'square',  vib:8, vd:0.05,noise:0.26,mul:0.88,rasp:0.4},
+    dark:    {w:'sawtooth',vib:19,vd:0.10,noise:0.22,mul:0.72,rasp:0.45},
   },
   noiseBuf:null,
   getNoise(){
@@ -2356,7 +2366,7 @@ Object.assign(Au,{
 });
 
 // ===================== DATA =====================
-const MOVES={fire:[{name:'Glut',pow:40,acc:100},{name:'Flammenwurf',pow:90,acc:100},{name:'Feuersturm',pow:110,acc:85}],water:[{name:'Blubber',pow:40,acc:100},{name:'Aquaknarre',pow:65,acc:100},{name:'Hydropumpe',pow:110,acc:80}],grass:[{name:'Rankenhieb',pow:45,acc:100},{name:'Rasierblatt',pow:55,acc:95},{name:'Solarstrahl',pow:120,acc:100}],electric:[{name:'Donnerschock',pow:40,acc:100},{name:'Donnerblitz',pow:90,acc:100},{name:'Donner',pow:110,acc:70}],normal:[{name:'Tackle',pow:40,acc:100},{name:'Bodyslam',pow:85,acc:100},{name:'Hyperstrahl',pow:150,acc:90}],poison:[{name:'Giftpuder',pow:35,acc:100},{name:'Gifthieb',pow:80,acc:100},{name:'Matschbombe',pow:90,acc:100}],ground:[{name:'Schlammbad',pow:55,acc:100},{name:'Erdbeben',pow:100,acc:100},{name:'Rissbildung',pow:120,acc:80}],flying:[{name:'Windstosse',pow:40,acc:100},{name:'Windschnitt',pow:60,acc:95},{name:'Orkan',pow:110,acc:70}],psychic:[{name:'Konfusion',pow:50,acc:100},{name:'Psychokinese',pow:90,acc:100},{name:'Psychostoss',pow:100,acc:100}],rock:[{name:'Steinwurf',pow:50,acc:90},{name:'Felswurf',pow:75,acc:90},{name:'Steinhagel',pow:100,acc:80}],ice:[{name:'Eispulver',pow:40,acc:100},{name:'Eisstrahl',pow:90,acc:100},{name:'Blizzard',pow:110,acc:70}],dragon:[{name:'Drachenwut',pow:40,acc:100},{name:'Drachenklaue',pow:80,acc:100},{name:'Draco Meteor',pow:130,acc:90}],ghost:[{name:'Nachtnebel',pow:40,acc:100},{name:'Spukball',pow:80,acc:100},{name:'Phantomkraft',pow:90,acc:100}],fighting:[{name:'Karateschlag',pow:50,acc:100},{name:'Kreuzhieb',pow:100,acc:80},{name:'Nahkampf',pow:120,acc:100}]};
+const MOVES={fire:[{name:'Glut',pow:40,acc:100},{name:'Flammenwurf',pow:90,acc:100},{name:'Feuersturm',pow:110,acc:85}],water:[{name:'Blubber',pow:40,acc:100},{name:'Aquaknarre',pow:65,acc:100},{name:'Hydropumpe',pow:110,acc:80}],grass:[{name:'Rankenhieb',pow:45,acc:100},{name:'Rasierblatt',pow:55,acc:95},{name:'Solarstrahl',pow:120,acc:100}],electric:[{name:'Donnerschock',pow:40,acc:100},{name:'Donnerblitz',pow:90,acc:100},{name:'Donner',pow:110,acc:70}],normal:[{name:'Tackle',pow:40,acc:100},{name:'Bodyslam',pow:85,acc:100},{name:'Hyperstrahl',pow:150,acc:90}],poison:[{name:'Giftpuder',pow:35,acc:100},{name:'Gifthieb',pow:80,acc:100},{name:'Matschbombe',pow:90,acc:100}],ground:[{name:'Schlammbad',pow:55,acc:100},{name:'Erdbeben',pow:100,acc:100},{name:'Rissbildung',pow:120,acc:80}],flying:[{name:'Windstosse',pow:40,acc:100},{name:'Windschnitt',pow:60,acc:95},{name:'Orkan',pow:110,acc:70}],psychic:[{name:'Konfusion',pow:50,acc:100},{name:'Psychokinese',pow:90,acc:100},{name:'Psychostoss',pow:100,acc:100}],rock:[{name:'Steinwurf',pow:50,acc:90},{name:'Felswurf',pow:75,acc:90},{name:'Steinhagel',pow:100,acc:80}],ice:[{name:'Eispulver',pow:40,acc:100},{name:'Eisstrahl',pow:90,acc:100},{name:'Blizzard',pow:110,acc:70}],dragon:[{name:'Drachenwut',pow:40,acc:100},{name:'Drachenklaue',pow:80,acc:100},{name:'Draco Meteor',pow:130,acc:90}],ghost:[{name:'Nachtnebel',pow:40,acc:100},{name:'Spukball',pow:80,acc:100},{name:'Phantomkraft',pow:90,acc:100}],fighting:[{name:'Karateschlag',pow:50,acc:100},{name:'Kreuzhieb',pow:100,acc:80},{name:'Nahkampf',pow:120,acc:100}],dark:[{name:'Biss',pow:45,acc:100},{name:'Nachthieb',pow:85,acc:100},{name:'Dunkelklaue',pow:105,acc:95}]};
 
 const DB=[
 {id:'glumanda',nm:'Glumanda',spr:'\u{1F525}',t:'fire',hp:39,atk:52,def:43,spd:65,tier:1,evo:{lv:16,to:'glutexo'}},
@@ -2396,12 +2406,97 @@ const DB=[
 {id:'digdri',nm:'Digdri',spr:'\u{1F573}️',t:'ground',hp:35,atk:100,def:50,spd:120,tier:2},
 {id:'relaxo',nm:'Relaxo',spr:'\u{1F634}',t:'normal',hp:160,atk:110,def:65,spd:30,tier:3},
 {id:'lapras',nm:'Lapras',spr:'\u{1F433}',t:'ice',hp:130,atk:85,def:80,spd:60,tier:3},
+// ----- Unlicht: die Arten, die ausschliesslich nachts unterwegs sind -----
+{id:'hunduster',nm:'Hunduster',spr:'\u{1F43A}',t:'dark',hp:45,atk:60,def:30,spd:65,tier:1,evo:{lv:10,to:'hundemon'}},
+{id:'hundemon',nm:'Hundemon',spr:'\u{1F43A}',t:'dark',hp:75,atk:90,def:50,spd:95,tier:2,evo:{lv:20,to:'hundeross'}},
+{id:'hundeross',nm:'Hundeross',spr:'\u{1F415}\u{200D}\u{1F9BA}',t:'dark',hp:95,atk:120,def:70,spd:110,tier:3},
+{id:'kramurx',nm:'Kramurx',spr:'\u{1F426}\u{200D}\u{2B1B}',t:'dark',hp:60,atk:85,def:42,spd:91,tier:1,evo:{lv:10,to:'kramshef'}},
+{id:'kramshef',nm:'Kramshef',spr:'\u{1F426}\u{200D}\u{2B1B}',t:'dark',hp:100,atk:125,def:52,spd:71,tier:3},
+{id:'zobiris',nm:'Zobiris',spr:'\u{1F48E}',t:'dark',hp:50,atk:75,def:75,spd:50,tier:1,evo:{lv:10,to:'schlurplek'}},
+{id:'schlurplek',nm:'Schlurplek',spr:'\u{1F311}',t:'dark',hp:70,atk:95,def:85,spd:60,tier:2},
+{id:'sniebel',nm:'Sniebel',spr:'\u{1F319}',t:'dark',hp:55,atk:95,def:55,spd:115,tier:2,evo:{lv:20,to:'snibunna'}},
+{id:'snibunna',nm:'Snibunna',spr:'\u{1F319}',t:'dark',hp:70,atk:120,def:65,spd:125,tier:3},
+{id:'nachtara',nm:'Nachtara',spr:'\u{1F31A}',t:'dark',hp:95,atk:65,def:110,spd:65,tier:3},
+// ----- Geist: die zweite Nachtfamilie -----
+{id:'traunfugil',nm:'Traunfugil',spr:'\u{1F47B}',t:'ghost',hp:44,atk:50,def:45,spd:65,tier:1,evo:{lv:10,to:'traunmagil'}},
+{id:'traunmagil',nm:'Traunmagil',spr:'\u{1F47B}',t:'ghost',hp:64,atk:70,def:65,spd:85,tier:2,evo:{lv:20,to:'traunstein'}},
+{id:'traunstein',nm:'Traunstein',spr:'\u{1F52E}',t:'ghost',hp:84,atk:95,def:85,spd:95,tier:3},
+{id:'makabaja',nm:'Makabaja',spr:'\u{1F480}',t:'ghost',hp:50,atk:40,def:95,spd:35,tier:1,evo:{lv:10,to:'knogga'}},
+{id:'knogga',nm:'Knogga',spr:'\u{1F480}',t:'ghost',hp:60,atk:80,def:110,spd:45,tier:2},
+// ----- Pflanze -----
+{id:'knofensa',nm:'Knofensa',spr:'\u{1F33B}',t:'grass',hp:50,atk:75,def:35,spd:40,tier:1,evo:{lv:10,to:'ultrigaria'}},
+{id:'ultrigaria',nm:'Ultrigaria',spr:'\u{1F33B}',t:'grass',hp:65,atk:90,def:50,spd:55,tier:2,evo:{lv:20,to:'sarzenia'}},
+{id:'sarzenia',nm:'Sarzenia',spr:'\u{1F33B}',t:'grass',hp:80,atk:105,def:65,spd:70,tier:3},
+{id:'tangela',nm:'Tangela',spr:'\u{1F33E}',t:'grass',hp:65,atk:55,def:115,spd:60,tier:2},
+// ----- Wasser -----
+{id:'sterndu',nm:'Sterndu',spr:'\u{2B50}',t:'water',hp:30,atk:45,def:55,spd:85,tier:1,evo:{lv:10,to:'starmie'}},
+{id:'starmie',nm:'Starmie',spr:'\u{1F31F}',t:'water',hp:60,atk:75,def:85,spd:115,tier:3},
+{id:'karpador',nm:'Karpador',spr:'\u{1F41F}',t:'water',hp:20,atk:10,def:55,spd:80,tier:1,evo:{lv:10,to:'garados'}},
+{id:'garados',nm:'Garados',spr:'\u{1F40D}',t:'water',hp:95,atk:125,def:79,spd:81,tier:3},
+// ----- Gift -----
+{id:'rettan',nm:'Rettan',spr:'\u{1F40D}',t:'poison',hp:35,atk:60,def:44,spd:55,tier:1,evo:{lv:10,to:'arbok'}},
+{id:'arbok',nm:'Arbok',spr:'\u{1F40D}',t:'poison',hp:60,atk:95,def:69,spd:80,tier:2},
+{id:'smogon',nm:'Smogon',spr:'\u{1F4A8}',t:'poison',hp:40,atk:65,def:95,spd:35,tier:1,evo:{lv:10,to:'smogmog'}},
+{id:'smogmog',nm:'Smogmog',spr:'\u{1F4A8}',t:'poison',hp:65,atk:90,def:120,spd:60,tier:2},
+{id:'giflor',nm:'Giflor',spr:'\u{1F33A}',t:'poison',hp:75,atk:80,def:85,spd:50,tier:3},
+// ----- Eis -----
+{id:'schneppke',nm:'Schneppke',spr:'\u{2744}',t:'ice',hp:50,atk:50,def:50,spd:50,tier:1,evo:{lv:10,to:'firnontor'}},
+{id:'firnontor',nm:'Firnontor',spr:'\u{2744}',t:'ice',hp:80,atk:80,def:80,spd:80,tier:2},
+{id:'botogel',nm:'Botogel',spr:'\u{1F427}',t:'ice',hp:90,atk:70,def:80,spd:55,tier:2},
+{id:'jugong',nm:'Jugong',spr:'\u{1F9AD}',t:'ice',hp:90,atk:70,def:80,spd:70,tier:3},
+// ----- Gestein -----
+{id:'onix',nm:'Onix',spr:'\u{1FAA8}',t:'rock',hp:35,atk:45,def:160,spd:70,tier:2},
+{id:'amonitas',nm:'Amonitas',spr:'\u{1F41A}',t:'rock',hp:35,atk:40,def:100,spd:35,tier:1,evo:{lv:10,to:'amoroso'}},
+{id:'amoroso',nm:'Amoroso',spr:'\u{1F41A}',t:'rock',hp:70,atk:60,def:125,spd:55,tier:2},
+{id:'rizeros',nm:'Rizeros',spr:'\u{1F98F}',t:'rock',hp:80,atk:110,def:116,spd:40,tier:3},
+// ----- Kampf -----
+{id:'menki',nm:'Menki',spr:'\u{1F412}',t:'fighting',hp:40,atk:80,def:35,spd:70,tier:1,evo:{lv:10,to:'rasaff'}},
+{id:'rasaff',nm:'Rasaff',spr:'\u{1F98D}',t:'fighting',hp:65,atk:105,def:60,spd:95,tier:2},
+{id:'kicklee',nm:'Kicklee',spr:'\u{1F9B5}',t:'fighting',hp:50,atk:120,def:53,spd:87,tier:3},
+{id:'machomei',nm:'Machomei',spr:'\u{1F4AA}',t:'fighting',hp:90,atk:130,def:80,spd:55,tier:3},
+// ----- Elektro -----
+{id:'voltobal',nm:'Voltobal',spr:'\u{1F534}',t:'electric',hp:40,atk:30,def:50,spd:100,tier:1,evo:{lv:10,to:'lektrobal'}},
+{id:'lektrobal',nm:'Lektrobal',spr:'\u{1F534}',t:'electric',hp:60,atk:50,def:70,spd:140,tier:2},
+{id:'magnetilo',nm:'Magnetilo',spr:'\u{1F9F2}',t:'electric',hp:25,atk:35,def:70,spd:45,tier:1,evo:{lv:10,to:'magneton'}},
+{id:'magneton',nm:'Magneton',spr:'\u{1F9F2}',t:'electric',hp:50,atk:60,def:95,spd:70,tier:2},
+{id:'elektek',nm:'Elektek',spr:'\u{26A1}',t:'electric',hp:65,atk:83,def:57,spd:105,tier:3},
+// ----- Psycho -----
+{id:'traumato',nm:'Traumato',spr:'\u{1F4A4}',t:'psychic',hp:60,atk:48,def:45,spd:42,tier:1,evo:{lv:10,to:'hypno'}},
+{id:'hypno',nm:'Hypno',spr:'\u{1F300}',t:'psychic',hp:85,atk:73,def:70,spd:67,tier:2},
+{id:'fluffeluff',nm:'Fluffeluff',spr:'\u{1FA84}',t:'psychic',hp:95,atk:70,def:73,spd:60,tier:3},
+// ----- Normal -----
+{id:'habitak',nm:'Habitak',spr:'\u{1F99C}',t:'normal',hp:40,atk:60,def:30,spd:70,tier:1,evo:{lv:10,to:'ibitak'}},
+{id:'ibitak',nm:'Ibitak',spr:'\u{1F99C}',t:'normal',hp:65,atk:90,def:65,spd:100,tier:2},
+{id:'chaneira',nm:'Chaneira',spr:'\u{1F95A}',t:'normal',hp:250,atk:5,def:5,spd:50,tier:3},
+{id:'kangama',nm:'Kangama',spr:'\u{1F998}',t:'normal',hp:105,atk:95,def:80,spd:90,tier:3},
+// ----- Boden / Flug -----
+{id:'sandan',nm:'Sandan',spr:'\u{1F994}',t:'ground',hp:50,atk:75,def:85,spd:40,tier:1,evo:{lv:10,to:'sandamer'}},
+{id:'sandamer',nm:'Sandamer',spr:'\u{1F994}',t:'ground',hp:75,atk:100,def:110,spd:65,tier:2},
+{id:'zubat',nm:'Zubat',spr:'\u{1F987}',t:'flying',hp:40,atk:45,def:35,spd:55,tier:1,evo:{lv:10,to:'golbat'}},
+{id:'golbat',nm:'Golbat',spr:'\u{1F987}',t:'flying',hp:75,atk:80,def:70,spd:90,tier:2},
 {id:'dragoran',nm:'Dragoran',spr:'\u{1F409}',t:'dragon',hp:91,atk:134,def:95,spd:80,tier:4},
 {id:'mewtwo',nm:'Mewtu',spr:'\u{1F47E}',t:'psychic',hp:106,atk:150,def:70,spd:130,tier:4},
 {id:'arktos',nm:'Arktos',spr:'❄️',t:'ice',hp:90,atk:85,def:100,spd:85,tier:4},
 {id:'zapdos',nm:'Zapdos',spr:'\u{1F329}️',t:'electric',hp:90,atk:90,def:85,spd:100,tier:4},
 {id:'lavados',nm:'Lavados',spr:'\u{1F985}',t:'fire',hp:90,atk:100,def:90,spd:90,tier:4},
 ];
+
+// ===================== BAELLE =====================
+// Baelle sind Verbrauchsmaterial: Professor Eichenholz gibt eine Grundausstattung
+// mit, alles weitere kauft man. Der Faktor multipliziert die Fangchance.
+const BALLS=[
+  {id:'poke',  nm:'Pokeball',    spr:'\u{26AA}', mult:1.0, price:25,
+   desc:'Der Standardball. Guenstig, zuverlaessig bei geschwaechten Pokemon.'},
+  {id:'super', nm:'Superball',   spr:'\u{1F535}', mult:1.6, price:70,
+   desc:'Deutlich fangstaerker als ein Pokeball. Fuer alles ab Stufe 2.'},
+  {id:'hyper', nm:'Hyperball',   spr:'\u{1F7E1}', mult:2.5, price:150,
+   desc:'Der staerkste kaeufliche Ball. Gedacht fuer seltene, starke Arten.'},
+  {id:'master',nm:'Meisterball', spr:'\u{1F7E3}', mult:999, price:0,
+   desc:'Faengt jedes Pokemon ohne Fehlschlag. Es gibt nur sehr wenige davon.'},
+];
+function ballById(id){ return BALLS.find(b=>b.id===id)||BALLS[0]; }
+function ballCount(s,id){ return (s&&s.balls&&s.balls[id])||0; }
+function totalBalls(s){ return BALLS.reduce((n,b)=>n+ballCount(s,b.id),0); }
 
 const TRAINERS=[
 {id:'ash',nm:'Ash',spr:'\u{1F9D1}',hair:'#3a2a1a'},
@@ -2413,39 +2508,33 @@ const TRAINERS=[
 ];
 
 // ===================== STORY / QUESTS / NPCs =====================
+// Nebenaufgaben der Bewohner. Sie sind alle mit normalem Spiel erfuellbar -
+// nichts davon verlangt ein legendaeres Pokemon oder sonst etwas Unerreichbares.
+// Der rote Faden laeuft nicht hierueber, sondern ueber currentStep().
 const QUESTS={
-  q0:{id:'q0',giverName:'Schicksal',name:'Hauptquest: Die Welt reparieren',
-    desc:'In der Nacht, in der deine Reise begann, riss die Welt auf. Drei Ankersteine halten die Nahte notdurftig zu - je einer in einer Arena. Gewinne ihr Vertrauen, dann bezwinge den Champion an der grossen Naht, und die Welt wird wieder ganz.',
-    check:s=>!!(s.flags.badgeR1&&s.flags.badgeR2&&s.flags.badgeR3&&s.flags.champion),
-    progress:s=>{const b=(s.flags.badgeR1?1:0)+(s.flags.badgeR2?1:0)+(s.flags.badgeR3?1:0);return `${b}/3 Orden, Champion: ${s.flags.champion?'besiegt':'noch offen'}`;},
-    reward:{}},
   q1:{id:'q1',giverName:'Professor Eichenholz',name:'Erste Schritte',desc:'Gewinne 3 Kampfe gegen wilde Pokemon.',
-    check:s=>s.battlesWon>=3,progress:s=>Math.min(s.battlesWon,3)+'/3',reward:{potions:3,cash:50}},
+    check:s=>s.battlesWon>=3,progress:s=>Math.min(s.battlesWon,3)+'/3',reward:{potions:3,cash:120,balls:{poke:10}}},
   q2:{id:'q2',giverName:'Anwohnerin Lisa',name:'Pokemon-Sammler',desc:'Fange 3 wilde Pokemon.',
-    check:s=>(s.caughtCount||0)>=3,progress:s=>Math.min(s.caughtCount||0,3)+'/3',reward:{potions:2,cash:60}},
+    check:s=>(s.caughtCount||0)>=3,progress:s=>Math.min(s.caughtCount||0,3)+'/3',reward:{potions:2,cash:150,balls:{poke:10}}},
   q3:{id:'q3',giverName:'Anwohner Tom',name:'Beweise deine Starke',desc:'Bringe ein Pokemon auf Level 15.',
-    check:s=>s.team.some(p=>p.lv>=15),progress:s=>Math.max(...s.team.map(p=>p.lv))+'/15',reward:{potions:5,cash:100}},
+    check:s=>s.team.some(p=>p.lv>=15),progress:s=>(s.team.length?Math.max(...s.team.map(p=>p.lv)):0)+'/15',reward:{potions:5,cash:220,balls:{super:3}}},
   q4:{id:'q4',giverName:'Rivale Gary',name:'Trainerherausforderung',desc:'Besiege beide Trainer im Dorf.',
-    check:s=>!!(s.flags.t1Beaten&&s.flags.t2Beaten),progress:s=>((s.flags.t1Beaten?1:0)+(s.flags.t2Beaten?1:0))+'/2',reward:{potions:4,cash:150}},
-  q5:{id:'q5',giverName:'Schaffner Aldric',name:'Die Fahrkarte',desc:'Gewinne insgesamt 10 Kampfe, um die Zugfahrkarte zur Schattenregion zu erhalten.',
-    check:s=>s.battlesWon>=10,progress:s=>Math.min(s.battlesWon,10)+'/10',reward:{potions:3,cash:100,key:true}},
-  q6:{id:'q6',giverName:'Alteste Elana',name:'Starke der Schattenregion',desc:'Fange ein Pokemon der Stufe 3 oder hoher.',
-    check:s=>s.team.some(p=>p.tier>=3),progress:s=>s.team.some(p=>p.tier>=3)?'1/1':'0/1',reward:{potions:5,cash:150}},
-  q7:{id:'q7',giverName:'Reisender Kilian',name:'Der Wanderer',desc:'Gewinne insgesamt 25 Kampfe.',
-    check:s=>s.battlesWon>=25,progress:s=>Math.min(s.battlesWon,25)+'/25',reward:{potions:5,cash:200}},
+    check:s=>!!(s.flags.t1Beaten&&s.flags.t2Beaten),progress:s=>((s.flags.t1Beaten?1:0)+(s.flags.t2Beaten?1:0))+'/2',reward:{potions:4,cash:300,balls:{super:5}}},
+  q5:{id:'q5',giverName:'Schaffner Aldric',name:'Fahrgastordnung',desc:'Gewinne 20 Kampfe - so viel verlangt die Bahn von Reisenden.',
+    check:s=>s.battlesWon>=20,progress:s=>Math.min(s.battlesWon,20)+'/20',reward:{potions:3,cash:250}},
+  q6:{id:'q6',giverName:'Alteste Elana',name:'Starke der Schattenregion',desc:'Fange ein Pokemon der Stufe 3.',
+    check:s=>s.team.some(p=>p.tier>=3),progress:s=>s.team.some(p=>p.tier>=3)?'1/1':'0/1',reward:{potions:5,cash:400,balls:{hyper:3}}},
+  q7:{id:'q7',giverName:'Reisender Kilian',name:'Der Wanderer',desc:'Gewinne insgesamt 40 Kampfe.',
+    check:s=>s.battlesWon>=40,progress:s=>Math.min(s.battlesWon,40)+'/40',reward:{potions:5,cash:450}},
   q8:{id:'q8',giverName:'Krauterfrau Toni',name:'Wahre Meisterschaft',desc:'Bringe ein Pokemon auf Level 25.',
-    check:s=>s.team.some(p=>p.lv>=25),progress:s=>Math.max(...s.team.map(p=>p.lv))+'/25',reward:{potions:6,cash:250}},
-  q9:{id:'q9',giverName:'Hueterin Frigga',name:'Bezwinge die Kalte',desc:'Gewinne insgesamt 35 Kampfe.',
-    check:s=>s.battlesWon>=35,progress:s=>Math.min(s.battlesWon,35)+'/35',reward:{potions:6,cash:250}},
-  q10:{id:'q10',giverName:'Kristallschurfer Finn',name:'Eisiger Meister',desc:'Bringe ein Pokemon auf Level 30.',
-    check:s=>s.team.some(p=>p.lv>=30),progress:s=>Math.max(...s.team.map(p=>p.lv))+'/30',reward:{potions:7,cash:300}},
-  q11:{id:'q11',giverName:'Schneejagerin Runa',name:'Seltene Beute',desc:'Fange ein legendaeres Pokemon.',
-    check:s=>s.team.some(p=>p.tier>=4),progress:s=>s.team.some(p=>p.tier>=4)?'1/1':'0/1',reward:{potions:8,cash:350}},
-  qL:{id:'qL',giverName:'Professor Eichenholz',name:'Legendaere Bedrohung',
-    desc:'Legendaere Pokemon bedrohen die vier Regionen! Reise in jede Region, finde das legendaere Pokemon und fange es, um die Menschen zu retten.',
-    check:s=>!!(s.flags.legendR1&&s.flags.legendR2&&s.flags.legendR3&&s.flags.legendR4),
-    progress:s=>{const c=(s.flags.legendR1?1:0)+(s.flags.legendR2?1:0)+(s.flags.legendR3?1:0)+(s.flags.legendR4?1:0);return c+'/4 Legendaere bezwungen';},
-    reward:{}},
+    check:s=>s.team.some(p=>p.lv>=25),progress:s=>(s.team.length?Math.max(...s.team.map(p=>p.lv)):0)+'/25',reward:{potions:6,cash:500,balls:{super:5}}},
+  q9:{id:'q9',giverName:'Hueterin Frigga',name:'Bezwinge die Kalte',desc:'Gewinne insgesamt 60 Kampfe.',
+    check:s=>s.battlesWon>=60,progress:s=>Math.min(s.battlesWon,60)+'/60',reward:{potions:6,cash:600}},
+  q10:{id:'q10',giverName:'Kristallschurfer Finn',name:'Eisiger Meister',desc:'Bringe ein Pokemon auf Level 35.',
+    check:s=>s.team.some(p=>p.lv>=35),progress:s=>(s.team.length?Math.max(...s.team.map(p=>p.lv)):0)+'/35',reward:{potions:7,cash:700,balls:{hyper:4}}},
+  q11:{id:'q11',giverName:'Schneejagerin Runa',name:'Vollstandige Zahlung',desc:'Trage 15 verschiedene Arten im Pokedex als gefangen ein.',
+    check:s=>Object.values(s.dex||{}).filter(v=>v==='caught').length>=15,
+    progress:s=>Math.min(Object.values(s.dex||{}).filter(v=>v==='caught').length,15)+'/15',reward:{potions:8,cash:800,balls:{hyper:5}}},
 };
 function questStatus(qid,s){
   const st=(s.quests||{})[qid];
@@ -2461,18 +2550,22 @@ function completeQuest(qid){
   const parts=[];
   if(q.reward.potions){G.s.potions+=q.reward.potions;parts.push(`+${q.reward.potions} Heiltranke`);}
   if(q.reward.cash){G.s.cash=(G.s.cash||0)+q.reward.cash;parts.push(`+${q.reward.cash} PokeCash`);}
-  if(q.reward.key){G.s.flags.hasKey=true;parts.push('Schlussel erhalten!');}
+  if(q.reward.balls){G.s.balls=G.s.balls||{};
+    Object.keys(q.reward.balls).forEach(k=>{G.s.balls[k]=(G.s.balls[k]||0)+q.reward.balls[k];
+      parts.push(`+${q.reward.balls[k]} ${ballById(k).nm}`);});}
   G.updateHud();G.saveGame();
   G.popup(`Quest abgeschlossen: ${q.name}!<div class="lvl-sub">${parts.join(', ')}</div>`,'caught-popup',2600);
 }
 
 // ===== Nach dem Sieg: die geflickte Welt =====
-// Sobald die Championin bezwungen ist, sind die Nahte zu und das Land heil. Ab da
-// spricht jeder den Spieler als Held bzw. Heldin an und erzahlt, was seither wieder
-// gut ist - kein Wort mehr uber Risse, Gefahr und Verluste. Wer noch eine Aufgabe zu
-// vergeben hat, fragt jetzt freundlich ('ask') statt duster.
-const LEGEND_REGIONS={r1:'lavados',r2:'zapdos',r3:'arktos',r4:'dragoran'};
-const LEGEND_BOSS='mewtwo';
+// Nach dem Liga-Sieg ist der Spieler Championin bzw. Champion - aber noch nicht
+// Held. Erst wenn alle vier legendaeren Pokemon gefangen sind, aendert sich, wie
+// die Leute einen ansprechen. Wer noch eine Aufgabe zu vergeben hat, fragt dann
+// freundlich ('ask') statt sachlich.
+// Je Region wacht genau ein legendaeres Pokemon. Sie kommen ausschliesslich hier
+// vor - kein Trainer fuehrt eines, und im hohen Gras taucht keines auf.
+const LEGEND_REGIONS={r1:'lavados',r2:'zapdos',r3:'arktos',r4:'mewtwo'};
+const LEGEND_LV={r1:66,r2:68,r3:70,r4:74};
 function isPostChampion(s){ return !!(s&&s.flags&&s.flags.champion); }
 function isLegendHunt(s){ return isPostChampion(s)&&!isHero(s); }
 function allLegendsCaught(s){ return !!(s&&s.flags&&s.flags.legendR1&&s.flags.legendR2&&s.flags.legendR3&&s.flags.legendR4); }
@@ -2487,145 +2580,163 @@ function hero(id,kind){ const H=HEROTXT[id]; if(!H)return null; const l=H[kind||
 // Laufende Aufgaben bleiben nach dem Titel spielbar: Fortschritt und Belohnung
 // werden weiter angesagt, nur mit der Held-Begruessung davor.
 function heroSay(s,id,lines){ const h=isHero(s)&&hero(id); return h?[h[0]].concat(lines):lines; }
+// Nach dem Fang aller vier legendaeren Pokemon aendert sich der Ton: Die Leute
+// sprechen einen als Held bzw. Heldin an. Wer noch eine Aufgabe offen hat, fragt
+// jetzt freundlich ('ask'), statt sie sachlich zu stellen.
 const HEROTXT={
+  mother:{say:['Mutter Ida: Da ist ja {H}. Setz dich, ich mache dir was zu essen.',
+    'Vier legendaere Pokemon. Und ich dachte, du wuerdest dich am Bahnhof verlaufen.']},
   professor:{say:['Professor Eichenholz: {H}! Komm rein, der Tee ist frisch.',
-    'Der Himmel steht seit Wochen ganz und still. Meine Instrumente haben nichts mehr zu messen - das schonste Ergebnis meiner Laufbahn.',
-    'Die Arten, die fehlten, kommen zuruck. Eine nach der anderen.']},
-  rival:{say:['Rivale Gary: Da kommt {H} hochstpersonlich.',
-    'Ich erzahle inzwischen jedem, dass wir zusammen aufgewachsen sind. Funktioniert erstaunlich gut.',
+    'Vier legendaere Arten, alle im Pokedex, alle lebend gefangen. Das ist Forschungsmaterial fuer zehn Jahre.',
+    'Und du hast sie mir einfach so mitgebracht.']},
+  rival:{say:['Rivale Gary: Da kommt {H} hoechstpersoenlich.',
+    'Ich erzaehle inzwischen jedem, dass wir zusammen aufgewachsen sind. Funktioniert erstaunlich gut.',
     'Und irgendwann gewinne ich. Irgendwann.']},
-  lisa:{done:['Anwohnerin Lisa: Drei Eintrage, {H}. Danke - und nimm das hier.','Wasser schlagt Feuer. Das galt immer und gilt weiter.'],
+  lisa:{done:['Anwohnerin Lisa: Drei Eintraege, {H}. Danke - und nimm das hier.','Wasser schlaegt Feuer. Das gilt weiter, auch fuer Heldinnen und Helden.'],
     say:['Anwohnerin Lisa: {H}! Mein Buch ist voll, und diesmal mit guten Nachrichten.',
-      'Drei Arten, die jahrelang fehlten, sind wieder da. Ich habe sie heute Morgen selbst gesehen.'],
+      'Seit die legendaeren Pokemon gefangen sind, traut sich hier wieder jeder ins hohe Gras.'],
     ask:['Anwohnerin Lisa: {H}, hast du kurz Zeit?',
-      'Ich fuhre wieder Buch, jetzt wo es sich lohnt. Fang mir drei wilde Pokemon, dann ist mein Eintrag komplett.']},
+      'Fang mir drei wilde Pokemon, dann ist mein Eintrag endlich komplett.']},
   tom:{done:['Anwohner Tom: Level 15, {H}. Sauber gemacht.','Der Rat bleibt: Lauf nie mit nur einem Pokemon los. Nie.'],
-    say:['Anwohner Tom: {H}! Die Strasse nach Osten ist wieder eine Strasse und kein Abenteuer.',
-      'Meine Kinder durfen zum ersten Mal allein zum Fluss. Dafur danke ich dir.'],
+    say:['Anwohner Tom: {H}! Meine Kinder duerfen zum ersten Mal allein zum Fluss.',
+      'Vorher stand da ein Lavados. Man versteht meine Zurueckhaltung.'],
     ask:['Anwohner Tom: {H}, mach mir eine Freude.',
-      'Bring eines deiner Pokemon auf Level 15. Ich will sehen, wie Training aussieht, wenn niemand mehr um sein Leben trainiert.']},
-  mara:{say:['Wanderin Mara: {H}! Ich bin heute bis zum Horizont gelaufen, und er war den ganzen Weg da.',
-    'Fruher hat er einfach aufgehort. Jetzt geht er weiter, so weit ich schaue.']},
-  elana:{done:['Alteste Elana: Stark genug, {H}. Wie erwartet.','Nimm das hier - und geh, wohin du willst. Alles steht dir offen.'],
-    say:['Alteste Elana: {H}. Sieh dich um - das hier ist Mittag.',
-      'Die Kinder haben heute zum ersten Mal ihren eigenen Schatten gesehen. Sie haben gelacht wie verruckt.'],
-    ask:['Alteste Elana: {H}, unsere Region atmet wieder. Eine Bitte habe ich trotzdem.',
-      'Fang ein Pokemon der Stufe 3 oder hoher - ich will wissen, was hier im neuen Licht heranwachst.']},
-  kilian:{done:['Reisender Kilian: 25 Siege, {H}. Verdient.','Am alten Rand steht heute Gras. Ich war da, ich habe es angefasst.'],
-    say:['Reisender Kilian: {H}! Ich war am alten Rand. Da ist kein Rand mehr.',
-      'Zwei Regionen sind zuruck. Ich kartiere Strassen, die es letzte Woche noch nicht gab.'],
-    ask:['Reisender Kilian: {H}, mir fehlen Notizen fur die neue Karte.',
-      'Gewinne 25 Kampfe unterwegs, dann trage ich deine Route mit ein.']},
+      'Bring eines deiner Pokemon auf Level 15. Ich will sehen, wie Training aussieht, wenn es jemand richtig macht.']},
+  mara:{say:['Wanderin Mara: {H}! Ich laufe wieder nachts, und zwar aus Vergnuegen.',
+    'Geist-Pokemon sind mir dabei lieber als das, was vorher unterwegs war.']},
+  elana:{done:['Alteste Elana: Stark genug, {H}. Wie erwartet.','Nimm das hier - und geh, wohin du willst.'],
+    say:['Alteste Elana: {H}. Die Region ist ruhig, seit du hier warst.',
+      'Zapdos hat drei Wochen ueber dem Talkessel gestanden. Jetzt steht dort wieder nur Himmel.'],
+    ask:['Alteste Elana: {H}, eine Bitte habe ich trotzdem.',
+      'Fang ein Pokemon der Stufe 3 - ich will wissen, was hier heranwaechst.']},
+  kilian:{done:['Reisender Kilian: 40 Siege, {H}. Verdient.','Und die Bahn laesst dich inzwischen sogar ohne Diskussion durch.'],
+    say:['Reisender Kilian: {H}! Ich kartiere wieder, und diesmal komme ich ueberall durch.',
+      'Vier Regionen, zwoelf Arenen, alles begehbar. Das erste Mal seit Jahren.'],
+    ask:['Reisender Kilian: {H}, mir fehlen Notizen fuer die neue Karte.',
+      'Gewinne 40 Kampfe unterwegs, dann trage ich deine Route mit ein.']},
   toni:{done:['Krauterfrau Toni: Level 25, {H}. Das schafft kaum jemand.','Hier - mein bestes Rezept. Viel Freude damit.'],
-    say:['Krauterfrau Toni: {H}! Meine Wurzeln wachsen wieder nach unten. Alle.',
-      'Das Futter schmeckt seither besser. Frag nicht warum, ich weiss es auch nicht.'],
-    ask:['Krauterfrau Toni: {H}, hilf mir bei einem Versuch.',
-      'Bring ein Pokemon auf Level 25 - ich will wissen, wie weit man kommt, wenn einen nichts mehr aufhalt.']},
-  silas:{say:['Handler Silas: {H}. Bar zahlen, keine Fragen - aber dein Name steht inzwischen in meinen Buchern.',
-    'Mein Sortiment wachst zum ersten Mal seit Jahren. Schau es dir an.']},
-  vala:{say:['Geisterseherin Vala: Der Stuhl links ist frei, {H}. Sie sind alle gegangen.',
-    'Ganz ruhig, ohne Groll. Sie haben nur auf die offene Tur gewartet - du hast sie aufgemacht.']},
+    say:['Krauterfrau Toni: {H}! Meine Krauter stehen so gut wie nie.',
+      'Kein Feuervogel mehr ueber den Beeten. Das hilft ungemein.']},
+  silas:{say:['Handler Silas: {H}. Bar zahlen, keine Fragen - aber dein Name steht inzwischen in meinen Buechern.',
+    'Mein Sortiment waechst zum ersten Mal seit Jahren. Schau es dir an.']},
+  vala:{say:['Geisterseherin Vala: Setz dich ruhig, {H}. Der Stuhl links ist heute frei.',
+    'Die Geister hier sind harmlos. Das war das andere, was ueber der Region hing - und das hast du eingefangen.']},
   boris:{say:['Schmied Boris: {H}! Die Esse brennt Tag und Nacht, wie bei meinem Grossvater.',
-    'Ich schmiede wieder fur Reisende statt fur Uberlebende. Das ist ein Unterschied.']},
-  aldric:{done:['Schaffner Aldric: Zehn Siege, {H}. Hier ist deine Karte.','Und komm zuruck. Ich mag es, wenn die Zahlen stimmen.'],
-    say:['Schaffner Aldric: {H} fahrt bei mir umsonst. Das ist keine Diskussion.',
-      'Die Zahlen stimmen zum ersten Mal: genauso viele Ruckkehrer wie Abfahrten.'],
-    ask:['Schaffner Aldric: {H}, Vorschrift bleibt Vorschrift - aber ich mach es kurz.',
-      'Zehn gewonnene Kampfe, dann ist deine Karte ausgestellt.']},
-  elrik:{say:['Schaffner Elrik: {H} an Bord! Der Zug ins Heimatdorf steht bereit. Einsteigen?']},
+    'Ich schmiede wieder fuer Reisende. Das ist ein Unterschied.']},
+  aldric:{done:['Schaffner Aldric: Alles erfuellt, {H}. Hier, das ist fuer die Wartezeit.','Und komm zurueck. Ich mag es, wenn die Zahlen stimmen.'],
+    say:['Schaffner Aldric: {H} faehrt bei mir umsonst. Das ist keine Diskussion.',
+      'Die Zahlen stimmen zum ersten Mal: genauso viele Rueckkehrer wie Abfahrten.'],
+    ask:['Schaffner Aldric: {H}, Vorschrift bleibt Vorschrift - aber ich mache es kurz.',
+      'Zwanzig gewonnene Kampfe, dann bekommst du meinen Stempel.']},
+  elrik:{say:['Schaffner Elrik: {H} an Bord! Der Zug steht bereit. Einsteigen?']},
   yara:{say:['Schaffnerin Yara: {H}! Die Strecke ist offen, glatt und langweilig. Herrlich.',
     'Weiter in die Frostregion?']},
-  juno:{say:['Schaffner Juno: Schon dich zu sehen, {H}. Zuruck in die Schattenregion?']},
-  frigga:{done:['Hueterin Frigga: 35 Siege, {H}. Du gehorst hierher, ob du willst oder nicht.','Hier, nimm das.'],
-    say:['Hueterin Frigga: {H}! Der Rauch uber dem See zieht. Nach Osten, seit heute Morgen.',
-      'Ich habe vierzig Jahre auf diesen Anblick gewartet.'],
+  juno:{say:['Schaffner Juno: Schoen dich zu sehen, {H}. Zurueck in die Schattenregion?']},
+  frigga:{done:['Hueterin Frigga: 60 Siege, {H}. Du gehoerst hierher, ob du willst oder nicht.','Hier, nimm das.'],
+    say:['Hueterin Frigga: {H}! Der See ist wieder ein See und kein Sperrgebiet.',
+      'Arktos hat vier Wochen darauf gesessen. Ich habe vierzig Jahre hier verbracht und so etwas nie gesehen.'],
     ask:['Hueterin Frigga: {H}, eine Bitte habe ich noch.',
-      '35 gewonnene Kampfe - dann gehorst du auch offiziell hierher.']},
-  finn:{done:['Kristallschurfer Finn: Level 30, {H}. Der Fund gehort dir.','Halt ihn ins Licht - der Kristall ist klar geworden.'],
-    say:['Kristallschurfer Finn: {H}! Das Eis taut, und darunter liegt alles Mogliche.',
-      'Heute war ein Blatt dabei. Frisch. Diesmal aus diesem Fruhling.'],
+      '60 gewonnene Kampfe - dann gehoerst du auch offiziell hierher.']},
+  finn:{done:['Kristallschurfer Finn: Level 35, {H}. Der Fund gehoert dir.','Halt ihn ins Licht - der Kristall ist klar geworden.'],
+    say:['Kristallschurfer Finn: {H}! Ich komme wieder in jeden Stollen, ohne nachzudenken.',
+      'Heute war ein Blatt dabei. Frisch. Diesmal aus diesem Fruehling.'],
     ask:['Kristallschurfer Finn: {H}, komm mit runter in den Stollen.',
-      'Bring ein Pokemon auf Level 30 mit, dann zeig ich dir meinen besten Fund.']},
-  runa:{done:['Schneejagerin Runa: Ein Stufe-4-Pokemon, {H}. Freiwillig an deiner Seite.','Dann stimmt alles, was sie uber dich erzahlen. Nimm das hier.'],
-    say:['Schneejagerin Runa: {H}. Ich zahle immer noch - aber jetzt zahle ich Neugeborene.',
-      'Die Stufe-4-Pokemon bleiben. Sie gehoren einfach dazu.'],
+      'Bring ein Pokemon auf Level 35 mit, dann zeige ich dir meinen besten Fund.']},
+  runa:{done:['Schneejagerin Runa: Fuenfzehn Arten, {H}. Sauber gezaehlt.','Dann stimmt alles, was sie ueber dich erzaehlen. Nimm das hier.'],
+    say:['Schneejagerin Runa: {H}. Ich zaehle immer noch - aber jetzt zaehle ich Neugeborene.',
+      'Meine Liste wird jeden Monat laenger statt kuerzer.'],
     ask:['Schneejagerin Runa: {H}, tu mir den Gefallen.',
-      'Fang ein Stufe-4-Pokemon. Ich will endlich eines in Ruhe zeichnen.']},
-  bjorn:{say:['Alter Fischer Bjorn: {H}! Es beisst wieder. Seit heute fruh, ohne Unterbrechung.',
-    'Vierzig Jahre gewartet - und dann kommt so ein junger Mensch daher und macht es einfach.']},
+      'Trag fuenfzehn verschiedene Arten als gefangen ein. Dann ist meine Zaehlung vollstaendig.']},
+  bjorn:{say:['Alter Fischer Bjorn: {H}! Es beisst wieder. Seit heute frueh, ohne Unterbrechung.',
+    'Vierzig Jahre am selben See - und dann kommt so ein junger Mensch daher.']},
   nieve:{say:['Handlerin Nieve: {H}! Es ist immer noch kalt, aber es ist ein normaler Winter.',
     'Und normale Winter gehen vorbei. Was darf es sein?']},
   nora:{say:['Schaffnerin Nora: {H}. Ich fahre die Strecke inzwischen mit offenen Augen.',
     'Zur Liga? Steig ein.']},
-  otto:{say:['Schaffner Otto: {H} an Bord. Zuruck in die Frostregion?']},
-  arena1:{say:['Meister Boreas: {H}. Elf Generationen haben diesen Stein gehutet - und du hast ihn gebraucht.',
-    'Komm jederzeit wieder. Die Halle steht dir offen.']},
-  arena2:{say:['Meister Voss: {H}. Du warst der Funfzehnte, und du warst der Erste.',
-    'Es ist hell hier drin. Ich muss mich noch daran gewohnen.']},
-  arena3:{say:['Meisterin Elsa: {H}. Wir sind alle auf einmal alter geworden, wie abgestimmt.',
-    'Es war jede Falte wert. Der Schnee schmilzt.']},
+  otto:{say:['Schaffner Otto: {H} an Bord. Zurueck in die Frostregion?']},
   gateR1:{say:['Torwache Brunn: {H}! Das Tor steht offen, das Labyrinth ist nur noch ein Garten.',
-    'Ich fuhre jetzt Besucher hindurch. Verlaufen tue ich mich immer noch.']},
-  gateR2:{say:['Torwache Skarn: {H}. Ich sehe das Gelande zum ersten Mal richtig.',
+    'Ich fuehre jetzt Besucher hindurch. Verlaufen tue ich mich immer noch.']},
+  gateR2:{say:['Torwache Skarn: {H}. Ich sehe das Gelaende zum ersten Mal in Ruhe.',
     'Es ist kleiner, als ich dachte. Viel kleiner.']},
   gateR3:{say:['Torwache Eisla: {H}. Der Wind schneidet nicht mehr, er weht nur noch.',
     'Geh ruhig langsam durch. Es holt dich nichts mehr ein.']},
-  aldo:{say:['Chronist Aldo: {H}! Die Seite ist gefullt. Ich habe sie zwolf Jahre freigehalten.',
-    'Dein Name steht jetzt ganz oben - und darunter ist wieder Platz fur andere.']},
-  perle:{say:['Handlerin Perle: {H}! Die Handelskette endet nicht mehr hier, sie geht weiter.',
-    'Ich bekomme Nachschub aus Regionen, die es letztes Jahr nicht gab.']},
-  mia:{say:['Handlerin Mia: {H}! Fur dich immer der beste Preis.',
-    'Seit die Strassen wieder halten, kommt jede Woche Ware an. Schau dich um!']},
+  gateR4:{say:['Torwache Aurel: {H}. Fuer dich ist dieses Tor ohnehin nur noch Dekoration.',
+    'Geh durch, wann immer du willst.']},
+  aldo:{say:['Chronist Aldo: {H}! Die Seite ist gefuellt.',
+    'Dein Name steht jetzt ganz oben - und darunter ist wieder Platz fuer andere.']},
+  perle:{say:['Handlerin Perle: {H}! Fuer dich lege ich alles zurueck, was hereinkommt.',
+    'Hyperbaelle inklusive. Schau dich um.']},
+  mia:{say:['Handlerin Mia: {H}! Fuer dich immer der beste Preis.',
+    'Seit die Strassen wieder sicher sind, kommt jede Woche Ware an. Schau dich um!']},
   kevin:{say:['Trainer Kevin: {H}! Gegen dich verloren zu haben ist inzwischen eine Auszeichnung.']},
-  julia:{say:['Trainerin Julia: {H}! Ich erzahle die Sache mit unserem Kampf immer noch jedem.']},
-  joy:{say:['Schwester Joy: {H}! Schon, dass du vorbeischaust.']},
+  julia:{say:['Trainerin Julia: {H}! Ich erzaehle die Sache mit unserem Kampf immer noch jedem.']},
+  joy:{say:['Schwester Joy: {H}! Schoen, dass du vorbeischaust.']},
 };
 
+// Die Mutter gibt den Startschuss: Reisegeld, Heiltranke und den Hinweis aufs Labor.
+function motherLines(s){
+  if(isHero(s)) return hero('mother');
+  if(!s.flags.talkedMother) return ['Mutter Ida: Du bist ja schon wach. Ich hatte dich noch schlafen lassen.',
+    'Heute ist es also soweit - du gehst auf Reisen. Ich habe dir alles zurechtgelegt.',
+    'Hier sind 500 PokeCash und funf Heiltranke. Mehr kann ich nicht entbehren, aber das bringt dich durch die ersten Wochen.',
+    'Und jetzt geh zu Professor Eichenholz ins Labor. Er wartet schon seit gestern auf dich.'];
+  if(!s.flags.gotStarter) return ['Mutter Ida: Was stehst du noch hier herum? Das Labor ist gleich um die Ecke.',
+    'Der Professor gibt dir dein erstes Pokemon. Ohne eines kommst du keine drei Schritte weit.'];
+  return ['Mutter Ida: Hast du auch genug gegessen?',
+    'Im Pokemon-Center heilen sie dein Team umsonst. Nutz das, dafuer ist es da.',
+    'Und schreib mir, wenn du in einer neuen Region ankommst.'];
+}
 function professorLines(s){
-  if(!s.flags.gotStarter) return ['Professor Eichenholz: Ah, da bist du ja! Ich habe dich schon erwartet.',
-    'Du bist hier, um dein erstes Pokemon abzuholen, nicht wahr?',
-    'Schau dir die Pokemon hier an - eines davon wird dein treuer Begleiter fur das ganze Abenteuer.',
-    'Wahle weise. Euer Schicksal liegt von nun an in euren gemeinsamen Handen.'];
-  if(!s.flags.metProfessor) return ['Professor Eichenholz: Du hast es gespurt, nicht wahr? Vor einer Stunde.',
-    'Der Boden hat gezittert, der Himmel ist aufgesprungen wie eine alte Naht - und dann war er wieder zu.',
-    'Das war der Riss. Die Welt ist zerbrochen, und sie halt sich seither nur noch muhsam selbst zusammen.',
-    'Es gibt drei Ankersteine, die die Nahte geschlossen halten. Je einer liegt in einer Arena, bewacht von einem Meister.',
-    'Ein Orden ist kein Abzeichen. Er ist das Vertrauen eines Ankers - und Anker folgen nur, wem sie folgen wollen.',
-    'Nimm diese zwei Heiltranke. Und fang klein an: Gewinne drei Kampfe, dann reden wir weiter.'];
-  const st=questStatus('q1',s);
-  if(st==='ready') return ['Professor Eichenholz: Drei Siege. Gut.','Ich habe die Messwerte verglichen: Wo du kampfst, wird die Naht ruhiger. Das ist kein Zufall.','Hier, nimm das - und geh weiter.'];
-  if(st==='active') return [`Professor Eichenholz: Fortschritt: ${QUESTS.q1.progress(s)}.`,'Die Nahte warten nicht auf dich. Aber sie reissen auch nicht schneller, wenn du hetzt.'];
-  const b=(s.flags.badgeR1?1:0)+(s.flags.badgeR2?1:0)+(s.flags.badgeR3?1:0);
+  if(!s.flags.gotStarter) return ['Professor Eichenholz: Da bist du ja. Deine Mutter hat mir Bescheid gegeben.',
+    'Du willst also Trainerin oder Trainer werden. Dann brauchst du zwei Dinge: ein Pokemon und etwas zum Fangen.',
+    'Das Pokemon suchst du dir gleich selbst aus. Ich gebe dir dazu 50 Pokebaelle und funf Superbaelle mit.',
+    'Geh damit sorgsam um - Baelle sind Verbrauchsmaterial, und Nachschub kostet Geld.',
+    'Such dir eines aus. Es begleitet dich die ganze Reise.'];
   if(isHero(s)) return hero('professor');
-  if(isLegendHunt(s)){const c=(s.flags.legendR1?1:0)+(s.flags.legendR2?1:0)+(s.flags.legendR3?1:0)+(s.flags.legendR4?1:0);return ['Professor Eichenholz: Die Welt ist geheilt, aber legendaere Pokemon bedrohen die Regionen!',`${c} von 4 Legendaeren sind bezwungen. Reise in jede Region und fange sie!`,'Nur wer alle vier baendigt, wird ein wahrer Held.'];}
-  if(b===3) return ['Professor Eichenholz: Alle drei Anker folgen dir. Damit hat noch nie jemand die Liga betreten.','Die letzte Naht liegt dort. Sie ist die grosste. Sei vorsichtig.'];
-  if(b===2) return ['Professor Eichenholz: Zwei Anker. Die Erschutterungen werden seltener - man merkt es an den Instrumenten.','Einer fehlt noch. Der schwerste, naturlich.'];
-  if(b===1) return ['Professor Eichenholz: Ein Anker folgt dir bereits. Die Naht uber unserem Dorf hat sich messbar beruhigt.','Zwei fehlen. Weiter im Osten wartet mehr.'];
-  if(s.battlesWon<10) return ['Professor Eichenholz: Fang weiter Pokemon. Jede Art, die du eintragst, ist ein Punkt, an dem die Welt sich noch sicher ist.'];
-  return ['Professor Eichenholz: Man erzahlt sich, dass in den entferntesten Winkeln Pokemon umherstreifen, die alter sind als der Riss.','Ob sie ihn kommen sahen? Ich wurde sie gern fragen.'];
+  if(isLegendHunt(s)){
+    const c=REGION_ORDER.filter(r=>s.flags['legendR'+r.slice(1)]).length;
+    return ['Professor Eichenholz: Die Meldungen bestaetigen sich: In jeder Region ist ein legendaeres Pokemon aufgetaucht.',
+      `${c} von 4 hast du bereits gefangen.`,
+      'Und noch einmal, weil es wichtig ist: Besiegen reicht nicht. Du musst sie fangen.'];
+  }
+  const st=questStatus('q1',s);
+  if(st==='ready') return ['Professor Eichenholz: Drei Siege. Sauber.',
+    'Damit hast du das Grundsaetzliche verstanden. Hier, nimm das als Starthilfe.'];
+  if(st==='active') return [`Professor Eichenholz: Fortschritt: ${QUESTS.q1.progress(s)}.`,
+    'Kein Grund zur Eile. Im hohen Gras findest du genug Gegner.'];
+  const b=badgeCountIn(s.region,s);
+  if(s.flags.champion) return ['Professor Eichenholz: Liga-Siegerin oder Liga-Sieger, in meinem Labor. Setz dich ruhig.',
+    'Und trink einen Tee, bevor du den legendaeren hinterherjagst.'];
+  if(b===3) return ['Professor Eichenholz: Alle drei Orden dieser Region. Damit steht dir die Weiterreise offen.',
+    'Frag am Bahnhof nach - die Bahn hat allerdings ihre eigenen Bedingungen.'];
+  if(b===2) return ['Professor Eichenholz: Zwei Orden. Einer fehlt noch in dieser Region.',
+    'Der dritte ist erfahrungsgemaess der unangenehmste.'];
+  if(b===1) return ['Professor Eichenholz: Der erste Orden. Gut gemacht.',
+    'Zwei weitere Arenen warten hier, dann kannst du weiterreisen.'];
+  return ['Professor Eichenholz: Jede Art, die du eintraegst, hilft meiner Forschung.',
+    'Und dir hilft sie auch: Ein breites Team schlaegt ein starkes Einzelstueck fast immer.'];
 }
 function rivalLines(s){
   const w=s.flags.rivalWins||0;
-  if(isHero(s)&&!s.flags.metRival) return hero('rival');
-  if(!s.flags.metRival) return ['Rivale Gary: Da bist du ja. Ich hab die ganze Nacht nicht geschlafen.',
-    'Als es passierte, stand ich am Fenster. Unser Schuppen war danach einfach nicht mehr da. Nicht kaputt - weg.',
-    'Alle reden davon, dass jemand das richten soll. Warum nicht ich? Warum nicht du?',
-    'Also machen wir es zum Wettkampf. Besiege die beiden Trainer im Dorf, dann zeig ich dir, wo ich stehe.'];
-  const st=questStatus('q4',s);
-  if(st==='ready') return ['Rivale Gary: Beide? Wirklich beide?','Gut. Ich hasse es, aber gut. Hier, das gehort jetzt dir.','Und jetzt zu uns beiden.'];
   if(isHero(s)) return hero('rival');
-  if(w===0) return ['Rivale Gary: Diesmal gewinne ich. Ich hab trainiert, bis mir schlecht wurde.'];
-  if(w>=3) return [`Rivale Gary: ${w} Niederlagen. Ich zahle mit.`,'Und ich hore trotzdem nicht auf. Das ist der ganze Punkt.'];
-  return [`Rivale Gary: Du hast mich schon ${w}x besiegt. Das andert heute gar nichts an meinem Plan.`];
+  if(!s.flags.gotStarter) return ['Rivale Gary: Na endlich. Ich stehe hier seit einer Stunde.',
+    'Der Professor wollte warten, bis du da bist. Nimm dir eines, dann sind wir beide dran.'];
+  if(!s.flags.metRival) return ['Rivale Gary: Du hast deins, ich habe meins. Dann wissen wir ja, was jetzt kommt.',
+    'Ich gewinne das hier. Nur damit du es gleich von Anfang an weisst.'];
+  if(w===0) return ['Rivale Gary: Diesmal gewinne ich. Ich habe trainiert, bis mir schlecht wurde.'];
+  if(w>=3) return [`Rivale Gary: ${w} Niederlagen. Ich zaehle mit.`,
+    'Und ich hoere trotzdem nicht auf. Das ist der ganze Punkt.'];
+  return [`Rivale Gary: Du hast mich schon ${w}x besiegt. Das aendert heute gar nichts an meinem Plan.`];
 }
 function villagerLines1(s){
   const st=questStatus('q2',s);
   if(isHero(s)&&st==='none') return hero('lisa','ask');
-  if(st==='none') return ['Anwohnerin Lisa: Meine Grossmutter hat immer gesagt, man erkennt eine gesunde Welt an ihren Tieren.',
-    'Seit dem Riss sind manche Arten einfach verschwunden. Andere sind aufgetaucht, die es hier nie gab.',
-    'Ich fuhre Buch daruber. Fang drei wilde Pokemon und berichte mir - dann weiss ich mehr.'];
+  if(st==='none') return ['Anwohnerin Lisa: Ich fuehre Buch darueber, welche Arten hier vorkommen.',
+    'Tagsueber sind es ganz andere als nachts - nach Sonnenuntergang zeigen sich nur Geist- und Unlicht-Pokemon.',
+    'Fang drei wilde Pokemon und berichte mir. Dann kann ich meine Liste erganzen.'];
   if(isHero(s)&&st==='ready') return hero('lisa','done');
-  if(st==='ready') return ['Anwohnerin Lisa: Drei Eintrage. Danke, das hilft wirklich.','Und - Wasser schlagt Feuer. Das galt vor dem Riss und gilt noch immer. Wenigstens etwas.'];
+  if(st==='ready') return ['Anwohnerin Lisa: Drei Eintraege. Danke, das hilft wirklich.',
+    'Und merk dir: Wasser schlaegt Feuer, Feuer schlaegt Pflanze, Pflanze schlaegt Wasser. Damit kommst du weit.'];
   if(st==='active') return heroSay(s,'lisa',[`Anwohnerin Lisa: Fortschritt: ${QUESTS.q2.progress(s)}.`]);
   if(isHero(s)) return hero('lisa');
   return ['Anwohnerin Lisa: Die Heiltranke erneuern sich jeden Tag. Im Center kostet die Heilung gar nichts - geh ruhig hin.'];
@@ -2633,170 +2744,187 @@ function villagerLines1(s){
 function villagerLines2(s){
   const st=questStatus('q3',s);
   if(isHero(s)&&st==='none') return hero('tom','ask');
-  if(st==='none') return ['Anwohner Tom: Im hohen Gras trifft man auf wilde Pokemon. Das war schon immer so.',
-    'Neu ist, dass sie starker sind als fruher. Deutlich starker.',
-    'Bring eines deiner Pokemon auf Level 15, dann hab ich was fur dich - und einen guten Rat dazu.'];
+  if(st==='none') return ['Anwohner Tom: Im hohen Gras trifft man auf wilde Pokemon. Je weiter weg vom Dorf, desto staerker.',
+    'Deine Pokemon entwickeln sich uebrigens im Zehnerschritt: auf Level 10 und noch einmal auf Level 20.',
+    'Bring eines auf Level 15, dann habe ich etwas fuer dich - und einen guten Rat dazu.'];
   if(isHero(s)&&st==='ready') return hero('tom','done');
-  if(st==='ready') return ['Anwohner Tom: Level 15. Damit uberlebst du die Strasse nach Osten.','Der Rat: Lauf nie mit nur einem Pokemon los. Nie.'];
+  if(st==='ready') return ['Anwohner Tom: Level 15. Damit ueberstehst du die Strasse nach Norden.',
+    'Der Rat: Lauf nie mit nur einem Pokemon los. Nie.'];
   if(st==='active') return heroSay(s,'tom',[`Anwohner Tom: Fortschritt: ${QUESTS.q3.progress(s)}.`]);
   if(isHero(s)) return hero('tom');
-  return ['Anwohner Tom: Ausserhalb des Dorfes stehen Hofe und Hutten. Die Leute dort sehen mehr als wir - sprich mit ihnen.'];
+  return ['Anwohner Tom: Ausserhalb des Dorfes stehen Hoefe und Huetten. Die Leute dort haben fast immer Arbeit zu vergeben.'];
 }
 function wandererLines(s){
   if(isHero(s)) return hero('mara');
   return ['Wanderin Mara: Sehr effektive Treffer verursachen doppelten Schaden - merk dir das, es rettet Leben.',
-    'Und geh raus aus dem Dorf. Uberall im Land stehen Hauser, und jeder darin hat eine Aufgabe fur dich.'];
+    'Und geh raus aus dem Dorf. Ueberall im Land stehen Haeuser, und fast jeder darin hat eine Aufgabe fuer dich.'];
 }
 function elder2Lines(s){
   const st=questStatus('q6',s);
   if(isHero(s)&&st==='none') return hero('elana','ask');
-  if(st==='none') return ['Alteste Elana: Willkommen in der Schattenregion. Sag nicht, man hatte dich nicht gewarnt.',
-    'Was du hier fur Dunkelheit haltst, ist keine. Es ist das Fehlen von Licht - es lauft aus der Naht heraus, Tag fur Tag.',
-    'Wir leben damit, seit der Riss geschah. Manche Kinder hier haben nie einen Mittag gesehen.',
-    'Wer hier bestehen will, braucht ein Pokemon der Stufe 3 oder hoher. Bring mir eines.'];
+  if(st==='none') return ['Alteste Elana: Willkommen in der Schattenregion. Die Sonne steht hier tiefer als anderswo.',
+    'Das hat nichts Unheimliches - es ist die Lage im Talkessel. Nur gewoehnungsbeduerftig.',
+    'Drei Arenen gibt es hier: Gift, Geist und Unlicht. Alle drei sind unangenehm, wenn man das falsche Team mitbringt.',
+    'Fang ein Pokemon der Stufe 3, dann weiss ich, dass du hier bestehen kannst.'];
   if(isHero(s)&&st==='ready') return hero('elana','done');
-  if(st==='ready') return ['Alteste Elana: Stark genug. Gut.','Der Anker unserer Region liegt in der Schattenarena. Meister Voss hutet ihn - und er gibt ihn nicht leicht her.'];
+  if(st==='ready') return ['Alteste Elana: Stufe 3. Damit kannst du dich hier sehen lassen.',
+    'Geh zu Venor in die Giftarena. Er ist der erste von dreien.'];
   if(st==='active') return heroSay(s,'elana',[`Alteste Elana: Fortschritt: ${QUESTS.q6.progress(s)}.`]);
   if(isHero(s)) return hero('elana');
-  return ['Alteste Elana: Wenn du den Anker gewinnst, wird es hier wieder hell. Nicht sofort. Aber wieder.'];
+  return ['Alteste Elana: Nachts laufen hier nur Geist- und Unlicht-Pokemon herum. Wer die sucht, sollte spaet aufbrechen.'];
 }
 function v3Lines(s){
   const st=questStatus('q7',s);
   if(isHero(s)&&st==='none') return hero('kilian','ask');
-  if(st==='none') return ['Reisender Kilian: Ich war in allen vier Regionen. Vor dem Riss waren es sechs.',
-    'Zwei sind weg. Nicht zerstort - herausgeschnitten. Die Strassen dorthin enden mitten im Nichts.',
-    'Gewinne 25 Kampfe, dann erzahle ich dir, was ich am Rand gesehen habe.'];
+  if(st==='none') return ['Reisender Kilian: Ich war in allen vier Regionen. Zwoelf Arenen, alle gesehen, keine gewonnen.',
+    'Das Auental ist der Anfang, dann die Schattenregion, dann der Frost, zuletzt die Liga-Region.',
+    'Gewinne 40 Kampfe, dann erzaehle ich dir, was mich aufgehalten hat.'];
   if(isHero(s)&&st==='ready') return hero('kilian','done');
-  if(st==='ready') return ['Reisender Kilian: 25 Siege. Also gut, du hast es dir verdient:',
-    'Am Rand steht eine Wand aus nichts. Und dahinter - ich schwore es - bewegt sich etwas.'];
+  if(st==='ready') return ['Reisender Kilian: 40 Siege. Also gut, du hast es dir verdient:',
+    'Mich hat nie ein Gegner aufgehalten, sondern die Bahn. Hundert Siege verlangen die, bevor sie einen weiterfahren lassen.'];
   if(st==='active') return heroSay(s,'kilian',[`Reisender Kilian: Fortschritt: ${QUESTS.q7.progress(s)}.`]);
   if(isHero(s)) return hero('kilian');
-  return ['Reisender Kilian: Die starksten Pokemon findest du weit weg von jedem Dorf. Das war schon immer der Preis.'];
+  return ['Reisender Kilian: Die staerksten Pokemon findest du weit weg von jedem Dorf. Das war schon immer der Preis.'];
 }
 function v4Lines(s){
   const st=questStatus('q8',s);
   if(isHero(s)&&st==='none') return hero('toni','ask');
-  if(st==='none') return ['Krauterfrau Toni: Ich mische Futter, das Pokemon durch diese Region bringt.',
-    'Die Krauter hier wachsen falschherum, seit dem Riss. Wurzeln nach oben. Man gewohnt sich an alles.',
-    'Bring ein Pokemon auf Level 25, dann bekommst du mein bestes Rezept.'];
+  if(st==='none') return ['Krauterfrau Toni: Ich mische Futter, das Pokemon schneller wachsen laesst.',
+    'Im Laden bekommst du davon welches - es bringt ein Pokemon sofort ein Stueck weiter.',
+    'Bring eines auf Level 25, dann bekommst du mein bestes Rezept.'];
   if(isHero(s)&&st==='ready') return hero('toni','done');
-  if(st==='ready') return ['Krauterfrau Toni: Level 25 in dieser Gegend. Das schafft kaum jemand.','Hier - und pass auf dich auf.'];
+  if(st==='ready') return ['Krauterfrau Toni: Level 25. Das schafft nicht jeder.','Hier - und pass auf dich auf.'];
   if(st==='active') return heroSay(s,'toni',[`Krauterfrau Toni: Fortschritt: ${QUESTS.q8.progress(s)}.`]);
   if(isHero(s)) return hero('toni');
-  return ['Krauterfrau Toni: Futter aus dem Laden hilft beim Trainieren. Und im Center heilen sie dich umsonst.'];
+  return ['Krauterfrau Toni: Futter aus dem Laden hilft beim Trainieren. Und im Center heilen sie umsonst.'];
 }
 function silasLines(s){ if(isHero(s)) return hero('silas');
-  return ['Handler Silas: Willkommen. Bar zahlen, keine Fragen, keine Namen.',
-  'Ich handle seit dem Riss mit allem, was noch existiert. Das Sortiment wird jedes Jahr kleiner.',
-  'Heiltranke und Futter hab ich. Schau es dir an.']; }
+  return ['Handler Silas: Willkommen. Baelle, Traenke, Futter - alles da.',
+  'Wer ohne Baelle ins hohe Gras geht, kommt ohne neues Pokemon zurueck. So einfach ist das.',
+  'Schau dich um.']; }
 function v5Lines(s){ if(isHero(s)) return hero('vala');
   return ['Geisterseherin Vala: Setz dich nicht auf den Stuhl links. Der ist besetzt.',
-  'Seit der Riss geschah, sind die Toten dieser Region nicht weitergegangen. Sie stehen an der Naht und warten.',
-  'Wenn du sie schliesst, konnen sie endlich gehen. Vergiss das nicht, wenn es hart wird.']; }
+  'Nein, ich mache keine Witze. Geist-Pokemon sind hier so selbstverstaendlich wie anderswo die Katzen.',
+  'Wenn du eines fangen willst: nach Sonnenuntergang, im hohen Gras. Tagsueber zeigen sie sich nicht.']; }
 function v6Lines(s){ if(isHero(s)) return hero('boris');
-  return ['Schmied Boris: Meine Esse ist in jener Nacht ausgegangen. Zum ersten Mal seit vier Generationen.',
-  'Ich hab sie wieder angezundet. Was soll man sonst tun.',
-  'Die Pokemon hier sind nicht zu unterschatzen - rust dich aus, bevor du in die Arena gehst.']; }
+  return ['Schmied Boris: Vier Generationen Schmiede, und ich bin die fuenfte.',
+  'Ich mache keine Orden - die gibt es nur in den Arenen, und nur gegen einen gewonnenen Kampf.',
+  'Aber ruest dich aus, bevor du hingehst. Die Leiter fuehren immer zwei Pokemon.']; }
 function conductorLines(s){
   const st=questStatus('q5',s);
   if(isHero(s)&&st==='none') return hero('aldric','ask');
-  if(st==='none') return ['Schaffner Aldric: Halt. Ohne Fahrkarte kein Bahnsteig.',
-    'Die Strecke nach Osten fuhrt durch eine Naht. Wer da schwach einsteigt, steigt gar nicht mehr aus.',
-    'Gewinne 10 Kampfe. Dann - und nur dann - bekommst du deine Karte.'];
-  if(st==='active') return [`Schaffner Aldric: Fortschritt: ${QUESTS.q5.progress(s)}.`,'Ich mach die Regeln nicht. Ich zahle nur die Ruckkehrer.'];
-  if(isHero(s)&&st==='ready') return hero('aldric','done');
-  if(st==='ready') return ['Schaffner Aldric: Zehn Siege. Hier ist deine Fahrkarte zur Schattenregion.','Und - komm zuruck. Ich mag es, wenn die Zahlen stimmen.'];
+  const done=regionComplete(s.region,s), wins=s.battlesWon;
+  if(!done) return ['Schaffner Aldric: Ohne alle drei Orden dieser Region keine Weiterfahrt.',
+    `Du hast ${badgeCountIn(s.region,s)} von 3. Komm wieder, wenn es drei sind.`];
+  if(wins<TRAIN_NEED_WINS) return [`Schaffner Aldric: Orden vollstaendig, aber die Bahn verlangt ${TRAIN_NEED_WINS} gewonnene Kampfe.`,
+    `Du stehst bei ${wins}. Noch ${TRAIN_NEED_WINS-wins}.`,
+    'Ich mache die Regeln nicht. Ich pruefe sie nur.'];
+  if(st==='ready') return ['Schaffner Aldric: Alles erfuellt. Hier, das ist fuer die Wartezeit.'];
   if(isHero(s)) return hero('aldric');
-  return ['Schaffner Aldric: Der Zug zur Schattenregion steht bereit. Einsteigen?'];
+  return ['Schaffner Aldric: Orden vollstaendig, Kampfe vollstaendig. Der Zug steht bereit. Einsteigen?'];
 }
 function returnConductorLines(s){ if(isHero(s)) return hero('elrik');
-  if(isLegendHunt(s)){const need=[];if(!s.flags.legendR1)need.push('Heimatdorf (Lavados)');if(!s.flags.legendR2)need.push('Schattenregion (Zapdos)');if(!s.flags.legendR3)need.push('Frostregion (Arktos)');if(!s.flags.legendR4)need.push('Pokemon-Liga (Dragoran)');return need.length?['Schaffner Elrik: Legendaere Pokemon bedrohen die Regionen!','Noch zu bezwingen: '+need.join(', ')+'.','Steig ein, ich bringe dich hin!']:['Schaffner Elrik: Der Zug steht bereit!'];}
-  return ['Schaffner Elrik: Der Zug zuruck ins Heimatdorf steht bereit. Einsteigen?']; }
+  if(isLegendHunt(s)){
+    const need=REGION_ORDER.filter(r=>!s.flags['legendR'+r.slice(1)])
+      .map(r=>{const d=DB.find(x=>x.id===LEGEND_REGIONS[r]);return `${REGION_NAME[r]} (${d?d.nm:'?'})`;});
+    return need.length?['Schaffner Elrik: In jeder Region ist ein legendaeres Pokemon gemeldet.',
+      'Offen sind noch: '+need.join(', ')+'.','Steig ein, ich bringe dich hin.']
+      :['Schaffner Elrik: Der Zug steht bereit.'];
+  }
+  return ['Schaffner Elrik: Der Zug zurueck steht bereit. Einsteigen?']; }
 function yaraLines(s){
   if(isHero(s)) return hero('yara');
-  if(!s.flags.badgeR2) return ['Schaffnerin Yara: Dahinter liegt die Frostregion. Die Strecke ist gesperrt.',
-    'Nicht aus Bosheit - der Zug fahrt durch eine offene Naht. Ohne den Anker dieser Region zerreisst es dich unterwegs.',
-    'Bezwinge Meister Voss in der Schattenarena. Dann offne ich das Gleis.'];
-  return ['Schaffnerin Yara: Der Anker folgt dir. Damit halt der Zug die Strecke aus.','Bereit fur die Frostregion?'];
+  return conductorLines(s);
 }
 function junoLines(s){ if(isHero(s)) return hero('juno');
-  return ['Schaffner Juno: Der Zug zuruck in die Schattenregion steht bereit. Einsteigen?']; }
+  return ['Schaffner Juno: Der Zug zurueck in die Schattenregion steht bereit. Einsteigen?']; }
 function friggaLines(s){
   const st=questStatus('q9',s);
   if(isHero(s)&&st==='none') return hero('frigga','ask');
-  if(st==='none') return ['Hueterin Frigga: Willkommen in der Frostregion. Zieh die Kapuze hoch.',
-    'Hier ist nicht einfach Winter. Hier ist der Moment des Risses eingefroren - die Zeit selbst ist stehengeblieben.',
-    'Siehst du den Rauch uber dem See? Der steht dort seit jener Nacht. Unverandert.',
-    'Wer hier bestehen will, muss 35 Kampfe gewonnen haben. Komm wieder, wenn du soweit bist.'];
+  if(st==='none') return ['Hueterin Frigga: Willkommen in der Frostregion. Zieh die Kapuze hoch, das ist kein Scherz.',
+    'Drei Arenen gibt es hier: Eis, Gestein und Kampf. In dieser Reihenfolge, und leicht ist keine davon.',
+    'Gewinne 60 Kampfe, dann habe ich etwas fuer dich. Wer hier antritt, sollte Erfahrung haben.'];
   if(isHero(s)&&st==='ready') return hero('frigga','done');
-  if(st==='ready') return ['Hueterin Frigga: 35 Siege bei dieser Kalte. Du gehorst hierher, ob du willst oder nicht.','Hier, nimm das.'];
+  if(st==='ready') return ['Hueterin Frigga: 60 Siege bei dieser Kaelte. Du gehoerst hierher, ob du willst oder nicht.','Hier, nimm das.'];
   if(st==='active') return heroSay(s,'frigga',[`Hueterin Frigga: Fortschritt: ${QUESTS.q9.progress(s)}.`]);
   if(isHero(s)) return hero('frigga');
-  return ['Hueterin Frigga: Wenn du den letzten Anker gewinnst, lauft die Zeit hier weiter. Der Rauch wird ziehen.','Ich mochte das noch erleben.'];
+  return ['Hueterin Frigga: Eis-Pokemon halten wenig aus, treffen aber hart. Nimm etwas mit Feuer oder Gestein mit.'];
 }
 function finnLines(s){
   const st=questStatus('q10',s);
   if(isHero(s)&&st==='none') return hero('finn','ask');
-  if(st==='none') return ['Kristallschurfer Finn: Ich schurfe hier seit Jahren. Das Eis gibt Kristalle her, die es nicht geben durfte.',
-    'In einem steckte ein Blatt. Grun, frisch, mitten im Eis - und alter als mein Urgrossvater.',
-    'Bring ein Pokemon auf Level 30, dann zeig ich dir meinen besten Fund.'];
+  if(st==='none') return ['Kristallschurfer Finn: Ich schuerfe hier seit Jahren. Das Eis gibt Kristalle her, die es kaum geben duerfte.',
+    'In einem steckte ein Blatt. Gruen, frisch, mitten im Eis. Ich habe es bis heute nicht erklaeren koennen.',
+    'Bring ein Pokemon auf Level 35, dann zeige ich dir meinen besten Fund.'];
   if(isHero(s)&&st==='ready') return hero('finn','done');
-  if(st==='ready') return ['Kristallschurfer Finn: Level 30. Da - der Fund gehort dir.','Halt ihn ins Licht. Man sieht die Naht darin.'];
+  if(st==='ready') return ['Kristallschurfer Finn: Level 35. Da - der Fund gehoert dir.','Halt ihn ins Licht, dann siehst du das Blatt.'];
   if(st==='active') return heroSay(s,'finn',[`Kristallschurfer Finn: Fortschritt: ${QUESTS.q10.progress(s)}.`]);
   if(isHero(s)) return hero('finn');
-  return ['Kristallschurfer Finn: Die tiefsten Hohlen bergen die wertvollsten Kristalle. Und die kaltesten Uberraschungen.'];
+  return ['Kristallschurfer Finn: Die tiefsten Hoehlen bergen die wertvollsten Kristalle. Und die kaeltesten Ueberraschungen.'];
 }
 function runaLines(s){
   const st=questStatus('q11',s);
   if(isHero(s)&&st==='none') return hero('runa','ask');
-  if(st==='none') return ['Schneejagerin Runa: Ich jage die seltenen. Nicht zum Toten - zum Zahlen.',
-    'Die Stufe-4-Pokemon sind erst nach dem Riss aufgetaucht. Als hatte die Welt in Panik etwas Grosses erschaffen.',
-    'Fang eines. Dann weiss ich, dass du bereit bist fur das, was in der Liga wartet.'];
+  if(st==='none') return ['Schneejagerin Runa: Ich jage nicht zum Toeten - ich zaehle.',
+    'Fuenfzehn verschiedene Arten im Pokedex, als gefangen eingetragen. Das ist meine Messlatte.',
+    'Wer das schafft, hat wirklich gesucht und nicht nur das Naechstbeste mitgenommen.'];
   if(isHero(s)&&st==='ready') return hero('runa','done');
-  if(st==='ready') return ['Schneejagerin Runa: Ein Stufe-4-Pokemon. An deiner Seite, freiwillig.','Dann stimmt es also, was sie uber dich erzahlen. Nimm das hier.'];
+  if(st==='ready') return ['Schneejagerin Runa: Fuenfzehn Arten. Sauber gezaehlt.','Dann stimmt es also, was sie ueber dich erzaehlen. Nimm das hier.'];
   if(st==='active') return heroSay(s,'runa',[`Schneejagerin Runa: Fortschritt: ${QUESTS.q11.progress(s)}.`]);
   if(isHero(s)) return hero('runa');
-  return ['Schneejagerin Runa: Die machtigsten Pokemon verstecken sich weit draussen im Schnee. Geh nicht ohne Heiltranke.'];
+  return ['Schneejagerin Runa: Die seltenen Arten verstecken sich weit draussen im Schnee. Geh nicht ohne Heiltranke.'];
 }
 function bjornLines(s){ if(isHero(s)) return hero('bjorn');
-  return ['Alter Fischer Bjorn: Ich sitze seit vierzig Jahren an diesem See. Seit dem Riss beisst nichts mehr.',
-  'Aber ich sitze weiter. Irgendwann lauft die Zeit hier wieder, und dann will ich als Erster die Angel im Wasser haben.',
-  'Im Basar gibt es Vorrate. Und im Center heilen sie umsonst - nutz das.']; }
+  return ['Alter Fischer Bjorn: Ich sitze seit vierzig Jahren an diesem See.',
+  'Wasser-Pokemon gibt es hier genug. Geduld braucht man trotzdem.',
+  'Im Basar gibt es Vorraete. Und im Center heilen sie umsonst - nutz das.']; }
 function nieveLines(s){ if(isHero(s)) return hero('nieve');
-  return ['Handlerin Nieve: Willkommen! Ja, es ist kalt. Nein, daran gewohnt man sich nicht.',
-  'Selbst hier am Ende der Welt gibt es Heiltranke und starkendes Futter. Das Geschaft halt die Leute bei Verstand.']; }
+  return ['Handlerin Nieve: Willkommen! Ja, es ist kalt. Nein, daran gewoehnt man sich nicht.',
+  'Baelle, Heiltranke, staerkendes Futter - alles vorraetig. Selbst hier oben.']; }
 // The arena gate: a keeper bars the only way in and only yields to someone who has
 // already proved themselves in the field, and then only after a fight.
+// Vor dem Gelaende der dritten Arena jeder Region steht eine Torwache. Sie
+// verlangt eine Mindestzahl gewonnener Kampfe und danach einen Kampf gegen sie
+// selbst - ihr Team besteht wie bei allen Trainern aus normalen Arten.
 const GATES={
-  r1:{flag:'gateR1',name:'Torwache Brunn',shirt:'#8a5a2a',hair:'#3a2a1a',tier:2,lvBonus:3,need:5,
-      place:'Arena von Auenhain',
-      intro:['Torwache Brunn: Halt. Weiter kommt hier niemand.',
+  r1:{flag:'gateR1',name:'Torwache Brunn',shirt:'#8a5a2a',hair:'#3a2a1a',tier:2,lvBonus:3,need:15,
+      place:'Flussarena in Ahornfurt',
+      intro:['Torwache Brunn: Halt. Weiter kommt hier niemand ohne Weiteres.',
         'Hinter mir liegt das Arenagelaende - und das ist keine Wiese, das ist ein Labyrinth aus Stein.',
-        'Meister Boreas laesst nur herein, wer den Weg allein findet. Und ich lasse nur herein, wer ihn uberlebt.'],
+        'Meisterin Marina laesst nur herein, wer den Weg allein findet. Und ich lasse nur herein, wer vorher an mir vorbeikommt.'],
       demand:n=>[`Torwache Brunn: Erst die Pflicht: ${n} gewonnene Kampfe. Du hast sie nicht.`,
-        'Geh ins hohe Gras. Komm wieder, wenn du zahlen kannst.'],
+        'Geh ins hohe Gras. Komm wieder, wenn du zaehlen kannst.'],
       ready:['Torwache Brunn: Die Zahlen stimmen. Jetzt der Rest.',
-        'Ich bin die Prufung, nicht die Formalitat. Waffen hoch.'],
+        'Ich bin die Pruefung, nicht die Formalitaet. Stell dich auf.'],
       done:['Torwache Brunn: Der Weg ist offen. Im Labyrinth hilft dir niemand mehr.',
         'Halte dich rechts, wenn du dich verirrst. Oder auch nicht - ich habe es selbst nie gemerkt.']},
-  r2:{flag:'gateR2',name:'Torwache Skarn',shirt:'#4a2060',hair:'#101010',tier:3,lvBonus:7,need:18,
-      place:'Schattenarena',
+  r2:{flag:'gateR2',name:'Torwache Skarn',shirt:'#4a2060',hair:'#101010',tier:3,lvBonus:5,need:45,
+      place:'Unlichtarena in Nachtwacht',
       intro:['Torwache Skarn: Bleib stehen. Im Dunkeln sieht man den Abgrund nicht.',
         'Das Gelaende hinter mir hat schon Trainer verschluckt, die besser waren als du.',
-        'Meister Voss will keine Leichen im Labyrinth. Also siebe ich vorher.'],
+        'Meister Corvin will niemanden im Labyrinth suchen muessen. Also siebe ich vorher.'],
       demand:n=>[`Torwache Skarn: ${n} Siege. So lautet die Schwelle.`,
-        'Nicht mein Massstab - der der Region. Sie ist unbarmherziger als ich.'],
+        'Nicht mein Massstab - der der Region.'],
       ready:['Torwache Skarn: Genug Siege. Mal sehen, ob einer davon echt war.'],
       done:['Torwache Skarn: Geh durch. Und zaehle deine Schritte - das Labyrinth zaehlt seine auch.']},
-  r3:{flag:'gateR3',name:'Torwache Eisla',shirt:'#1a4a70',hair:'#e8f2ff',tier:4,lvBonus:10,need:30,
-      place:'Frostarena',
+  r3:{flag:'gateR3',name:'Torwache Eisla',shirt:'#1a4a70',hair:'#e8f2ff',tier:3,lvBonus:8,need:75,
+      place:'Kampfarena in Eiswacht',
       intro:['Torwache Eisla: Nicht weitergehen. Der Wind hier schneidet.',
-        'Das Gelaende ist seit dem Riss vereist. Die Mauern haben sich verschoben, der Weg stimmt nicht mehr mit den Plaenen.',
-        'Wer da drin falsch abbiegt, findet nicht zurueck. Ich lasse nur Leute rein, die etwas aushalten.'],
+        'Das Gelaende ist vereist, die Mauern sind von Jahr zu Jahr verschoben. Die alten Plaene stimmen laengst nicht mehr.',
+        'Wer da drin falsch abbiegt, findet lange nicht zurueck. Ich lasse nur Leute rein, die etwas aushalten.'],
       demand:n=>[`Torwache Eisla: ${n} Siege, sonst nichts.`,
-        'Meisterin Elsa gibt ihren Anker nicht an Leute, die schon am Tor scheitern.'],
+        'Meister Bruno nimmt keine Herausforderer an, die schon am Tor scheitern.'],
       ready:['Torwache Eisla: Du hast genug hinter dir. Jetzt zeig es mir.'],
       done:['Torwache Eisla: Durch. Und wenn du drin bist: nicht stehenbleiben. Kaelte holt Stehende zuerst.']},
+  r4:{flag:'gateR4',name:'Torwache Aurel',shirt:'#c0a040',hair:'#6a5020',tier:3,lvBonus:12,need:110,
+      place:'Psychoarena am Liga-Plateau',
+      intro:['Torwache Aurel: Das Liga-Plateau. Hoeher geht es in diesem Land nicht.',
+        'Hinter mir liegt die letzte Arena vor dem Champion. Entsprechend streng ist das Tor.',
+        'Meisterin Sibylle empfaengt niemanden, den ich nicht gepruft habe.'],
+      demand:n=>[`Torwache Aurel: ${n} gewonnene Kampfe verlangt die Liga. Nicht ich - die Liga.`,
+        'Komm wieder, wenn die Zahl steht.'],
+      ready:['Torwache Aurel: Die Zahl steht. Dann pruefe ich jetzt den Rest.'],
+      done:['Torwache Aurel: Das Tor ist offen. Viel Glueck - du wirst es brauchen.']},
 };
 function gateLines(region,s){
   const g=GATES[region]; if(!g)return ['...'];
@@ -2806,62 +2934,229 @@ function gateLines(region,s){
   if(s.battlesWon<g.need)return g.demand(g.need);
   return g.ready;
 }
-function arena1Lines(s){
-  if(isHero(s)) return hero('arena1');
-  if(s.flags.badgeR1) return ['Meister Boreas: Der Anker folgt dir, und das Dorf schlaft wieder ruhiger.','Geh nach Osten. Voss wird es dir schwerer machen als ich.'];
-  return ['Meister Boreas: Willkommen. Du kommst wegen des Ankersteins, nicht wegen mir.',
-    'Er liegt unter dieser Halle, seit meine Familie ihn hutet - elf Generationen.',
-    'Ich kann ihn dir nicht geben. Anker folgen keinem Befehl, nur einer Leistung.',
-    'Also zeig mir deine. Jetzt.'];
+// ===================== ARENEN =====================
+// Zwoelf Arenen, drei je Region, jede auf genau einen Typ festgelegt. Jede Leitung
+// tritt mit zwei Pokemon an, deren Arten und Level fest eingetragen sind - nichts
+// daran wird ausgewuerfelt, damit ein Kampf beim zweiten Anlauf derselbe ist.
+const ARENAS={
+  r1:[
+    {badge:'b_r1_1',type:'grass',name:'Bluetenarena',leader:'Meisterin Flora',shirt:'#409030',hair:'#2a5a1a',town:'Auenhain',
+     team:[{id:'knofensa',lv:10},{id:'bisaknosp',lv:12}],
+     intro:['Meisterin Flora: Willkommen in der Bluetenarena. Hier wachsen die Dinge langsam - Trainer eingeschlossen.',
+       'Ich fuehre die erste Arena der Region. Wer hier besteht, hat noch elf Hallen vor sich.',
+       'Mein Rat vorweg: Pflanze ist stark gegen Wasser und Gestein, aber Feuer macht kurzen Prozess.',
+       'Zwei Pokemon, ein Kampf. Fangen wir an.'],
+     done:['Meisterin Flora: Der Bluetenorden gehoert dir. Du hast ihn sauber geholt.',
+       'Geh nach Muhlbach im Norden. Konrad fuehrt dort die zweite Arena.']},
+    {badge:'b_r1_2',type:'normal',name:'Feldarena',leader:'Meister Konrad',shirt:'#a8a878',hair:'#6a5a3a',town:'Muhlbach',
+     team:[{id:'rattikarl',lv:14},{id:'kangama',lv:16}],
+     intro:['Meister Konrad: Feldarena. Keine Tricks, keine Sonderrechte - nur solide Arbeit.',
+       'Normal-Pokemon haben keine Schwaechen ausser einer: Kampf-Typen.',
+       'Und gegen Geister richte ich gar nichts aus. Merk dir das, es gilt auch fuer dich.',
+       'Zwei Pokemon. Zeig mir Handwerk.'],
+     done:['Meister Konrad: Feldorden. Verdient.',
+       'Die dritte Arena steht in Ahornfurt am Fluss. Marina kaempft mit Wasser.']},
+    {badge:'b_r1_3',type:'water',name:'Flussarena',leader:'Meisterin Marina',shirt:'#3070c0',hair:'#20506a',town:'Ahornfurt',
+     team:[{id:'schillok',lv:18},{id:'starmie',lv:20}],
+     intro:['Meisterin Marina: Die Flussarena ist die letzte Huerde dieser Region.',
+       'Wasser loescht Feuer, unterspuelt Gestein und weicht Boden auf. Dafuer verliert es gegen Pflanze und Elektro.',
+       'Mit meinem Orden hast du alle drei aus dem Auental. Erst dann faehrt dich der Zug weiter.',
+       'Aber verdienen musst du ihn hier.'],
+     done:['Meisterin Marina: Alle drei Orden des Auentals. Das schaffen die wenigsten im ersten Anlauf.',
+       'Der Bahnhof laesst dich jetzt weiter - wenn du genug Kaempfe hinter dir hast.']},
+  ],
+  r2:[
+    {badge:'b_r2_1',type:'poison',name:'Giftarena',leader:'Meister Venor',shirt:'#9a3a9a',hair:'#2a1a30',town:'Dammerstein',
+     team:[{id:'arbok',lv:23},{id:'giflor',lv:25}],
+     intro:['Meister Venor: Die Schattenregion empfaengt dich. Erste Arena, erster Fehler moeglich.',
+       'Gift wirkt gegen Pflanze und sonst wenig - aber es haelt aus, was andere umwirft.',
+       'Boden- und Psycho-Pokemon sind meine Sorge. Deine auch, wenn du sie nicht dabei hast.',
+       'Zwei Pokemon. Los.'],
+     done:['Meister Venor: Giftorden. Du haeltst mehr aus, als du aussiehst.',
+       'Rabenfels liegt noerdlich. Nyx fuehrt die Geisterarena - und die ist unangenehmer.']},
+    {badge:'b_r2_2',type:'ghost',name:'Geisterarena',leader:'Meisterin Nyx',shirt:'#504870',hair:'#d0c0e0',town:'Rabenfels',
+     team:[{id:'traunmagil',lv:27},{id:'alpollo',lv:29}],
+     intro:['Meisterin Nyx: Leise hereinkommen war gut. Leise wieder hinaus wird schwerer.',
+       'Geist-Attacken treffen Normal-Pokemon ueberhaupt nicht - und Normal trifft mich genauso wenig.',
+       'Wer hier nur mit einem Allerweltsteam antritt, steht eine Stunde im Kreis.',
+       'Unlicht raeumt mich ab. Wenn du welche hast, jetzt waere der Moment.'],
+     done:['Meisterin Nyx: Geisterorden. Du hast das Richtige mitgebracht.',
+       'Nachtwacht im Osten ist die letzte Arena der Region. Corvin kaempft mit Unlicht.']},
+    {badge:'b_r2_3',type:'dark',name:'Unlichtarena',leader:'Meister Corvin',shirt:'#3a3040',hair:'#101010',town:'Nachtwacht',
+     team:[{id:'hundemon',lv:31},{id:'kramshef',lv:33}],
+     intro:['Meister Corvin: Nachtwacht. Hier draussen laufen nach Sonnenuntergang nur meine Arten.',
+       'Unlicht schlaegt Geist und Psycho. Gegen Kampf-Pokemon sehe ich dagegen alt aus.',
+       'Mit meinem Orden hast du die Schattenregion vollstaendig.',
+       'Zwei Pokemon. Und nein, ich gehe nicht sanft mit dir um.'],
+     done:['Meister Corvin: Unlichtorden. Alle drei der Region gehoeren dir.',
+       'Der Zug in die Frostregion faehrt, sobald du genug Kaempfe vorweisen kannst.']},
+  ],
+  r3:[
+    {badge:'b_r3_1',type:'ice',name:'Eisarena',leader:'Meisterin Elsa',shirt:'#2060a0',hair:'#e0f0ff',town:'Firnau',
+     team:[{id:'firnontor',lv:36},{id:'jugong',lv:38}],
+     intro:['Meisterin Elsa: Firnau. Zieh die Jacke nicht aus, der Kampf dauert.',
+       'Eis trifft Pflanze, Boden, Flug und Drache doppelt. Es haelt dafuer fast nichts aus.',
+       'Feuer, Gestein, Kampf und Stahl - alles davon bricht mich.',
+       'Zwei Pokemon. Zeig, ob du vorbereitet bist.'],
+     done:['Meisterin Elsa: Eisorden. Sauber gekaempft.',
+       'Gletscherhalt liegt hoeher im Gebirge. Granit wartet dort mit Gestein.']},
+    {badge:'b_r3_2',type:'rock',name:'Felsarena',leader:'Meister Granit',shirt:'#a08838',hair:'#4a3a20',town:'Gletscherhalt',
+     team:[{id:'onix',lv:40},{id:'rizeros',lv:42}],
+     intro:['Meister Granit: Felsarena. Alles hier ist hart, auch die Regeln.',
+       'Gestein raeumt Feuer, Eis und Flug ab. Wasser, Pflanze und Kampf raeumen mich ab.',
+       'Meine Pokemon stecken mehr ein als alles, was du bisher gesehen hast.',
+       'Zwei Stueck. Fang an.'],
+     done:['Meister Granit: Felsorden. Du hast dich durchgebissen.',
+       'Eiswacht am Pass ist die letzte Arena hier. Bruno kaempft mit Kampf-Pokemon.']},
+    {badge:'b_r3_3',type:'fighting',name:'Kampfarena',leader:'Meister Bruno',shirt:'#903028',hair:'#2a2a2a',town:'Eiswacht',
+     team:[{id:'maschock',lv:44},{id:'machomei',lv:46}],
+     intro:['Meister Bruno: Eiswacht. Letzte Arena der Frostregion.',
+       'Kampf schlaegt Normal, Gestein, Eis und Unlicht. Gegen Flug, Psycho und Geist komme ich nicht an.',
+       'Wer hier gewinnt, faehrt zur Liga-Region. Wer verliert, trainiert weiter.',
+       'Zwei Pokemon. Keine Ausreden.'],
+     done:['Meister Bruno: Kampforden. Die Frostregion ist durch.',
+       'In der Liga-Region stehen drei weitere Arenen. Danach erst der Champion.']},
+  ],
+  r4:[
+    {badge:'b_r4_1',type:'fire',name:'Flammenarena',leader:'Meisterin Ignis',shirt:'#c04020',hair:'#8a2020',town:'Goldbruck',
+     team:[{id:'glutexo',lv:49},{id:'vulnona',lv:51}],
+     intro:['Meisterin Ignis: Goldbruck. Ab hier wird nichts mehr geschenkt.',
+       'Feuer verbrennt Pflanze und Eis. Wasser, Gestein und Boden loeschen es.',
+       'Drei Arenen liegen zwischen dir und dem Champion. Ich bin die erste.',
+       'Zwei Pokemon - und beide sind schneller, als du denkst.'],
+     done:['Meisterin Ignis: Flammenorden. Du gehoerst tatsaechlich hierher.',
+       'Volt fuehrt die Blitzarena. Er ist der schnellste Leiter, den ich kenne.']},
+    {badge:'b_r4_2',type:'electric',name:'Blitzarena',leader:'Meister Volt',shirt:'#e0c020',hair:'#3a3a20',town:'Siegespforte',
+     team:[{id:'magneton',lv:53},{id:'elektek',lv:55}],
+     intro:['Meister Volt: Blitzarena. Schnell rein, schnell raus - so oder so.',
+       'Elektro schlaegt Wasser und Flug. Gegen Boden richte ich gar nichts aus, nicht einen Punkt.',
+       'Wenn du ein Boden-Pokemon dabei hast, wird das hier kurz.',
+       'Wenn nicht, auch. Zwei Pokemon.'],
+     done:['Meister Volt: Blitzorden. Und du hattest das Boden-Pokemon dabei, gib es zu.',
+       'Bleibt Sibylle in der Psychoarena. Danach der Champion.']},
+    {badge:'b_r4_3',type:'psychic',name:'Psychoarena',leader:'Meisterin Sibylle',shirt:'#e85878',hair:'#a040a0',town:'Liga-Plateau',
+     team:[{id:'hypno',lv:57},{id:'simsala',lv:59}],
+     intro:['Meisterin Sibylle: Die letzte Arena vor dem Champion. Zwoelfte von zwoelf.',
+       'Psycho schlaegt Kampf und Gift. Unlicht-Attacken dagegen treffen mich hart.',
+       'Ich verrate dir das, weil es den Kampf besser macht, nicht weil es ihn leichter macht.',
+       'Zwei Pokemon. Und dann steht dir die Liga offen.'],
+     done:['Meisterin Sibylle: Psychoorden. Alle drei der Liga-Region.',
+       'Die Halle des Champions ist offen. Seraphina wartet - sie weiss bereits, dass du kommst.']},
+  ],
+};
+// Der Champion steht am Ende der zwoelften Arena - mit drei festen Pokemon.
+const CHAMPION={name:'Championin Seraphina',shirt:'#e0c040',hair:'#f0e8d0',
+  team:[{id:'tauboss',lv:62},{id:'relaxo',lv:64},{id:'glurak',lv:66}]};
+// Regionsnamen und die drei Doerfer, die es je Region wirklich gibt.
+const REGION_NAME={r1:'Auental',r2:'Schattenregion',r3:'Frostregion',r4:'Liga-Region'};
+const REGION_TOWNS={
+  r1:['Auenhain','Muhlbach','Ahornfurt'],
+  r2:['Dammerstein','Rabenfels','Nachtwacht'],
+  r3:['Firnau','Gletscherhalt','Eiswacht'],
+  r4:['Goldbruck','Siegespforte','Liga-Plateau'],
+};
+function arenasOf(region){ return ARENAS[region]||ARENAS.r1; }
+function arenaBySlot(region,slot){ return arenasOf(region)[slot-1]; }
+// Wie viele Orden der Spieler in genau dieser Region besitzt.
+function badgeCountIn(region,s){ return arenasOf(region).filter(a=>s&&s.flags&&s.flags[a.badge]).length; }
+function regionComplete(region,s){ return badgeCountIn(region,s)===3; }
+// Die Arena, die in dieser Region als naechstes dran ist (oder null, wenn alle drei stehen).
+function nextArena(region,s){ return arenasOf(region).find(a=>!(s&&s.flags&&s.flags[a.badge]))||null; }
+// ===================== AUFGABE DES AUGENBLICKS =====================
+// Statt einer grossen Hauptquest gibt es immer genau einen naechsten Schritt.
+// Er wird nicht gespeichert, sondern aus dem Spielstand abgeleitet - damit kann
+// er nie mit dem tatsaechlichen Fortschritt auseinanderlaufen.
+//   text  : steht als Zeile oben am Bildschirmrand
+//   where : wo es hingeht, als Klartext
+//   house : Gebaeude-Kennung, auf die der rote Punkt auf der Karte zeigt
+//   tall  : statt eines Gebaeudes zeigt der Punkt auf das naechste hohe Gras
+const TRAIN_NEED_WINS=100;
+function trainUnlocked(s){
+  return !!s && regionComplete(s.region,s) && s.battlesWon>=TRAIN_NEED_WINS;
 }
-function arena2Lines(s){
-  if(isHero(s)) return hero('arena2');
-  if(s.flags.badgeR2) return ['Meister Voss: Zwei Anker. Du bist weiter gekommen als alle vor dir.','Elsa im Frost gibt ihren nicht her, ohne dich bluten zu lassen. Sei bereit.'];
-  return ['Meister Voss: Leise. Der Anker hier hasst Larm.',
-    'Seit der Riss geschah, saugt die Naht das Licht aus dieser Region. Mein Stein bremst es. Mehr kann er nicht.',
-    'Ich habe vierzehn Herausforderer gesehen. Keiner hat bestanden.',
-    'Zeig mir, dass du der Funfzehnte bist - oder geh nach Hause.'];
+function currentStep(s){
+  if(!s||!s.flags) return null;
+  const f=s.flags;
+  if(!f.talkedMother) return {id:'mother',text:'Sprich mit deiner Mutter',where:'zu Hause',house:'home'};
+  if(!f.gotStarter)   return {id:'starter',text:'Hole dein erstes Pokemon bei Professor Eichenholz',where:'im Labor',house:'lab'};
+  if(!f.metRival)     return {id:'rival',text:'Sprich im Labor mit Rivale Gary',where:'im Labor',house:'lab'};
+  if((s.caughtCount||0)<1) return {id:'catch',text:'Fange dein erstes wildes Pokemon',where:'im hohen Gras',tall:true};
+
+  const a=nextArena(s.region,s);
+  if(a){
+    const slot=arenasOf(s.region).indexOf(a)+1;
+    return {id:'arena_'+a.badge,text:`Gewinne den Orden der ${a.name} (${TYPE_DE[a.type]||a.type})`,
+      where:`in ${a.town}`,house:'arena'+slot};
+  }
+  // Alle drei Orden der Region stehen. In der Liga-Region wartet der Champion,
+  // sonst geht es per Zug weiter - sobald genug Kaempfe gewonnen sind.
+  if(s.region==='r4'){
+    if(!f.champion) return {id:'champion',text:`Fordere ${CHAMPION.name} heraus`,where:'in der Liga-Halle',house:'liga'};
+  } else if(!trainUnlocked(s)){
+    const left=Math.max(0,TRAIN_NEED_WINS-s.battlesWon);
+    return {id:'wins',text:`Gewinne noch ${left} Kaempfe fuer die Weiterfahrt`,where:'ueberall in der Region'};
+  } else if(!f.champion){
+    return {id:'travel',text:`Fahre mit dem Zug weiter`,where:'am Bahnhof',station:true};
+  }
+
+  // Nach dem Liga-Sieg: in jeder Region ein legendaeres Pokemon fangen.
+  if(f.champion&&!f.legendaryHero){
+    const lid=LEGEND_REGIONS[s.region];
+    const mine='legendR'+s.region.slice(1);
+    if(lid&&!f[mine]){
+      const d=DB.find(x=>x.id===lid);
+      return {id:'legend_'+s.region,text:`Fange ${d?d.nm:'das legendaere Pokemon'} im ${REGION_NAME[s.region]}`,
+        where:'irgendwo in der Region',legend:true};
+    }
+    const open=REGION_ORDER.filter(r=>!f['legendR'+r.slice(1)]);
+    if(open.length) return {id:'legend_travel',text:`Reise in ${REGION_NAME[open[0]]} - dort wartet ein legendaeres Pokemon`,
+      where:'am Bahnhof',station:true};
+  }
+  return null;
 }
-function arena3Lines(s){
-  if(isHero(s)) return hero('arena3');
-  if(s.flags.badgeR3) return ['Meisterin Elsa: Alle drei Anker folgen dir. Das hat es noch nie gegeben.','Geh zur Liga. Seraphina wartet seit dem Riss auf jemanden wie dich - im Wortsinn.'];
-  return ['Meisterin Elsa: Du zitterst. Gut, das heisst du lebst noch.',
-    'Mein Anker halt die Zeit hier an. Ohne ihn ware diese Region in jener Nacht einfach ausgeloscht worden.',
-    'Der Preis: Nichts hier verandert sich. Nichts wachst. Nichts endet.',
-    'Wenn du ihn mitnimmst, lauft die Zeit weiter - und wir altern alle auf einmal nach. Wir haben abgestimmt. Wir wollen es.',
-    'Also nimm ihn dir. Wenn du kannst.'];
+// Deutsche Typbezeichnungen fuer alles, was der Spieler zu lesen bekommt.
+const TYPE_DE={fire:'Feuer',water:'Wasser',grass:'Pflanze',electric:'Elektro',normal:'Normal',
+  poison:'Gift',ground:'Boden',flying:'Flug',psychic:'Psycho',rock:'Gestein',ice:'Eis',
+  dragon:'Drache',ghost:'Geist',fighting:'Kampf',dark:'Unlicht'};
+
+function arenaLines(region,slot,s){
+  const a=arenaBySlot(region,slot);
+  if(!a) return ['...'];
+  if(s.flags[a.badge]) return a.done;
+  return a.intro;
 }
 function noraLines(s){
   if(isHero(s)) return hero('nora');
-  const ready=!!(s.flags.badgeR1&&s.flags.badgeR2&&s.flags.badgeR3);
-  if(!ready) return ['Schaffnerin Nora: Die Liga liegt am Ursprung. Dort, wo der Riss anfing.',
-    'Der Zug fahrt direkt in die grosse Naht hinein. Ohne alle drei Anker ist das kein Reisen, das ist Selbstmord.',
-    'Komm wieder, wenn du sie hast.'];
-  return ['Schaffnerin Nora: Alle drei. Ich hab das nie fur moglich gehalten.','Der Zug steht bereit. Einsteigen?'];
+  return conductorLines(s);
 }
 function returnLigaLines(s){ if(isHero(s)) return hero('otto');
-  return ['Schaffner Otto: Der Zug zuruck in die Frostregion steht bereit. Einsteigen?']; }
+  return ['Schaffner Otto: Der Zug zurueck in die Frostregion steht bereit. Einsteigen?']; }
 function ligaLines(s){
-  if(isHero(s)) return heroText(['Champion Seraphina: Sieh dir den Himmel an, {H}. Ganz. Einfach ganz.',
-    'Ich habe hier gestanden und gehalten, was zu halten war. Du hast es beendet.',
-    'Der Titel gehort dir, und der Name auch: So nennt dich das ganze Land inzwischen.',
+  if(isHero(s)) return heroText(['Championin Seraphina: Da bist du ja, {H}.',
+    'Alle vier legendaeren Pokemon gefangen. Ich haette nicht gedacht, dass das jemand in einem Zug durchzieht.',
+    'Der Titel gehoert dir, und der Name auch: So nennt dich das ganze Land inzwischen.',
     'Und ich - ich glaube, ich gehe jetzt einfach mal spazieren.']);
-  return ['Champion Seraphina: Du kommst mit allen drei Ankern. Ich habe darauf gewartet.',
-    'Hinter mir liegt die erste Naht - die, aus der alle anderen entstanden sind.',
-    'Ich halte sie zu, seit der Riss geschah. Ich kann sie nicht schliessen, nur halten. Dafur ist ein Anker zu wenig und ich bin nur eine Person.',
-    'Drei Anker und ein vierter Wille konnten es schaffen. Aber die Anker folgen dir, nicht mir.',
-    'Also musst du starker sein als ich. Sonst gebe ich dich nicht frei - und die Welt bleibt, wie sie ist.',
-    'Letzter Kampf. Enttausch mich nicht.'];
+  if(s.flags.champion) return ['Championin Seraphina: Der Titel ist deiner, daran aendert sich nichts.',
+    'Aber in allen vier Regionen ist ein legendaeres Pokemon aufgetaucht. Fang sie - alle vier.',
+    'Besiegen hilft nicht. Ich habe es versucht.'];
+  const done=regionComplete('r4',s);
+  if(!done) return ['Championin Seraphina: Noch nicht. Erst die drei Arenen dieser Region.',
+    `Du hast ${badgeCountIn('r4',s)} von 3. Flamme, Blitz, Psycho - in dieser Reihenfolge sind sie angeordnet.`,
+    'Wenn alle drei stehen, komm wieder. Dann rede ich mit dir als Herausforderin oder Herausforderer.'];
+  return ['Championin Seraphina: Zwoelf Orden. Alle vier Regionen. Du hast dir das hier ehrlich erarbeitet.',
+    'Ich fuehre drei Pokemon, und keines davon ist schwach. Das sage ich nicht, um dich zu schrecken - sondern damit du dich vorbereitest.',
+    'Wenn du gewinnst, gehoert der Titel dir. Wenn nicht, kannst du wiederkommen, so oft du willst.',
+    'Letzter Kampf. Enttaeusch mich nicht.'];
 }
 function lloreLines(s){ if(isHero(s)) return hero('aldo');
-  return ['Chronist Aldo: Willkommen in der Ruhmeshalle. Die meisten Namen hier sind alter als der Riss.',
-  'Danach hat niemand mehr etwas eingetragen. Es gab nichts einzutragen.',
-  'Ich halte eine Seite frei. Seit Jahren. Die Tinte ist langst eingetrocknet, aber ich ruhre sie jeden Morgen neu an.',
-  'Ich hoffe sehr, dass du sie mir fullst.']; }
+  return ['Chronist Aldo: Willkommen in der Ruhmeshalle. Hier steht jeder Name, der je einen Liga-Titel geholt hat.',
+  'Es sind weniger, als man denkt. Zwoelf Arenen sieben gruendlich aus.',
+  'Ich halte immer eine Seite frei. Man weiss nie, wer als Naechstes hereinkommt.',
+  'Vielleicht ja du.']; }
 function lshopLines(s){ if(isHero(s)) return hero('perle');
-  return ['Handlerin Perle: Willkommen im Liga-Shop. Hier endet die Handelskette der ganzen Welt.',
-  'Was ich hier habe, ist das Beste, was noch existiert. Der Preis spiegelt das leider wider.',
-  'Kauf gut ein. Danach gibt es keinen Laden mehr - nur noch Seraphina.']; }
+  return ['Handlerin Perle: Willkommen im Liga-Shop. Das beste Sortiment im ganzen Land.',
+  'Hyperbaelle, Heiltranke, Futter - alles da, und alles teuer.',
+  'Kauf gut ein. Weiter oben gibt es keinen Laden mehr, nur noch die Championin.']; }
 
 function centerLines(s){
   const hurt=s.team.filter(p=>p.hp<p.mhp).length;
@@ -2869,22 +3164,35 @@ function centerLines(s){
   if(hurt===0) return base.concat(['Dein Team ist bei bester Gesundheit.','Trotzdem: ich sehe einmal nach. Das Haus zahlt - hier wird nie abgerechnet.']);
   return base.concat([`Ich sehe ${hurt===1?'ein verletztes Pokemon':hurt+' verletzte Pokemon'}. Gib sie mir.`,
     isHero(s)?'Die Heilung ist wie immer kostenlos. Bei dir sowieso.'
-             :'Die Heilung ist kostenlos. Seit dem Riss ist das keine Wohltatigkeit mehr, sondern Pflicht.']);
+             :'Die Heilung ist kostenlos - in jedem Center des Landes.']);
 }
 const HOUSES={
   center:{name:'Pokemon-Center',npc:{name:'Schwester Joy',shirt:'#f4f4f6',hair:'#e0506a',lines:s=>centerLines(s),
     onEnd:()=>{ G.healTeamFree(); }}},
+  // Das Labor: hier bekommt man sein erstes Pokemon und seine Grundausstattung
+  // an Baellen. Gary wartet gleich daneben auf sein erstes Duell.
   lab:{name:'Pokemon-Labor',npc:{name:'Professor Eichenholz',shirt:'#f0f0f0',hair:'#3a2a1a',lines:s=>professorLines(s),
     onEnd:()=>{ const s=G.s;
       if(!s.flags.gotStarter){ setTimeout(()=>G.openStarterPick(),200); return; }
-      if(!s.flags.metProfessor){ s.flags.metProfessor=true; s.potions+=2; startQuest('q1'); G.updateHud(); G.saveGame(); return; }
-      if(questStatus('q1',s)==='ready') completeQuest('q1');
-    }}},
-  rival:{name:'Rivalenhaus',npc:{name:'Rivale Gary',shirt:'#2a6a2a',hair:'#e0a020',lines:s=>rivalLines(s),
+      G.updateHud(); G.saveGame();
+    }},
+    extra:[{name:'Rivale Gary',shirt:'#2a6a2a',hair:'#e0a020',lines:s=>rivalLines(s),
+      onEnd:()=>{ const s=G.s;
+        if(!s.flags.gotStarter) return;
+        s.flags.metRival=true;
+        G.refreshQuest(); G.saveGame();
+        setTimeout(()=>G.startRivalBattle(),200);
+      }}]},
+  // Das Elternhaus. Hier startet das Spiel, und hier gibt es das Reisegepaeck.
+  home:{name:'Zuhause',npc:{name:'Mutter Ida',shirt:'#c06090',hair:'#8a5a30',lines:s=>motherLines(s),
     onEnd:()=>{ const s=G.s;
-      if(!s.flags.metRival){ s.flags.metRival=true; startQuest('q4'); }
-      else if(questStatus('q4',s)==='ready') completeQuest('q4');
-      setTimeout(()=>G.startRivalBattle(),200);
+      if(s.flags.talkedMother) return;
+      s.flags.talkedMother=true;
+      s.cash=(s.cash||0)+500;
+      s.potions=(s.potions||0)+5;
+      G.popup('Reisegepaeck erhalten!<div class="lvl-sub">+500 PokeCash, +5 Heiltranke</div>','caught-popup',3200);
+      Au.lv();
+      G.updateHud(); G.refreshQuest(); G.saveGame();
     }}},
   v1:{name:'Wohnhaus',npc:{name:'Anwohnerin Lisa',shirt:'#8040a0',hair:'#402a1a',lines:s=>villagerLines1(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q2',s); if(st==='none')startQuest('q2'); else if(st==='ready')completeQuest('q2'); }}},
@@ -2904,12 +3212,6 @@ const HOUSES={
     onEnd:()=>{ G.openShop(); }}},
   v5:{name:'Wohnhaus',npc:{name:'Geisterseherin Vala',shirt:'#5030a0',hair:'#e0e0f0',lines:s=>v5Lines(s)}},
   v6:{name:'Schmiede',npc:{name:'Schmied Boris',shirt:'#704020',hair:'#302010',lines:s=>v6Lines(s)}},
-  arena1:{name:'Arena',npc:{name:'Meister Boreas',shirt:'#c04020',hair:'#202020',lines:s=>arena1Lines(s),
-    onEnd:()=>{ if(!G.s.flags.badgeR1) setTimeout(()=>G.startGymBattle('badgeR1','Meister Boreas',3,5),200); }}},
-  arena2:{name:'Schattenarena',npc:{name:'Meister Voss',shirt:'#3a1a50',hair:'#101010',lines:s=>arena2Lines(s),
-    onEnd:()=>{ if(!G.s.flags.badgeR2) setTimeout(()=>G.startGymBattle('badgeR2','Meister Voss',4,8),200); }}},
-  arena3:{name:'Frostarena',npc:{name:'Meisterin Elsa',shirt:'#2060a0',hair:'#e0f0ff',lines:s=>arena3Lines(s),
-    onEnd:()=>{ if(!G.s.flags.badgeR3) setTimeout(()=>G.startGymBattle('badgeR3','Meisterin Elsa',4,10),200); }}},
   f1:{name:'Haus der Huterin',npc:{name:'Hueterin Frigga',shirt:'#3070b0',hair:'#e0f0ff',lines:s=>friggaLines(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q9',s); if(st==='none')startQuest('q9'); else if(st==='ready')completeQuest('q9'); }}},
   f2:{name:'Frost-Basar',npc:{name:'Handlerin Nieve',shirt:'#80c0e0',hair:'#f0f4f8',lines:s=>nieveLines(s),
@@ -2940,12 +3242,12 @@ const OUT_MULT={r1:1,r2:1.9,r3:2.8,r4:3.6};
 const OUTPOST_DEFS=[
   {nm:'Waldhutte',npc:'Einsiedler Ansgar',shirt:'#5a6a3a',hair:'#c8c8c0',goal:'battles',amt:7,rp:2,rc:70,
    qn:'Wachter der Lichtung',
-   intro:['Einsiedler Ansgar: Selten kommt jemand so weit hinaus.','In der Nacht, als der Himmel zerriss, stand ich genau hier.','Die Baume bogen sich nach innen - als wollte die Welt sich selbst verschlucken.','Wenn du sie wirklich heilen willst, musst du stark genug sein. Beweise es mir.'],
+   intro:['Einsiedler Ansgar: Selten kommt jemand so weit hinaus.','Ich lebe seit dreissig Jahren zwischen diesen Baeumen und kenne jede Art, die hier durchkommt.','Wer so weit hinausgeht, sollte etwas koennen. Beweise es mir.'],
    wait:['Einsiedler Ansgar: Die Wildnis lugt nicht. Kampfe weiter.'],
    done:['Einsiedler Ansgar: Du hast das Mark eines Wachters. Nimm das hier - du wirst es brauchen.'],
    hero:['Einsiedler Ansgar: {H}. Der Wald steht still und atmet ruhig.','Selten kommt jemand so weit hinaus. Bei dir freue ich mich darueber.'],
    heroAsk:['Einsiedler Ansgar: {H}, setz dich einen Moment.','Gewinne mir sieben Kampfe da draussen - ich will wissen, wie stark die Wildnis heute noch ist.'],
-   after:['Einsiedler Ansgar: Der Riss hat den Wald verandert. Hor genau hin, dann horst du ihn atmen.']},
+   after:['Einsiedler Ansgar: Hoer genau hin. Der Wald ist lauter, als die Leute im Dorf glauben.']},
   {nm:'Fischerkate',npc:'Fischerin Marla',shirt:'#2a6a8a',hair:'#7a5a30',goal:'fangen',amt:5,rp:2,rc:80,
    qn:'Was das Wasser hergibt',
    intro:['Fischerin Marla: Vorsicht, die Netze liegen aus.','Seit der Zersplitterung steigen Pokemon aus Tiefen auf, die es fruher gar nicht gab.','Ich kann sie nicht alle katalogisieren. Fang du sie - fur die Aufzeichnungen.'],
@@ -2956,12 +3258,12 @@ const OUTPOST_DEFS=[
    after:['Fischerin Marla: Manche Nachte hore ich das Meer ruckwarts rauschen. Frag nicht.']},
   {nm:'Bergwacht',npc:'Bergwachterin Sina',shirt:'#8a4a2a',hair:'#2a2a2a',goal:'level',amt:14,rp:3,rc:110,
    qn:'Der harte Aufstieg',
-   intro:['Bergwachterin Sina: Von hier oben sieht man, wie falsch alles steht.','Die Bergkette bricht mitten in der Luft ab. Dahinter: nichts. Nur Naht.','Ein schwaches Pokemon uberlebt da oben keinen Tag. Zieh eines gross, dann reden wir.'],
+   intro:['Bergwachterin Sina: Von hier oben sieht man, wie falsch alles steht.','Von hier oben sieht man alle drei Doerfer der Region auf einmal.','Ein schwaches Pokemon ueberlebt da oben keinen Tag. Zieh eines gross, dann reden wir.'],
    wait:['Bergwachterin Sina: Noch zu grun. Der Berg vergibt keine Eile.'],
    done:['Bergwachterin Sina: Jetzt hast du eines, das den Grat halt. Respekt.'],
    hero:['Bergwachterin Sina: {H}. Von hier oben steht wieder alles richtig.','Die Bergkette laeuft bis zum Horizont durch. Ich habe sie gestern drei Stunden lang angeschaut.'],
    heroAsk:['Bergwachterin Sina: {H}, ich brauche jemanden fuer den Grat.','Zieh ein Pokemon auf Level 14 gross, dann gehen wir zusammen hoch.'],
-   after:['Bergwachterin Sina: Die Naht am Horizont wird schmaler, seit du unterwegs bist.']},
+   after:['Bergwachterin Sina: Bei klarer Sicht erkennt man von hier sogar die Arena im Nachbardorf.']},
   {nm:'Sternwarte',npc:'Sternenkundler Ove',shirt:'#30306a',hair:'#d8d8e8',goal:'dex',amt:8,rp:3,rc:120,
    qn:'Karte der Arten',
    intro:['Sternenkundler Ove: Still! Ich zahle.','Achtzehn Sternbilder fehlen seit jener Nacht. Achtzehn.','Die Pokemon sind das letzte verlassliche Register dieser Welt.','Trage mir Arten in deinen Dex ein - jede einzelne ist ein Fixpunkt.'],
@@ -2980,20 +3282,20 @@ const OUTPOST_DEFS=[
    after:['Bauerin Hedda: Iss was, bevor du gehst. Die Welt lauft dir nicht davon. Hoffentlich.']},
   {nm:'Ruinenlager',npc:'Ausgraberin Perel',shirt:'#6a5a8a',hair:'#402a1a',goal:'battles',amt:16,rp:4,rc:160,
    qn:'Was unter dem Staub liegt',
-   intro:['Ausgraberin Perel: Fass nichts an, das alter aussieht als du.','Unter diesem Lager liegt eine Halle. Ihre Wande zeigen den Riss - gemalt vor tausend Jahren.','Sie wussten, dass es passieren wurde. Und sie wussten, wer es richten kann.','Die Wandbilder zeigen jemanden mit drei Orden. Also: kampfe dich frei.'],
+   intro:['Ausgraberin Perel: Fass nichts an, das alter aussieht als du.','Unter diesem Lager liegt eine Halle. Ihre Waende zeigen Trainer mit Orden - gemalt vor tausend Jahren.','Dieselben zwoelf Arenen, dieselben Typen. Das System ist aelter, als die Liga zugibt.','Hol dir Orden, dann zeige ich dir die Wand.'],
    wait:['Ausgraberin Perel: Die Halle offnet sich nur Leuten mit Geschichte. Sammle welche.'],
-   done:['Ausgraberin Perel: Da - genau dein Umriss auf der Wand. Ich sage nur ungern "Schicksal", aber.'],
+   done:['Ausgraberin Perel: Da - genau deine Haltung auf der Wand. Vor tausend Jahren stand hier schon jemand wie du.'],
    hero:['Ausgraberin Perel: {H}! Die letzte Kammer zeigt jetzt eine ganze Welt.','Die leere Wand dahinter ist bemalt worden. Von wem, weiss keiner.'],
    heroAsk:['Ausgraberin Perel: {H}, grab mit mir weiter.','Ich brauche jemanden mit Erfahrung an meiner Seite - sammle unterwegs Siege.'],
    after:['Ausgraberin Perel: Die letzte Kammer zeigt die Liga. Und danach: leere Wand. Kein gutes Zeichen.']},
   {nm:'Leuchtturm',npc:'Warterin Isolde',shirt:'#204a6a',hair:'#e8e0c0',goal:'fangen',amt:9,rp:4,rc:170,
    qn:'Licht gegen die Leere',
-   intro:['Warterin Isolde: Der Turm brennt seit dreihundert Jahren ohne Unterbrechung.','In der Nacht des Risses ging er aus. Vier Sekunden. Ich habe sie gezahlt.','Was in diesen vier Sekunden hereinkam, streift noch immer durchs Land.','Fang es ein. Fang alles ein, was du findest. Es ist sicherer bei dir.'],
+   intro:['Warterin Isolde: Der Turm brennt seit dreihundert Jahren ohne Unterbrechung.','Einmal ging er aus. Vier Sekunden. Ich habe sie gezaehlt.','Seither zaehle ich lieber Pokemon - das beruhigt mehr.','Fang mir welche, dann kommt meine Liste endlich voran.'],
    wait:['Warterin Isolde: Noch zu viele draussen. Ich sehe sie im Lichtkegel.'],
    done:['Warterin Isolde: Der Kegel ist ruhig heute Nacht. Das war lange nicht so.'],
-   hero:['Warterin Isolde: {H}. Ich habe in die Naht geschaut, wie du siehst.','Da war nichts mehr. Nur Himmel. Danke, dass ich das noch erleben durfte.'],
+   hero:['Warterin Isolde: {H}. Und der Turm brennt immer noch.','Vierhundert Jahre schafft er auch noch, denke ich.'],
    heroAsk:['Warterin Isolde: {H}, eine letzte Wache halte ich noch.','Leiste mir Gesellschaft, indem du dich draussen bewaehrst.'],
-   after:['Warterin Isolde: Wenn du die Liga erreichst - schau nicht in die Naht. Versprich es mir.']},
+   after:['Warterin Isolde: Wenn du die Liga erreichst - komm noch einmal vorbei und erzaehl davon.']},
   {nm:'Grenzposten',npc:'Grenzerin Vike',shirt:'#5a2a2a',hair:'#101010',goal:'level',amt:22,rp:5,rc:220,
    qn:'Bis hierher und weiter',
    intro:['Grenzerin Vike: Halt. Dahinter faltet sich das Land.','Ich lasse niemanden durch, der nicht bestehen wurde. Das ist keine Schikane, das ist Statistik.','Bring mir ein Pokemon, das dieser Gegend gewachsen ist, dann offne ich den Weg.'],
@@ -3041,6 +3343,16 @@ function outpostLines(def,qid,s){
 }
 // Resolves both the fixed village buildings and the procedurally placed homesteads.
 function houseCfgFor(id){
+  // Arenen sind nicht fest verdrahtet, sondern werden aus ARENAS aufgeloest:
+  // dieselbe Tuer fuehrt je Region zu einer anderen Halle mit eigenem Typ.
+  const am=/^arena([123])$/.exec(id||'');
+  if(am){
+    const region=(G.s&&G.s.region)||'r1', slot=+am[1];
+    const a=arenaBySlot(region,slot);
+    if(a) return {name:a.name,npc:{name:a.leader,shirt:a.shirt,hair:a.hair,
+      lines:s=>arenaLines(region,slot,s),
+      onEnd:()=>{ if(!G.s.flags[a.badge]) setTimeout(()=>G.startGymBattle(region,slot),200); }}};
+  }
   if(HOUSES[id])return HOUSES[id];
   const mm=/^out(\d+)$/.exec(id||'');
   if(mm){
@@ -3072,7 +3384,7 @@ function buildRandomTrainerNpc(rt){
     onEnd:()=>{ if(!G.s.flags[flagId]) setTimeout(()=>G.startTrainerBattle(flagId,rt.name,rt.tier,rt.tier*2),200); }};
 }
 
-const TE={fire:{grass:2,water:.5,fire:.5,ice:2,rock:.5,dragon:.5},water:{fire:2,grass:.5,water:.5,ground:2,rock:2,dragon:.5},grass:{water:2,fire:.5,grass:.5,ground:2,rock:2,poison:.5,flying:.5},electric:{water:2,grass:.5,electric:.5,ground:0,flying:2,dragon:.5},normal:{rock:.5,ghost:0},poison:{grass:2,poison:.5,ground:.5,rock:.5,ghost:.5},ground:{fire:2,electric:2,grass:.5,poison:2,rock:2,flying:0},flying:{grass:2,electric:.5,fighting:2,rock:.5},psychic:{fighting:2,poison:2,psychic:.5},rock:{fire:2,ice:2,flying:2,fighting:.5,ground:.5},ice:{grass:2,ground:2,flying:2,dragon:2,fire:.5,water:.5,ice:.5},dragon:{dragon:2},ghost:{ghost:2,psychic:2,normal:0},fighting:{normal:2,rock:2,ice:2,ghost:0,flying:.5,psychic:.5}};
+const TE={fire:{grass:2,water:.5,fire:.5,ice:2,rock:.5,dragon:.5},water:{fire:2,grass:.5,water:.5,ground:2,rock:2,dragon:.5},grass:{water:2,fire:.5,grass:.5,ground:2,rock:2,poison:.5,flying:.5},electric:{water:2,grass:.5,electric:.5,ground:0,flying:2,dragon:.5},normal:{rock:.5,ghost:0},poison:{grass:2,poison:.5,ground:.5,rock:.5,ghost:.5},ground:{fire:2,electric:2,grass:.5,poison:2,rock:2,flying:0},flying:{grass:2,electric:.5,fighting:2,rock:.5},psychic:{fighting:2,poison:2,psychic:.5},rock:{fire:2,ice:2,flying:2,fighting:.5,ground:.5},ice:{grass:2,ground:2,flying:2,dragon:2,fire:.5,water:.5,ice:.5},dragon:{dragon:2},ghost:{ghost:2,psychic:2,normal:0,dark:.5},fighting:{normal:2,rock:2,ice:2,ghost:0,flying:.5,psychic:.5,dark:2},dark:{psychic:2,ghost:2,dark:.5,fighting:.5}};
 
 const T={GRASS:0,TALL:1,WATER:2,TREE:3,ROCK:4,PATH:5,FLOWER:6,SAND:7,BRIDGE:8,
   ROOFL:9,ROOFM:10,ROOFR:11,WALLL:12,WALLR:13,DOOR_LAB:14,DOOR_RIVAL:15,DOOR_V1:16,DOOR_V2:17,
@@ -3089,7 +3401,7 @@ const TW=new Set([T.GRASS,T.TALL,T.PATH,T.FLOWER,T.SAND,T.BRIDGE,T.DOOR_LAB,T.DO
   T.DOOR_ARENA1,T.DOOR_ARENA2,T.DOOR_ARENA3,T.DOOR_F1,T.DOOR_F2,T.DOOR_F3,T.DOOR_F4,T.DOOR_F5,T.DOOR_LIGA,T.DOOR_LSHOP,T.DOOR_LLORE,
   T.DOOR_CENTER,...OUT_DOORS]);
 const IW=new Set([T.FLOOR,T.EXITDOOR,T.RUG]);
-const DOOR_HOUSE={[T.DOOR_LAB]:'lab',[T.DOOR_RIVAL]:'rival',[T.DOOR_V1]:'v1',[T.DOOR_V2]:'v2',[T.DOOR_SHOP]:'shop',[T.DOOR_ELDER2]:'elder2',[T.DOOR_V3]:'v3',[T.DOOR_V4]:'v4',[T.DOOR_SHOP2]:'shop2',[T.DOOR_V5]:'v5',[T.DOOR_V6]:'v6',
+const DOOR_HOUSE={[T.DOOR_LAB]:'lab',[T.DOOR_RIVAL]:'home',[T.DOOR_V1]:'v1',[T.DOOR_V2]:'v2',[T.DOOR_SHOP]:'shop',[T.DOOR_ELDER2]:'elder2',[T.DOOR_V3]:'v3',[T.DOOR_V4]:'v4',[T.DOOR_SHOP2]:'shop2',[T.DOOR_V5]:'v5',[T.DOOR_V6]:'v6',
   [T.DOOR_ARENA1]:'arena1',[T.DOOR_ARENA2]:'arena2',[T.DOOR_ARENA3]:'arena3',
   [T.DOOR_F1]:'f1',[T.DOOR_F2]:'f2',[T.DOOR_F3]:'f3',[T.DOOR_F4]:'f4',[T.DOOR_F5]:'f5',
   [T.DOOR_LIGA]:'liga',[T.DOOR_LSHOP]:'lshop',[T.DOOR_LLORE]:'llore',
@@ -3261,7 +3573,7 @@ const IROOMS={
     "#.............#",
     "#....p.1.p....#",
     "#...CCCCC.....#",
-    "#..xx.........#",
+    "#..xx......3..#",
     "#..xx....TT...#",
     "#........cc...#",
     "#P..2........P#",
@@ -3333,7 +3645,7 @@ const IEXTRA={
     lines:['Ordner Damian: Ohne alle Orden kommst du hier nicht weit.','Der Teppich fuehrt direkt zur Championin. Geh ihn zu Ende.']}],
   forge:[{name:'Lehrling Kuno',shirt:'#8a5a30',hair:'#402010',
     hero:['Lehrling Kuno: {H}! Der Meister schmiedet wieder bei Tageslicht.','Vorsicht trotzdem, der Amboss ist warm. Daran hat sich nichts geaendert.'],
-    lines:['Lehrling Kuno: Vorsicht, der Amboss ist noch warm.','Der Meister schmiedet seit dem Riss nur noch nachts. Fragt mich nicht warum.']}],
+    lines:['Lehrling Kuno: Vorsicht, der Amboss ist noch warm.','Der Meister schmiedet am liebsten nachts. Fragt mich nicht warum.']}],
   out:[{name:'Gast Silva',shirt:'#60805a',hair:'#503820',
     hero:['Gast Silva: {H}. Wer so weit rausgeht, hat Mut - das wusste ich gleich.','Heute geht man hier raus, weil es schoen ist. Nicht mehr, weil man muss.'],
     lines:['Gast Silva: Wer so weit rausgeht, hat entweder Mut oder einen Auftrag.','Bei dir ist es wohl beides.']}],
@@ -6172,10 +6484,16 @@ const G = {
     this.s.active=0;
     this.s.dex[d.id]='caught';
     this.s.flags.gotStarter=true;
+    // Die Grundausstattung des Professors: genug Baelle fuer den Anfang.
+    this.s.balls=this.s.balls||{};
+    this.s.balls.poke=(this.s.balls.poke||0)+50;
+    this.s.balls.super=(this.s.balls.super||0)+5;
+    startQuest('q1');
     document.getElementById('ov-starter-pick').classList.remove('on');
-    this.popup(`${d.spr} ${d.nm} wurde dein Partner!<div class="lvl-sub">Dein Abenteuer beginnt jetzt wirklich!</div>`,'caught-popup',3000);
+    this.popup(`${d.spr} ${d.nm} wurde dein Partner!<div class="lvl-sub">Dazu: 50 Pokebaelle und 5 Superbaelle</div>`,'caught-popup',3400);
     Au.lv();
     this.updateHud();
+    this.refreshQuest();
     this.saveGame();
   },
 
@@ -6183,8 +6501,11 @@ const G = {
   st(b,l){return Math.floor((2*b*l/100)+l+10);},
   mhp(b,l){return Math.floor((2*b*l/100)+l+10+l);},
   getMoves(t,l){const p=MOVES[t]||MOVES.normal;const m=[p[0]];if(l>=10&&p[1])m.push(p[1]);if(l>=30&&p[2])m.push(p[2]);if(l>=5&&t!=='normal')m.push(MOVES.normal[0]);return m;},
-  mkP(d,l){const m=this.mhp(d.hp,l);return{id:d.id,nm:d.nm,spr:d.spr,t:d.t,lv:l,xp:0,xpN:l*30+60,mhp:m,hp:m,atk:this.st(d.atk,l),def:this.st(d.def,l),spd:this.st(d.spd,l),bHp:d.hp,bAtk:d.atk,bDef:d.def,bSpd:d.spd,tier:d.tier,moves:this.getMoves(d.t,l),evoId:d.evo?d.evo.to:null,evoLv:d.evo?d.evo.lv:null};},
-  rcP(p){const d=DB.find(x=>x.id===p.id);if(!d)return;p.mhp=this.mhp(d.hp,p.lv);p.atk=this.st(d.atk,p.lv);p.def=this.st(d.def,p.lv);p.spd=this.st(d.spd,p.lv);p.bHp=d.hp;p.bAtk=d.atk;p.bDef=d.def;p.bSpd=d.spd;p.moves=this.getMoves(p.t,p.lv);p.evoId=d.evo?d.evo.to:null;p.evoLv=d.evo?d.evo.lv:null;},
+  // Entwicklung laeuft im Zehnerschritt: Stufe 1 wird auf Lv.10 zu Stufe 2,
+  // Stufe 2 auf Lv.20 zu Stufe 3. Wer Stufe 3 erreicht hat, bleibt, wie er ist.
+  evoLvFor(d){ return d.evo?d.tier*10:null; },
+  mkP(d,l){const m=this.mhp(d.hp,l);return{id:d.id,nm:d.nm,spr:d.spr,t:d.t,lv:l,xp:0,xpN:l*30+60,mhp:m,hp:m,atk:this.st(d.atk,l),def:this.st(d.def,l),spd:this.st(d.spd,l),bHp:d.hp,bAtk:d.atk,bDef:d.def,bSpd:d.spd,tier:d.tier,moves:this.getMoves(d.t,l),evoId:d.evo?d.evo.to:null,evoLv:this.evoLvFor(d)};},
+  rcP(p){const d=DB.find(x=>x.id===p.id);if(!d)return;p.mhp=this.mhp(d.hp,p.lv);p.atk=this.st(d.atk,p.lv);p.def=this.st(d.def,p.lv);p.spd=this.st(d.spd,p.lv);p.bHp=d.hp;p.bAtk=d.atk;p.bDef=d.def;p.bSpd=d.spd;p.moves=this.getMoves(p.t,p.lv);p.evoId=d.evo?d.evo.to:null;p.evoLv=this.evoLvFor(d);},
   tryEvo(p){if(!p.evoId||!p.evoLv||p.lv<p.evoLv)return false;const nd=DB.find(x=>x.id===p.evoId);if(!nd)return false;const o=p.nm;p.id=nd.id;p.nm=nd.nm;p.spr=nd.spr;p.t=nd.t;p.tier=nd.tier;this.rcP(p);p.hp=p.mhp;this.popup(`${o} entwickelt sich zu ${p.nm}!`,'caught-popup',2500);Au.lv();setTimeout(()=>Au.cry(p),700);return true;},
   lvUp(p){p.lv++;const om=p.mhp;this.rcP(p);const hg=p.mhp-om;p.hp=Math.min(p.mhp,p.hp+hg);p.xp=0;p.xpN=p.lv*30+60;this.popup(`${p.nm} ist jetzt Level ${p.lv}!<div class="lvl-sub">HP+${hg} ATK:${p.atk} DEF:${p.def} SPD:${p.spd}</div>`,'lvl-popup');Au.lv();setTimeout(()=>this.tryEvo(p),2200);},
   popup(h,c,d){const el=document.createElement('div');el.className=c||'lvl-popup';el.innerHTML=h;document.body.appendChild(el);setTimeout(()=>el.remove(),d||2000);},
@@ -6758,6 +7079,18 @@ const G = {
       mc.beginPath();mc.arc(leg.gx*sc,leg.gy*sc,2.4,0,Math.PI*2);mc.fill();
       if(trackerLbl){trackerLbl.style.display='block';trackerLbl.textContent='\u{1F52E} '+leg.def.nm;}
     } else if(trackerLbl){trackerLbl.style.display='none';}
+    // Der rote Punkt des aktuellen Auftrags: zeigt auf das Gebaeude, das Gras oder
+    // den Bahnhof, wo es als naechstes hingeht.
+    const goal=this.stepGoal();
+    if(goal){
+      const gp=2.6+Math.sin(performance.now()/200)*1.6;
+      mc.fillStyle='rgba(255,60,40,0.30)';
+      mc.beginPath();mc.arc(goal.x*sc,goal.y*sc,7+gp,0,Math.PI*2);mc.fill();
+      mc.strokeStyle='#ff4028';mc.lineWidth=1.6;
+      mc.beginPath();mc.arc(goal.x*sc,goal.y*sc,4.5,0,Math.PI*2);mc.stroke();
+      mc.fillStyle='#ffdc50';
+      mc.beginPath();mc.arc(goal.x*sc,goal.y*sc,2.2,0,Math.PI*2);mc.fill();
+    }
     // player dot with glow
     mc.fillStyle='rgba(255,255,0,0.3)';
     mc.beginPath();mc.arc(this.s.px*sc,this.s.py*sc,4,0,Math.PI*2);mc.fill();
@@ -6776,11 +7109,86 @@ const G = {
     document.getElementById('h-potions').textContent=`\u{1F9EA} ${this.s.potions}`;
     document.getElementById('h-cash').textContent=`\u{1F4B0} ${this.s.cash||0}`;
     document.getElementById('h-battles').textContent=`⚔️ ${this.s.battlesWon}`;
-    const regionLabels={r2:'\u{1F30C} Schattenregion',r3:'❄️ Frostregion',r4:'🏆 Pokemon-Liga'};
-    const regionLabel=regionLabels[this.s.region]||'';
+    const regionIcons={r1:'\u{1F33F}',r2:'\u{1F30C}',r3:'❄️',r4:'🏆'};
+    const regionLabel=(regionIcons[this.s.region]||'')+' '+(REGION_NAME[this.s.region]||'');
     document.getElementById('h-house').textContent=this.s.inHouse?('\u{1F3E0} '+(houseCfgFor(this.s.inHouse).name||'Haus')):regionLabel;
-    const badgeCount=(this.s.flags.badgeR1?1:0)+(this.s.flags.badgeR2?1:0)+(this.s.flags.badgeR3?1:0);
-    document.getElementById('h-badges').textContent=`\u{1F396}️ ${badgeCount}/3`;
+    // Angezeigt werden immer nur die Orden der Region, in der man gerade steht.
+    document.getElementById('h-badges').textContent=`\u{1F396}️ ${badgeCountIn(this.s.region,this.s)}/3`;
+    this.refreshQuest();
+  },
+
+  // Wo der rote Punkt auf der Karte steht. Ein Gebaeudeziel wird ueber sein
+  // Tuerfeld gesucht, ein Fangauftrag ueber das naechstgelegene hohe Gras.
+  // Das Ergebnis wird gepuffert, weil die Suche sonst in jedem Bild liefe.
+  stepGoal(){
+    const s=this.s;
+    if(!s||s.inHouse||!s.map||!s.map.length)return null;
+    const st=currentStep(s);
+    if(!st)return null;
+    const key=st.id+'@'+s.region;
+    if(this._goalKey===key&&this._goalMap===s.map&&!st.tall&&!st.legend)return this._goal;
+    let g=null;
+    if(st.legend){
+      const leg=(s.roamers||[]).find(r=>r.legendary);
+      g=leg?{x:leg.gx,y:leg.gy}:null;
+    } else if(st.tall){
+      g=this.nearestTile(t=>t===T.TALL);
+    } else if(st.station){
+      g=this.nearestNpc(n=>/Schaffner/i.test(n.name||''));
+    } else if(st.house){
+      const tile=Object.keys(DOOR_HOUSE).find(k=>DOOR_HOUSE[k]===st.house);
+      if(tile!==undefined) g=this.findTile(+tile);
+    }
+    this._goalKey=key; this._goalMap=s.map; this._goal=g;
+    return g;
+  },
+  findTile(t){
+    const s=this.s;
+    for(let y=0;y<s.mh;y++)for(let x=0;x<s.mw;x++) if(s.map[y][x]===t) return {x,y};
+    return null;
+  },
+  // Ringsuche um den Spieler: das naechste Feld, auf das die Bedingung zutrifft.
+  nearestTile(pred){
+    const s=this.s;
+    for(let r=1;r<Math.max(s.mw,s.mh);r+=2){
+      for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+        if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+        const x=s.px+dx,y=s.py+dy;
+        if(x<0||y<0||x>=s.mw||y>=s.mh)continue;
+        if(pred(s.map[y][x]))return {x,y};
+      }
+    }
+    return null;
+  },
+  nearestNpc(pred){
+    const list=(this.s.currentNpcs||[]).filter(pred);
+    if(!list.length)return null;
+    let best=list[0],bd=Infinity;
+    for(const n of list){
+      const d=Math.abs(n.x-this.s.px)+Math.abs(n.y-this.s.py);
+      if(d<bd){bd=d;best=n;}
+    }
+    return {x:best.x,y:best.y};
+  },
+
+  // Die Zeile unter dem HUD nennt immer genau den naechsten Schritt. Gibt es
+  // gerade keinen, steht dort, mit wem man reden sollte, um wieder einen zu bekommen.
+  refreshQuest(){
+    const bar=document.getElementById('questbar');
+    if(!bar)return;
+    if(!this.s||this.s.inBattle){bar.style.display='none';return;}
+    const st=currentStep(this.s);
+    bar.style.display='flex';
+    const t=document.getElementById('qb-text'), w=document.getElementById('qb-where');
+    if(st){
+      document.getElementById('qb-icon').textContent='\u{1F4CD}';
+      t.textContent=st.text;
+      w.textContent=st.where?'– '+st.where:'';
+    } else {
+      document.getElementById('qb-icon').textContent='\u{1F4AC}';
+      t.textContent='Rede mit den Leuten in den Doerfern - sie haben Arbeit fuer dich';
+      w.textContent='– in jedem Haus';
+    }
   },
   refreshPot(){const t=new Date().toDateString();if(this.s.lastPD!==t){this.s.potions=5;this.s.lastPD=t;}},
 
@@ -6870,10 +7278,14 @@ const G = {
     const host=spots['1']||{x:Math.floor(w/2),y:2};
     const npcs=[{x:host.x,y:host.y,name:cfg.npc.name,shirt:cfg.npc.shirt,hair:cfg.npc.hair,
       lines:cfg.npc.lines,onEnd:cfg.npc.onEnd,host:true}];
-    (IEXTRA[style]||[]).forEach((e,i)=>{
+    // Erst die Figuren, die zu genau diesem Haus gehoeren, dann die allgemeinen
+    // Bewohner des Baustils. Nur die hausspezifischen duerfen in die Spiellogik greifen.
+    const extras=(cfg.extra||[]).concat(IEXTRA[style]||[]);
+    extras.forEach((e,i)=>{
       const sp=spots[String(i+2)];
       if(sp)npcs.push({x:sp.x,y:sp.y,name:e.name,shirt:e.shirt,hair:e.hair,
-        lines:st=>(isHero(st)&&e.hero)?heroText(e.hero):e.lines});
+        lines:typeof e.lines==='function'?e.lines:(st=>(isHero(st)&&e.hero)?heroText(e.hero):e.lines),
+        onEnd:e.onEnd});
     });
     return {map,w,h,entryX,entryY,npcs};
   },
@@ -7056,11 +7468,7 @@ const G = {
       let tier=this.wildTier();
       // Nachts traut sich Staerkeres heraus - das ist der Grund, tagsueber zu reisen
       if(isNight(this.s)&&Math.random()<0.45) tier=Math.min(3,tier+1);
-      let pool=DB.filter(d=>d.tier===tier);
-      if(isNight(this.s)){
-        const nocturnal=pool.filter(d=>d.t==='ghost'||d.t==='poison'||d.t==='psychic'||d.t==='dragon');
-        if(nocturnal.length&&Math.random()<0.5) pool=nocturnal;
-      }
+      const pool=this.wildPool(tier);
       const def=pool[Math.floor(Math.random()*pool.length)];
       // Im hohen Gras traut sich staerkeres Getier heraus
       s.roamers.push({def, gx:sp.x, gy:sp.y, x:sp.x+0.5, z:sp.y+0.5,
@@ -7093,51 +7501,99 @@ const G = {
     if(!this.s.team.length){this.popup('Du hast noch kein Pokemon!<div class="lvl-sub">Gehe ins Labor zu Professor Eichenholz</div>','caught-popup',3000);return;}
     const isLeg=!!r.legendary;
     this.s.roamers=this.s.roamers.filter(o=>o!==r);
-    Au.enc(); this.s.inBattle=true; this.battleBusy=false; this.s.trainerBattle=false;
-    if(isLeg) this.s.legendaryBattle=this.s.region;
-    this.s.enemy=this.mkP(r.def, r.lv); this.markSeen(this.s.enemy);
-    const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
-    const msg=isLeg?`Das legendaere ${this.s.enemy.nm} (Lv.${this.s.enemy.lv}) greift an!`:`${this.s.enemy.nm} (Lv.${this.s.enemy.lv}) stellt sich dir!`;
-    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();Au.cry(this.s.enemy);
-      this.bl(msg);this.rBA();},350);},400);
+    const foe=this.mkP(r.def,r.lv);
+    this.beginBattle([foe],{legendary:isLeg?this.s.region:null,
+      intro:isLeg?`Das legendaere ${foe.nm} (Lv.${foe.lv}) stellt sich dir entgegen!`
+                 :`${foe.nm} (Lv.${foe.lv}) stellt sich dir!`});
   },
 
-  spawnW(){const t=this.wildTier();const pool=DB.filter(d=>d.tier===t);return this.mkP(pool[Math.floor(Math.random()*pool.length)],this.wildLv());},
+  // Der einzige Ort, an dem entschieden wird, welche Arten frei vorkommen.
+  // Legendaere sind grundsaetzlich ausgeschlossen - die gibt es nur beim Boss.
+  // Nach Einbruch der Dunkelheit stellen sich ausschliesslich Geist- und
+  // Unlicht-Arten, tagsueber sind genau diese beiden nicht unterwegs.
+  wildPool(tier){
+    const night=isNight(this.s);
+    const ok=d=>d.tier<4&&(night?(d.t==='ghost'||d.t==='dark'):(d.t!=='ghost'&&d.t!=='dark'));
+    let pool=DB.filter(d=>d.tier===tier&&ok(d));
+    if(!pool.length)pool=DB.filter(ok);
+    if(!pool.length)pool=DB.filter(d=>d.tier<4);
+    return pool;
+  },
+  spawnW(){const pool=this.wildPool(this.wildTier());return this.mkP(pool[Math.floor(Math.random()*pool.length)],this.wildLv());},
   markSeen(mon){this.s.dex=this.s.dex||{};if(this.s.dex[mon.id]!=='caught')this.s.dex[mon.id]='seen';},
 
   // Battle
-  startBattle(){if(!this.s.team.length)return;Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=false;this.s.enemy=this.spawnW();this.markSeen(this.s.enemy);
+  // ===== Kampfstart =====
+  // Alle Kampfarten laufen ueber denselben Einstieg: eine feste Folge von
+  // Gegnern. Ein wildes Pokemon ist nur der Sonderfall mit genau einem Eintrag,
+  // eine Arenaleitung schickt zwei, der Champion drei.
+  beginBattle(foes,o){
+    o=o||{};
+    if(!this.s.team.length)return;
+    if(!foes.length)return;
+    Au.enc();
+    this.s.inBattle=true; this.battleBusy=false; this.s.battleOver=false;
+    this.s.trainerBattle=!!o.trainer;
+    this.s.trainerFlag=o.flag||null;
+    this.s.gymFlag=o.gymFlag||null;
+    this.s.gymRegion=o.gymRegion||null;
+    this.s.gymSlot=o.gymSlot||null;
+    this.s.championBattle=!!o.champion;
+    this.s.legendaryBattle=o.legendary||null;
+    this.s.arenaStage=!!(o.gymFlag||o.champion);
+    this.s.foes=foes; this.s.foeIdx=0; this.s.enemy=foes[0];
+    foes.forEach(f=>this.markSeen(f));
     const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
-    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();Au.cry(this.s.enemy);this.bl(`Ein wildes ${this.s.enemy.nm} (Lv.${this.s.enemy.lv}) erscheint!`);this.rBA();},350);},400);},
+    const intro=o.intro||`Ein wildes ${foes[0].nm} (Lv.${foes[0].lv}) erscheint!`;
+    const count=foes.length>1?`<br>Gegnerteam: ${foes.length} Pokemon.`:'';
+    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{
+      this.renderB();Au.cry(this.s.enemy);this.bl(intro+count);this.rBA();},350);},400);
+  },
+  // Das Level, an dem sich Gegner ohne feste Vorgabe orientieren.
+  lead(){ return (this.s.team[this.s.active]||this.s.team[0]||{lv:5}).lv; },
+  // Ein Gegner-Pokemon aus einer festen Vorgabe {id,lv}.
+  foeFrom(spec){ const d=DB.find(x=>x.id===spec.id); return d?this.mkP(d,spec.lv):null; },
 
-  startRivalBattle(){if(!this.s.team.length)return;Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=true;this.s.trainerFlag=null;
+  startBattle(){ const w=this.spawnW(); if(w) this.beginBattle([w]); },
+
+  startRivalBattle(){
     const w=this.s.flags.rivalWins||0;
-    const lvl=Math.max(5,(this.s.team[this.s.active]||this.s.team[0]).lv+w*2);
-    const pool=DB.filter(d=>d.tier===1||d.tier===2);
-    this.s.enemy=this.mkP(pool[w%pool.length],lvl);this.markSeen(this.s.enemy);
-    const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
-    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();Au.cry(this.s.enemy);this.bl('Rivale Gary fordert dich zum Kampf heraus!');this.rBA();},350);},400);},
+    const lvl=Math.max(5,this.lead()+w*2);
+    const pool=DB.filter(d=>(d.tier===1||d.tier===2)&&d.tier<4);
+    const foes=[this.mkP(pool[w%pool.length],lvl)];
+    // Ab dem zweiten Duell tritt der Rivale mit einem zweiten Pokemon an.
+    if(w>=1) foes.push(this.mkP(pool[(w*3+1)%pool.length],Math.max(5,lvl-1)));
+    this.beginBattle(foes,{trainer:true,intro:'Rivale Gary fordert dich zum Kampf heraus!'});
+  },
 
-  startTrainerBattle(flagId,trainerName,tier,lvBonus){Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=true;this.s.trainerFlag=flagId;
-    const lvl=Math.max(5,this.s.team[this.s.active].lv+lvBonus);
-    const pool=DB.filter(d=>d.tier===tier);
-    this.s.enemy=this.mkP(pool[Math.floor(Math.random()*pool.length)],lvl);this.markSeen(this.s.enemy);
-    const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
-    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();Au.cry(this.s.enemy);this.bl(`${trainerName} fordert dich zum Kampf heraus!`);this.rBA();},350);},400);},
+  // Streunende Trainer: ab einem gewissen Rang fuehren sie ein zweites Pokemon mit.
+  startTrainerBattle(flagId,trainerName,tier,lvBonus){
+    const lvl=Math.max(5,this.lead()+lvBonus);
+    const pool=DB.filter(d=>d.tier===tier&&d.tier<4);
+    if(!pool.length)return;
+    const pick=n=>pool[n%pool.length];
+    const seed=Math.abs((flagId||'t').split('').reduce((a,c)=>a*31+c.charCodeAt(0),7));
+    const foes=[this.mkP(pick(seed),lvl)];
+    if(seed%2===0) foes.push(this.mkP(pick(seed+5),Math.max(3,lvl-2)));
+    this.beginBattle(foes,{trainer:true,flag:flagId,
+      intro:`${trainerName} fordert dich zum Kampf heraus!`});
+  },
 
-  startGymBattle(badgeFlag,meisterName,tier,lvBonus){Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=true;this.s.trainerFlag=null;this.s.gymFlag=badgeFlag;
-    const lvl=Math.max(10,this.s.team[this.s.active].lv+lvBonus);
-    const pool=DB.filter(d=>d.tier===tier);
-    this.s.enemy=this.mkP(pool[Math.floor(Math.random()*pool.length)],lvl);this.markSeen(this.s.enemy);
-    const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
-    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();Au.cry(this.s.enemy);this.bl(`${meisterName} fordert dich zum Arena-Kampf heraus!`);this.rBA();},350);},400);},
+  // Arenakampf: Typ, Arten und Level stehen fest in ARENAS - hier wird nichts gewuerfelt.
+  startGymBattle(region,slot){
+    const a=arenaBySlot(region,slot); if(!a)return;
+    const foes=a.team.map(t=>this.foeFrom(t)).filter(Boolean);
+    if(!foes.length)return;
+    this.beginBattle(foes,{trainer:true,gymFlag:a.badge,gymRegion:region,gymSlot:slot,
+      intro:`${a.leader} eroeffnet den Arenakampf um den ${a.name.replace('arena','orden')}!`});
+  },
 
-  startChampionBattle(){Au.enc();this.s.inBattle=true;this.battleBusy=false;this.s.trainerBattle=true;this.s.trainerFlag=null;this.s.gymFlag='champion';
-    const lvl=Math.max(15,this.s.team[this.s.active].lv+15);
-    const pool=DB.filter(d=>d.tier===3);
-    this.s.enemy=this.mkP(pool[Math.floor(Math.random()*pool.length)],lvl);this.markSeen(this.s.enemy);
-    const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
-    setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{this.renderB();Au.cry(this.s.enemy);this.bl('Champion Seraphina fordert dich zum finalen Kampf heraus!');this.rBA();},350);},400);},
+  startChampionBattle(){
+    const foes=CHAMPION.team.map(t=>this.foeFrom(t)).filter(Boolean);
+    if(!foes.length)return;
+    this.beginBattle(foes,{trainer:true,champion:true,gymFlag:'champion',
+      intro:`${CHAMPION.name} tritt gegen dich an!`});
+  },
 
   setBattleSprite(elId,mon){const el=document.getElementById(elId);el.innerHTML=`<img src="${Sprites.getCreatureUrl(mon)}" style="width:1em;height:1em;image-rendering:pixelated;">`;},
 
@@ -7155,7 +7611,7 @@ const G = {
     const p=this.s.team[this.s.active];let h='';
     p.moves.forEach((m,i)=>{h+=`<button class="btn btn-blue" onclick="G.bAtk(${i})" title="${m.pow} Starke">${m.name}<span style="font-size:0.7em;display:block;color:#889;">${m.pow}</span></button>`;});
     h+=`<button class="btn btn-blue" onclick="G.bSw()">Wechseln</button><button class="btn btn-blue" onclick="G.bItem()">\u{1F9EA} Heiltrank</button>`;
-    if(!this.s.trainerBattle){h+=`<button class="btn btn-green" onclick="G.bCat()">Fangen</button><button class="btn btn-red" onclick="G.bRun()">Fliehen</button>`;}
+    if(!this.s.trainerBattle){h+=`<button class="btn btn-green" onclick="G.bCat()">Fangen <span style="font-size:0.7em;display:block;color:#889;">${totalBalls(this.s)} Baelle</span></button><button class="btn btn-red" onclick="G.bRun()">Fliehen</button>`;}
     a.innerHTML=h;},
 
   bl(m){const l=document.getElementById('b-log');l.innerHTML+=m+'<br>';l.scrollTop=l.scrollHeight;},
@@ -7184,40 +7640,134 @@ const G = {
     const n=this.s.team.findIndex(pk=>pk.hp>0);if(n>=0){this.s.active=n;this.bl(`${this.s.team[this.s.active].nm} ubernimmt!`);this.renderB();this.battleBusy=false;this.rBA();}
     else{this.bl('Alle Pokemon besiegt!');this.s.battleOver=true;this.battleBusy=false;this.rBA();}},
 
-  bVic(){if(this.s.enemy)Au.cry(this.s.enemy,{faint:true,slow:true});this.s.battleOver=true;this.s.battlesWon++;
-    let vicMsg=`${this.s.enemy.nm} besiegt!`,cashMsg='';
+  // Ein Gegner ist gefallen. Fuehrt die Gegnerseite noch ein weiteres Pokemon,
+  // geht der Kampf einfach weiter - erst wenn die Folge leer ist, ist er gewonnen.
+  bVic(){
+    const e=this.s.enemy;
+    if(e)Au.cry(e,{faint:true,slow:true});
+    const p=this.s.team[this.s.active];
+    const xp=Math.floor(e.lv*18+e.tier*15);
+    p.xp+=xp;
+    this.bl(`${e.nm} besiegt! +${xp} XP`);
+    while(p.xp>=p.xpN){p.xp-=p.xpN;this.lvUp(p);this.bl(`${p.nm} erreicht Level ${p.lv}!`);}
+
+    const foes=this.s.foes||[];
+    if(this.s.foeIdx+1<foes.length){
+      this.s.foeIdx++;
+      const nx=this.s.foes[this.s.foeIdx];
+      this.s.enemy=nx;
+      this.bl(`Noch ${foes.length-this.s.foeIdx} Pokemon uebrig: ${nx.nm} (Lv.${nx.lv}) kommt herein!`);
+      setTimeout(()=>Au.cry(nx),300);
+      this.renderB();this.battleBusy=false;this.rBA();
+      return;
+    }
+
+    this.s.battleOver=true;this.s.battlesWon++;
+    let vicMsg='Kampf gewonnen!',cashMsg='';
     if(this.s.trainerBattle){
-      let cash=Math.floor(this.s.enemy.lv*5+this.s.enemy.tier*20);
+      let cash=Math.floor(e.lv*5+e.tier*20);
       if(this.s.gymFlag){
-        const wasChampion=this.s.gymFlag==='champion';
-        this.s.flags[this.s.gymFlag]=true;this.s.gymFlag=null;
+        const badge=this.s.gymFlag, wasChampion=this.s.championBattle;
+        this.s.flags[badge]=true;this.s.gymFlag=null;
         cash*=wasChampion?5:3;
-        if(wasChampion){ vicMsg='Champion besiegt! Die Welt ist repariert!'; this.s.quests=this.s.quests||{}; this.s.quests.q0='completed'; setTimeout(()=>this.showWorldHealed(),1200); }
-        else{ vicMsg='Meister besiegt! Orden erhalten!'; this.popup('Orden erhalten!<div class="lvl-sub">Du hast den Arena-Meister besiegt!</div>','caught-popup',2600); }
+        if(wasChampion){
+          vicMsg='Championin besiegt! Du bist Liga-Siegerin!';
+          setTimeout(()=>this.onChampionWon(),1200);
+        } else {
+          const a=arenaBySlot(this.s.gymRegion,this.s.gymSlot);
+          vicMsg='Arena gewonnen! Orden erhalten!';
+          this.popup(`${a?a.name:'Arena'} bezwungen!<div class="lvl-sub">Orden erhalten - ${badgeCountIn(this.s.gymRegion,this.s)}/3 in ${REGION_NAME[this.s.gymRegion]||'dieser Region'}</div>`,'caught-popup',2800);
+        }
+        this.s.gymRegion=null;this.s.gymSlot=null;this.s.championBattle=false;
       } else if(this.s.trainerFlag){this.s.flags[this.s.trainerFlag]=true;this.s.trainerFlag=null;vicMsg='Trainer besiegt!';}
       else{this.s.flags.rivalWins=(this.s.flags.rivalWins||0)+1;vicMsg='Rivale besiegt!';}
       this.s.cash=(this.s.cash||0)+cash;
       cashMsg=` +${cash} PokeCash`;
       this.updateHud();
     }
-    const e=this.s.enemy,p=this.s.team[this.s.active];
-    const xp=Math.floor(e.lv*18+e.tier*15);p.xp+=xp;
-    this.bl(`${vicMsg} +${xp} XP${cashMsg}`);
-    while(p.xp>=p.xpN){p.xp-=p.xpN;this.lvUp(p);this.bl(`${p.nm} erreicht Level ${p.lv}!`);}
+    this.bl(vicMsg+cashMsg);
     if(this.s.legendaryBattle){
-      this.bl(`${e.nm} flieht... Du musst es FANGEN, nicht nur besiegen!`);
+      this.bl(`${e.nm} zieht sich zurueck... Besiegen reicht nicht - du musst es FANGEN!`);
       this.s.legendaryBattle=null;
     }
+    this.refreshQuest();
     this.renderB();this.battleBusy=false;this.rBA();},
 
-  async bCat(){if(this.s.battleOver||this.battleBusy||this.s.trainerBattle)return;this.battleBusy=true;
-    const e=this.s.enemy;let rate=(1-e.hp/e.mhp)*0.55+0.08;if(e.tier>=3)rate*=0.45;if(e.tier>=4)rate*=0.25;
-    this.bl('Pokeball!');const an=document.createElement('div');an.className='catch-anim';an.innerHTML='<div class="catch-ball">⚪</div>';document.body.appendChild(an);await this.w(800);
-    if(Math.random()<rate){Au.cat();setTimeout(()=>Au.cry(e),260);an.innerHTML+='<div class="catch-result" style="color:#44dd44;">Gefangen!</div>';this.s.team.push({...e});this.s.battleOver=true;this.s.battlesWon++;this.s.caughtCount=(this.s.caughtCount||0)+1;this.s.dex=this.s.dex||{};this.s.dex[e.id]='caught';const xp=Math.floor(e.lv*12);const p=this.s.team[this.s.active];p.xp+=xp;while(p.xp>=p.xpN){p.xp-=p.xpN;this.lvUp(p);}this.bl(`${e.nm} gefangen! +${xp} XP`);this.checkLegendaryCatch(e);}
-    else{Au.fail();an.innerHTML+='<div class="catch-result" style="color:#dd4444;">Entkommen!</div>';this.bl('Entkommen!');}
+  // Fangen laeuft in zwei Schritten: erst waehlt man den Ball, dann fliegt er.
+  bCat(){
+    if(this.s.battleOver||this.battleBusy||this.s.trainerBattle)return;
+    if(totalBalls(this.s)<=0){this.bl('Du hast keine Baelle mehr! Im Laden gibt es Nachschub.');return;}
+    Au.cl();
+    const ov=document.getElementById('ov-ball');ov.classList.add('on');
+    const g=document.getElementById('ball-grid');g.innerHTML='';
+    const e=this.s.enemy;
+    document.getElementById('ball-info').textContent=
+      `${e.nm} (Lv.${e.lv}) - Grundchance ${Math.round(this.catchBase(e)*100)}%`;
+    BALLS.forEach(b=>{
+      const n=ballCount(this.s,b.id);
+      const c=document.createElement('div');
+      c.className='pk-card'+(n<=0?' ko':'');
+      const chance=b.mult>=999?100:Math.min(100,Math.round(this.catchBase(e)*b.mult*100));
+      c.innerHTML=`<div class="c-spr">${b.spr}</div><div class="c-nm">${b.nm}</div>`
+        +`<div class="c-lv">${n}x vorhanden</div>`
+        +`<div class="c-hp ${chance>60?'green':'red'}">Chance: ${chance}%</div>`
+        +`<div class="c-stats" style="font-size:0.6em;">${b.desc}</div>`;
+      if(n>0) c.onclick=()=>{ov.classList.remove('on');this.throwBall(b);};
+      g.appendChild(c);
+    });
+  },
+  closeBall(){document.getElementById('ov-ball').classList.remove('on');},
+
+  // Grundchance ohne Ball: haengt an den verbliebenen KP und der Stufe der Art.
+  // Bewusst grosszuegig - Fangen soll sich lohnen, nicht frustrieren.
+  catchBase(e){
+    let r=(1-e.hp/e.mhp)*0.62+0.30;
+    if(e.tier===3)r*=0.72;
+    if(e.tier>=4)r*=0.40;
+    return Math.max(0.05,Math.min(0.96,r));
+  },
+
+  async throwBall(b){
+    if(this.battleBusy)return;
+    this.battleBusy=true;
+    const e=this.s.enemy;
+    this.s.balls[b.id]=Math.max(0,ballCount(this.s,b.id)-1);
+    const guaranteed=b.mult>=999;
+    const rate=guaranteed?1:Math.min(0.97,this.catchBase(e)*b.mult);
+    this.bl(`${b.nm} geworfen!`);
+    const an=document.createElement('div');an.className='catch-anim';
+    an.innerHTML=`<div class="catch-ball">${b.spr}</div>`;
+    document.body.appendChild(an);
+    await this.w(800);
+    if(guaranteed||Math.random()<rate){
+      Au.cat();setTimeout(()=>Au.cry(e),260);
+      an.innerHTML+='<div class="catch-result" style="color:#44dd44;">Gefangen!</div>';
+      this.s.team.push({...e});
+      this.s.battleOver=true;this.s.battlesWon++;
+      this.s.caughtCount=(this.s.caughtCount||0)+1;
+      this.s.dex=this.s.dex||{};this.s.dex[e.id]='caught';
+      const xp=Math.floor(e.lv*12);const p=this.s.team[this.s.active];
+      p.xp+=xp;while(p.xp>=p.xpN){p.xp-=p.xpN;this.lvUp(p);}
+      this.bl(`${e.nm} gefangen! +${xp} XP`);
+      this.checkLegendaryCatch(e);
+      this.refreshQuest();
+    } else {
+      Au.fail();
+      an.innerHTML+='<div class="catch-result" style="color:#dd4444;">Entkommen!</div>';
+      this.bl('Ausgebrochen!');
+    }
     await this.w(1200);an.remove();
-    if(!this.s.battleOver){const p=this.s.team[this.s.active];const em=e.moves[Math.floor(Math.random()*e.moves.length)];const r=this.cD(e.atk,p.def,em,e.t,p.t,e.lv);p.hp=Math.max(0,p.hp-r.dmg);this.aS('player','hit');Au.hit();this.sDmg('player',r.dmg,r.crit);this.bl(`${e.nm}: ${em.name}! ${r.dmg}`);this.renderB();if(p.hp<=0){this.hFaint();return;}}
-    this.renderB();this.battleBusy=false;this.rBA();},
+    this.updateHud();this.saveGame();
+    if(!this.s.battleOver){
+      const p=this.s.team[this.s.active];
+      const em=e.moves[Math.floor(Math.random()*e.moves.length)];
+      const r=this.cD(e.atk,p.def,em,e.t,p.t,e.lv);
+      p.hp=Math.max(0,p.hp-r.dmg);this.aS('player','hit');Au.hit();this.sDmg('player',r.dmg,r.crit);
+      this.bl(`${e.nm}: ${em.name}! ${r.dmg}`);this.renderB();
+      if(p.hp<=0){this.hFaint();return;}
+    }
+    this.renderB();this.battleBusy=false;this.rBA();
+  },
 
   checkLegendaryCatch(e){
     const reg=this.s.legendaryBattle;
@@ -7303,23 +7853,34 @@ const G = {
   closeQuests(){document.getElementById('ov-quests').classList.remove('on');},
   rQL(){
     const el=document.getElementById('quest-list');
-    const entries=Object.keys(this.s.quests||{}).sort((a,b)=>{const o={q0:0,qL:1};return (o[a]??2)-(o[b]??2);});
-    if(entries.length===0){el.innerHTML='<p style="color:#667;">Noch keine Aufgaben angenommen. Sprich mit den Bewohnern im Dorf!</p>';return;}
-    el.innerHTML=entries.map(qid=>{
-      const q=QUESTS[qid];const st=this.s.quests[qid];
-      if(!q)return '';
-      const isMain=qid==='q0';const isLeg=qid==='qL';
-      const ready=st!=='completed'&&q.check(this.s);
-      const statusTxt=st==='completed'?'Abgeschlossen':(ready?(isMain?'Bereit! Werde jetzt Pokemon-Meister!':(isLeg?'Alle Legendaeren gefangen! Du bist ein wahrer Held!':'Bereit zur Abgabe! Sprich mit '+q.giverName)):'In Arbeit: '+q.progress(this.s));
-      const color=st==='completed'?'#4a4':(ready?'#ffcc00':'#889');
-      const style=(isMain||isLeg)?'background:linear-gradient(135deg,#241a08,#150f04);border:2px solid #ffcc00;border-radius:10px;padding:10px 14px;margin-bottom:10px;text-align:left;box-shadow:0 0 14px rgba(255,204,0,0.15);':'background:#0e1520;border:1px solid #1a2a3a;border-radius:10px;padding:10px 14px;margin-bottom:8px;text-align:left;';
-      return `<div style="${style}">
-        ${isMain?'<div style="font-size:0.7em;color:#ffcc00;letter-spacing:1px;margin-bottom:2px;">★ HAUPTQUEST</div>':(isLeg?'<div style="font-size:0.7em;color:#ff6600;letter-spacing:1px;margin-bottom:2px;">★ LEGENDAERE BEDROHUNG</div>':'')}
-        <div style="font-weight:700;color:#ddd;">${q.name}</div>
-        <div style="font-size:0.85em;color:#889;margin:3px 0;">${q.desc}</div>
-        <div style="font-size:0.8em;color:${color};">${statusTxt}</div>
-      </div>`;
-    }).join('');
+    const step=currentStep(this.s);
+    const head=step
+      ? `<div style="background:linear-gradient(135deg,#241a08,#150f04);border:2px solid #ffcc00;border-radius:10px;padding:10px 14px;margin-bottom:12px;text-align:left;box-shadow:0 0 14px rgba(255,204,0,0.15);">
+          <div style="font-size:0.7em;color:#ffcc00;letter-spacing:1px;margin-bottom:2px;">\u{1F4CD} NAECHSTER SCHRITT</div>
+          <div style="font-weight:700;color:#ddd;">${step.text}</div>
+          <div style="font-size:0.85em;color:#889;margin-top:3px;">${step.where||''}</div>
+          <div style="font-size:0.78em;color:#b09a70;margin-top:4px;">Der rote Punkt auf der Karte zeigt dir den Weg.</div>
+        </div>`
+      : `<div style="background:#0e1520;border:1px solid #1a2a3a;border-radius:10px;padding:10px 14px;margin-bottom:12px;text-align:left;">
+          <div style="font-weight:700;color:#ddd;">Kein offener Schritt</div>
+          <div style="font-size:0.85em;color:#889;margin-top:3px;">Sprich mit den Leuten in den Doerfern - fast jeder hat eine Aufgabe zu vergeben.</div>
+        </div>`;
+    const entries=Object.keys(this.s.quests||{}).filter(q=>QUESTS[q]);
+    const body=entries.length===0
+      ? '<p style="color:#667;">Noch keine Nebenaufgaben angenommen. Sprich mit den Bewohnern!</p>'
+      : entries.map(qid=>{
+          const q=QUESTS[qid];const st=this.s.quests[qid];
+          const ready=st!=='completed'&&q.check(this.s);
+          const statusTxt=st==='completed'?'Abgeschlossen'
+            :(ready?('Bereit zur Abgabe! Sprich mit '+q.giverName):'In Arbeit: '+q.progress(this.s));
+          const color=st==='completed'?'#4a4':(ready?'#ffcc00':'#889');
+          return `<div style="background:#0e1520;border:1px solid #1a2a3a;border-radius:10px;padding:10px 14px;margin-bottom:8px;text-align:left;">
+            <div style="font-weight:700;color:#ddd;">${q.name}</div>
+            <div style="font-size:0.85em;color:#889;margin:3px 0;">${q.desc}</div>
+            <div style="font-size:0.8em;color:${color};">${statusTxt}</div>
+          </div>`;
+        }).join('');
+    el.innerHTML=head+'<div style="font-size:0.75em;color:#667;letter-spacing:1px;margin:4px 0 6px;">NEBENAUFGABEN</div>'+body;
   },
 
   // Pokedex
@@ -7351,92 +7912,29 @@ const G = {
 
   // Ending / credits sequence, shown once after defeating the League Champion.
   // The game state is untouched - closing it simply returns to normal play.
-  playWorldCinematic(opts,cb){
-    const reverse=!!(opts&&opts.reverse);
-    const caption=(opts&&opts.caption)||(reverse?'Die Welt wird repariert...':'Eine neue Welt entsteht...');
-    const ov=document.getElementById('world-cinematic'),cvs=document.getElementById('world-cinematic-canvas'),cap=document.getElementById('world-cinematic-caption');
-    const ctx=cvs.getContext('2d');
-    const W=cvs.width=window.innerWidth,H=cvs.height=window.innerHeight,cx=W/2,cy=H/2;
-    ov.classList.add('on');ov.style.background='#000';
-    cap.textContent=caption;cap.classList.add('show');
-    const palExplode=['#fff6d0','#ffd23f','#ff9f1c','#ff5b1c','#e8391c','#8a1c1c'];
-    const palRepair=['#bfe9ff','#7fd1ff','#4fb8ff','#2f8fe0','#ffe27a','#ffffff'];
-    const pal=reverse?palRepair:palExplode;
-    const n=140;
-    let particles=[];
-    if(reverse){
-      for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,dist=Math.max(W,H)*(0.5+Math.random()*0.5);
-        particles.push({x:cx+Math.cos(a)*dist,y:cy+Math.sin(a)*dist,r:2+Math.random()*4,col:pal[Math.floor(Math.random()*pal.length)],a,dist});}
-    }
-    const explodeAt=600,dur=reverse?3000:2600;
-    let triggered=false,t0=performance.now();
-    const gameEl=document.getElementById('game');
-    function frame(now){
-      const el=now-t0;
-      ctx.clearRect(0,0,W,H);ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
-      if(!reverse){
-        if(el<explodeAt){
-          const p=el/explodeAt,rad=6+p*26;
-          const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,rad*2.2);
-          grad.addColorStop(0,'#fffef0');grad.addColorStop(0.4,'#ffd23f');grad.addColorStop(1,'rgba(255,90,20,0)');
-          ctx.fillStyle=grad;ctx.beginPath();ctx.arc(cx,cy,rad*2.2,0,Math.PI*2);ctx.fill();
-        } else {
-          if(!triggered){triggered=true;
-            for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=2+Math.random()*9;
-              particles.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:2+Math.random()*4,life:1,decay:0.006+Math.random()*0.012,col:pal[Math.floor(Math.random()*pal.length)]});}
-            cap.classList.remove('show');Au.boom();
-            gameEl.classList.add('shake');setTimeout(()=>gameEl.classList.remove('shake'),500);
-            ov.style.background='#fff';setTimeout(()=>{ov.style.background='#000';},90);
-          }
-          const se=el-explodeAt,ringR=se*0.9;
-          ctx.strokeStyle='rgba(255,220,150,'+Math.max(0,0.6-se/1400)+')';ctx.lineWidth=6;
-          ctx.beginPath();ctx.arc(cx,cy,ringR,0,Math.PI*2);ctx.stroke();
-          particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vx*=0.985;p.vy*=0.985;p.life-=p.decay;
-            if(p.life>0){ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.r*p.life,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}});
-          particles=particles.filter(p=>p.life>0);
-        }
-      } else {
-        const convergeEnd=dur-700;
-        if(el<convergeEnd){
-          const p=Math.min(1,el/convergeEnd),ease=1-Math.pow(1-p,3);
-          particles.forEach(pt=>{const curDist=pt.dist*(1-ease);
-            pt.x=cx+Math.cos(pt.a)*curDist+Math.sin(el*0.002+pt.a)*4;
-            pt.y=cy+Math.sin(pt.a)*curDist+Math.cos(el*0.002+pt.a)*4;
-            ctx.globalAlpha=0.85;ctx.fillStyle=pt.col;ctx.beginPath();ctx.arc(pt.x,pt.y,pt.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});
-          ctx.strokeStyle='rgba(150,210,255,'+(0.5*(1-ease))+')';ctx.lineWidth=4;
-          ctx.beginPath();ctx.arc(cx,cy,Math.max(W,H)*0.5*(1-ease),0,Math.PI*2);ctx.stroke();
-        } else {
-          if(!triggered){triggered=true;cap.classList.remove('show');Au.lv();
-            ov.style.background='#fff';setTimeout(()=>{ov.style.background='#000';},120);}
-          const p=Math.min(1,(el-convergeEnd)/700),rad=30*(1-p)+8;
-          const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,rad*2.4);
-          grad.addColorStop(0,'#ffffff');grad.addColorStop(0.4,'#8fd8ff');grad.addColorStop(1,'rgba(80,180,255,0)');
-          ctx.fillStyle=grad;ctx.beginPath();ctx.arc(cx,cy,rad*2.4,0,Math.PI*2);ctx.fill();
-        }
-      }
-      if(el<dur){requestAnimationFrame(frame);}
-      else{ov.classList.remove('on');setTimeout(()=>{ctx.clearRect(0,0,W,H);ov.style.background='#000';cb&&cb();},650);}
-    }
-    requestAnimationFrame(frame);
+  // Liga gewonnen: Das ist der Titel, aber noch nicht das Ende. Ab hier taucht in
+  // jeder Region ein legendaeres Pokemon auf, und erst wer alle vier faengt, gilt
+  // als Held. Die Meister-Sektion bleibt bis dahin verschlossen.
+  onChampionWon(){
+    this.s.flags.champion=true;
+    this.saveGame();
+    document.getElementById('ending-text').innerHTML=
+      `<b>${CHAMPION.name} ist besiegt.</b><br><br>Zwoelf Orden, zwoelf Arenen, eine Liga - du hast den Titel geholt.`
+      +`<br><br>Doch am selben Abend kommen aus allen vier Regionen dieselben Meldungen: In jeder von ihnen ist ein legendaeres Pokemon aufgetaucht.`
+      +`<br><br><b>Lavados</b> im Auental.<br><b>Zapdos</b> in der Schattenregion.<br><b>Arktos</b> in der Frostregion.<br><b>Mewtu</b> in der Liga-Region.`
+      +`<br><br>Reise in jede Region und <b>fange</b> sie - besiegen allein reicht nicht. Erst dann bist du mehr als Liga-Siegerin oder Liga-Sieger.`;
+    document.getElementById('ending-screen').classList.add('on');
   },
-
-  showWorldHealed(){
-    this.playWorldCinematic({reverse:true,caption:'Die Welt wird repariert...'},()=>{
-      this.s.quests=this.s.quests||{};
-      this.s.quests.qL='active';
-      this.saveGame();
-      document.getElementById('ending-text').innerHTML=`Seraphina tritt zur Seite, und zum ersten Mal seit jener Nacht beruhrt die Naht kein Widerstand mehr.<br><br>Drei Anker, ein Wille - der Riss schliesst sich. Der Rauch uber dem Frostsee zieht endlich weiter. In der Schattenregion geht die Sonne auf.<br><br>Doch kaum ist der letzte Riss geschlossen, dringt ein gewaltiges Bruellen durch die Stille. Legendaere Pokemon - aufgeschreckt durch das Heilen der Welt - bedrohen nun die vier Regionen!<br><br><b>Lavados</b> terrorisiert das Heimatdorf.<br><b>Zapdos</b> bedroht die Schattenregion.<br><b>Arktos</b> wuetet in der Frostregion.<br><b>Dragoran</b> herrscht ueber die Pokemon-Liga.<br><br>Reise in jede Region und bezwinge sie alle, um ein wahrer Held zu werden!`;
-      document.getElementById('ending-screen').classList.add('on');
-    });
-  },
+  // Alle vier gefangen: ab jetzt gilt man als Held, und die Meister-Sektion oeffnet.
   showEnding(){
     this.s.flags.legendaryHero=true;
     this.saveGame();
-    const stats=`Legendaere bezwungen: 4/4<br>Pokemon gefangen: ${this.s.caughtCount||0}<br>Kaempfe gewonnen: ${this.s.battlesWon}<br>PokeCash: ${this.s.cash||0}`;
-    this.playWorldCinematic({reverse:true,caption:'Du bist der wahre Held!'},()=>{
-      document.getElementById('ending-text').innerHTML=`Alle legendaeren Pokemon sind bezwungen. Die Regionen sind endlich frei.<br><br>Die Menschen jubeln dir zu. Chronist Aldo tragt deinen Namen auf die Seite ein, die er jahrelang freigehalten hat.<br><br>Du bist nicht nur Pokemon-Meister - du bist ${heroName()}, Beschuetzer aller vier Regionen!<br><br>${stats}`;
-      document.getElementById('ending-screen').classList.add('on');
-    });
+    const stats=`Legendaere gefangen: 4/4<br>Orden: 12/12<br>Pokemon gefangen: ${this.s.caughtCount||0}<br>Kaempfe gewonnen: ${this.s.battlesWon}<br>PokeCash: ${this.s.cash||0}`;
+    document.getElementById('ending-text').innerHTML=
+      `<b>Alle vier legendaeren Pokemon sind gefangen.</b><br><br>Die Regionen sind wieder sicher, und in jedem Dorf weiss man, wem das zu verdanken ist.`
+      +`<br><br>Chronist Aldo traegt deinen Namen auf der Seite ein, die er jahrelang freigehalten hat.`
+      +`<br><br>Du bist Pokemon-Meister - und ${heroName()}.<br><br>${stats}`;
+    document.getElementById('ending-screen').classList.add('on');
   },
   closeEnding(){ Au.cl(); document.getElementById('ending-screen').classList.remove('on'); },
   rShop(){document.getElementById('shop-cash').textContent=this.s.cash||0;},
@@ -7491,7 +7989,7 @@ const G = {
     const map=inH?this.s.outdoorPos.map:this.s.map,mw=inH?this.s.outdoorPos.mw:this.s.mw,mh=inH?this.s.outdoorPos.mh:this.s.mh;
     const px=inH?this.s.outdoorPos.px:this.s.px,py=inH?this.s.outdoorPos.py:this.s.py;
     const regions={...(this.s.regions||{}),[this.s.region]:{map,mw,mh,px,py,randomTrainers:this.s.randomTrainers,outposts:this.s.outposts,arenaGate:this.s.arenaGate}};
-    localStorage.setItem('pkmn2',JSON.stringify({clock:this.s.clock,char:this.s.char,team:this.s.team,active:this.s.active,potions:this.s.potions,cash:this.s.cash,lastPD:this.s.lastPD,battlesWon:this.s.battlesWon,caughtCount:this.s.caughtCount,region:this.s.region,regions,flags:this.s.flags,quests:this.s.quests,dex:this.s.dex}));
+    localStorage.setItem('pkmn2',JSON.stringify({clock:this.s.clock,char:this.s.char,team:this.s.team,active:this.s.active,potions:this.s.potions,cash:this.s.cash,balls:this.s.balls,lastPD:this.s.lastPD,battlesWon:this.s.battlesWon,caughtCount:this.s.caughtCount,region:this.s.region,regions,flags:this.s.flags,quests:this.s.quests,dex:this.s.dex}));
   }catch(e){}},
   loadGame(){try{const r=localStorage.getItem('pkmn2');if(!r)return false;const d=JSON.parse(r);if(!d.char||!d.team)return false;
     let region,regions;
@@ -7500,12 +7998,12 @@ const G = {
     else return false;
     const snap=regions[region];
     if(!snap)return false;
-    this.s={clock:d.clock||480,char:d.char,team:d.team,active:d.active||0,potions:d.potions!==undefined?d.potions:5,cash:d.cash||0,lastPD:d.lastPD||null,battlesWon:d.battlesWon||0,caughtCount:d.caughtCount||0,
+    this.s={clock:d.clock||480,char:d.char,team:d.team,active:d.active||0,potions:d.potions!==undefined?d.potions:5,cash:d.cash||0,balls:Object.assign({poke:0,super:0,hyper:0,master:0},d.balls||{}),lastPD:d.lastPD||null,battlesWon:d.battlesWon||0,caughtCount:d.caughtCount||0,
       region,regions,px:snap.px,py:snap.py,map:snap.map,mw:snap.mw,mh:snap.mh,randomTrainers:snap.randomTrainers||[],outposts:snap.outposts||[],arenaGate:snap.arenaGate||null,
-      inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:d.flags||{},quests:d.quests||{},dex:d.dex||{},
+      inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,foes:[],foeIdx:0,flags:d.flags||{},quests:d.quests||{},dex:d.dex||{},
       inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
-    if(!this.s.quests.q0){this.s.quests.q0=(this.s.flags.badgeR1&&this.s.flags.badgeR2&&this.s.flags.badgeR3&&this.s.flags.champion)?'completed':'active';}
-    if(this.s.flags.champion&&!this.s.quests.qL){this.s.quests.qL=allLegendsCaught(this.s)?'completed':'active';}
+    // Altstaende aufraeumen: Quests, die es nicht mehr gibt, verschwinden aus dem Log.
+    Object.keys(this.s.quests).forEach(k=>{ if(!QUESTS[k]) delete this.s.quests[k]; });
     if(allLegendsCaught(this.s)&&!this.s.flags.legendaryHero){this.s.flags.legendaryHero=true;}
     this.s.team.forEach(p=>this.rcP(p));
     const sx=Math.floor(this.s.mw/2),sy=Math.floor(this.s.mh/2);
@@ -7518,13 +8016,40 @@ const G = {
     this.s.currentNpcs=this.s.worldNpcs;
     return true;}catch(e){return false;}},
 
-  startNewGame(){Au.cl();this.s={clock:480,char:this._cc,team:[],active:0,potions:5,cash:50,lastPD:new Date().toDateString(),battlesWon:0,caughtCount:0,region:'r1',regions:{},px:0,py:0,map:[],mw:0,mh:0,inBattle:false,battleOver:false,trainerBattle:false,trainerFlag:null,gymFlag:null,enemy:null,flags:{},quests:{q0:'active'},dex:{},randomTrainers:[],outposts:[],arenaGate:null,inHouse:null,outdoorPos:null,dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
+  // Das Spiel faengt nicht auf der Landkarte an, sondern im eigenen Bett. Ohne
+  // Pokemon, ohne Geld, ohne Baelle - das alles bekommt man erst von der Mutter
+  // und vom Professor.
+  startNewGame(){Au.cl();
+    this.s={clock:450,char:this._cc,team:[],active:0,potions:0,cash:0,
+      balls:{poke:0,super:0,hyper:0,master:0},
+      lastPD:new Date().toDateString(),battlesWon:0,caughtCount:0,region:'r1',regions:{},
+      px:0,py:0,map:[],mw:0,mh:0,inBattle:false,battleOver:false,trainerBattle:false,
+      trainerFlag:null,gymFlag:null,enemy:null,foes:[],foeIdx:0,flags:{},quests:{},dex:{},
+      randomTrainers:[],outposts:[],arenaGate:null,inHouse:null,outdoorPos:null,
+      dialogueOpen:false,facing:{dx:0,dy:1},trainBusy:false};
     this.genWorld('r1');
-    this.playWorldCinematic({reverse:false,caption:'Eine neue Welt entsteht...'},()=>{
-      this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();this.saveGame();
-        setTimeout(()=>this.popup('Gehe ins Labor und hole dein Pokemon ab!<div class="lvl-sub">Das Labor befindet sich im Dorf</div>','caught-popup',4500),800);
-      },350);
-    });},
+    this.showScreen('scr-world');
+    setTimeout(()=>{
+      // Direkt ins Elternhaus setzen und den Spieler neben dem Bett aufwachen lassen.
+      this.enterHouse('home');
+      this.wakeInBed();
+      this.renderWorld();this.updateHud();this.saveGame();
+      setTimeout(()=>this.popup('Du wachst zu Hause auf.<div class="lvl-sub">Sprich mit deiner Mutter, bevor du aufbrichst</div>','caught-popup',4200),700);
+    },350);},
+
+  // Den Spieler auf ein freies Feld direkt neben dem Bett stellen.
+  wakeInBed(){
+    const s=this.s;
+    let bed=null;
+    for(let y=0;y<s.mh&&!bed;y++)for(let x=0;x<s.mw;x++) if(s.map[y][x]===T.BED){bed={x,y};break;}
+    if(!bed)return;
+    const around=[[0,1],[1,0],[-1,0],[0,2],[1,1],[-1,1]];
+    for(const [dx,dy] of around){
+      const x=bed.x+dx,y=bed.y+dy;
+      if(x<0||y<0||x>=s.mw||y>=s.mh)continue;
+      if(IW.has(s.map[y][x])){ s.px=x;s.py=y;s.facing={dx:0,dy:1};return; }
+    }
+  },
   resumeGame(){Au.cl();this.refreshPot();if(this.s.team.length&&this.s.team[this.s.active]&&this.s.team[this.s.active].hp<=0){const i=this.s.team.findIndex(p=>p.hp>0);if(i>=0)this.s.active=i;}this.showScreen('scr-world');setTimeout(()=>{this.renderWorld();this.updateHud();},350);},
 };
 
