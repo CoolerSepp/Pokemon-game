@@ -83,7 +83,10 @@ body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
 #qb-text { color: #ffd880; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #qb-where { color: #b09a70; font-size: 0.88em; flex-shrink: 0; white-space: nowrap; }
 @keyframes qbpulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.55; transform: scale(0.88); } }
-@media (max-width: 560px) { #qb-where { display: none; } }
+@media (max-width: 560px) {
+  #qb-where { display: none; }
+  .caught-popup, .lvl-popup { padding-left: 18px; padding-right: 18px; font-size: 1.05em; }
+}
 #hud { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); background: linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.6)); z-index: 10; width: 100%; min-height: 40px; flex-shrink: 0; border-bottom: 1px solid #1a2a3a; flex-wrap: wrap; row-gap: 4px; }
 .hud-l, .hud-r { display: flex; align-items: center; gap: 10px; font-size: 0.85em; flex-wrap: wrap; row-gap: 4px; }
 .hud-pokemon { display: flex; align-items: center; gap: 4px; }
@@ -101,7 +104,7 @@ body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
 @media (pointer: coarse) { #tracker-label { bottom: max(238px, calc(238px + env(safe-area-inset-bottom))); width: 104px; } }
 
 #scr-battle { background: linear-gradient(180deg, #5a9ad0 0%, #3a7a40 55%, #2a5a20 100%); position: relative; overflow: hidden; }
-/* Der Kampfhintergrund richtet sich danach, wo gekaempft wird: im Freien nach der
+/* Der Kampfhintergrund richtet sich danach, wo gekämpft wird: im Freien nach der
    Region, in einer Arena nach dem Typ der Halle. */
 #scr-battle.bg-r2 { background: linear-gradient(180deg, #2a1c44 0%, #46386a 52%, #221838 100%); }
 #scr-battle.bg-r3 { background: linear-gradient(180deg, #9cc8e4 0%, #cfe6f2 50%, #8fb0c4 100%); }
@@ -113,7 +116,7 @@ body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
 #scr-battle.bg-champion { background: linear-gradient(180deg, #3a2450 0%, #6a4a18 48%, #2a1c10 100%); }
 #scr-battle.bg-legend { background: linear-gradient(180deg, #140a24 0%, #4a1c58 45%, #12060f 100%); }
 #scr-battle.bg-arena .battle-bg-clouds, #scr-battle.bg-champion .battle-bg-clouds { display: none; }
-/* Im 3D-Modus zeichnet die Szene selbst - das flaechige CSS-Muster muss weg. */
+/* Im 3D-Modus zeichnet die Szene selbst - das flächige CSS-Muster muss weg. */
 body.d3 #scr-battle.bg-arena::after { display: none; }
 .battle-bg-clouds { position: absolute; top: 0; left: 0; width: 200%; height: 40%; background: repeating-linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 10%, transparent 20%); animation: cl 30s linear infinite; }
 @keyframes cl { 0%{transform:translateX(0)}100%{transform:translateX(-50%)} }
@@ -198,10 +201,10 @@ body.d3 #scr-battle.bg-arena::after { display: none; }
 @media (pointer: coarse) { #mob-ctrl.vis { display: flex; } }
 @media (pointer: fine) { #mob-ctrl { display: none !important; } }
 
-.lvl-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #ffcc00, #f09000); color: #1a1a2e; padding: 16px 40px; border-radius: 14px; font-size: 1.3em; font-weight: 700; z-index: 200; animation: lp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; text-align: center; box-shadow: 0 0 40px rgba(255,204,0,0.4); }
+.lvl-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: max-content; background: linear-gradient(135deg, #ffcc00, #f09000); color: #1a1a2e; padding: 16px 40px; max-width: min(420px, calc(100vw - 32px)); box-sizing: border-box; border-radius: 14px; font-size: 1.3em; font-weight: 700; z-index: 200; animation: lp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; text-align: center; box-shadow: 0 0 40px rgba(255,204,0,0.4); }
 .lvl-popup .lvl-sub { font-size: 0.6em; font-weight: 400; color: #4a3a00; margin-top: 4px; }
 @keyframes lp { 0%{transform:translate(-50%,-50%) scale(0);opacity:0}100%{transform:translate(-50%,-50%) scale(1);opacity:1} }
-.caught-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #2060c0, #1050a0); color: #fff; padding: 20px 40px; border-radius: 14px; font-size: 1.2em; font-weight: 700; z-index: 200; animation: lp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; text-align: center; box-shadow: 0 0 40px rgba(32,96,192,0.4); }
+.caught-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: max-content; background: linear-gradient(135deg, #2060c0, #1050a0); color: #fff; padding: 20px 40px; max-width: min(420px, calc(100vw - 32px)); box-sizing: border-box; border-radius: 14px; font-size: 1.2em; font-weight: 700; z-index: 200; animation: lp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; text-align: center; box-shadow: 0 0 40px rgba(32,96,192,0.4); }
 
 .dialogue-box { background: linear-gradient(160deg, rgba(10,10,20,0.96), rgba(20,20,35,0.94)); border: 2px solid #3a5a8a; border-radius: 14px; padding: 16px 20px; max-width: 600px; width: 90%; box-shadow: 0 8px 30px rgba(0,0,0,0.5); cursor: pointer; }
 .dlg-name { color: #ffcc00; font-weight: 700; font-size: 1em; margin-bottom: 6px; }
@@ -344,7 +347,7 @@ body.d3 #scr-battle.bg-arena::after { display: none; }
     <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px;">
       <div id="shop-balls" style="display:flex;flex-direction:column;gap:10px;"></div>
       <div style="background:#0e1520;border:1px solid #1a2a3a;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
-        <div><div style="font-weight:700;">Heiltrank</div><div style="font-size:0.75em;color:#889;">Fuellt einen Heiltrank in dein Inventar</div></div>
+        <div><div style="font-weight:700;">Heiltrank</div><div style="font-size:0.75em;color:#889;">Füllt einen Heiltrank in dein Inventar</div></div>
         <button class="btn btn-green" style="min-width:auto;padding:8px 14px;" onclick="G.buyPotion()">30 &#128176;</button>
       </div>
       <div style="background:#0e1520;border:1px solid #1a2a3a;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
@@ -2504,7 +2507,7 @@ const DB=[
 ];
 
 // ===================== BAELLE =====================
-// Baelle sind Verbrauchsmaterial: Professor Eichenholz gibt eine Grundausstattung
+// Bälle sind Verbrauchsmaterial: Professor Eichenholz gibt eine Grundausstattung
 // mit, alles weitere kauft man. Der Faktor multipliziert die Fangchance.
 const BALLS=[
   {id:'poke',  nm:'Pokeball',    spr:'\u{26AA}', mult:1.0, price:25,
@@ -2745,13 +2748,13 @@ function rivalLines(s){
     'Der Professor wollte warten, bis du da bist. Nimm dir eines, dann sind wir beide dran.'];
   if(!s.flags.metRival) return ['Rivale Gary: Du hast deins, ich habe meins. Dann wissen wir ja, was jetzt kommt.',
     'Und weil ich fair bin, gebe ich dir gleich noch eine Aufgabe mit: Besiege die beiden Trainer hier im Dorf.',
-    'Wenn du das schaffst, habe ich etwas fuer dich. Aber erst kaempfen wir.'];
+    'Wenn du das schaffst, habe ich etwas für dich. Aber erst kämpfen wir.'];
   const st=questStatus('q4',s);
   if(st==='ready') return ['Rivale Gary: Beide? Wirklich beide?',
-    'Gut. Ich hasse es, aber gut - das hier gehoert jetzt dir.',
+    'Gut. Ich hasse es, aber gut - das hier gehört jetzt dir.',
     'Und jetzt noch einmal zu uns beiden.'];
   if(st==='active') return [`Rivale Gary: Fortschritt: ${QUESTS.q4.progress(s)} Dorftrainer besiegt.`,
-    'Erst wenn beide liegen, reden wir ueber die Belohnung. Kaempfen koennen wir trotzdem.'];
+    'Erst wenn beide liegen, reden wir über die Belohnung. Kämpfen können wir trotzdem.'];
   if(w===0) return ['Rivale Gary: Diesmal gewinne ich. Ich habe trainiert, bis mir schlecht wurde.'];
   if(w>=3) return [`Rivale Gary: ${w} Niederlagen. Ich zähle mit.`,
     'Und ich höre trotzdem nicht auf. Das ist der ganze Punkt.'];
@@ -3214,7 +3217,7 @@ const HOUSES={
   center:{name:'Pokemon-Center',npc:{name:'Schwester Joy',shirt:'#f4f4f6',hair:'#e0506a',lines:s=>centerLines(s),
     onEnd:()=>{ G.healTeamFree(); }}},
   // Das Labor: hier bekommt man sein erstes Pokemon und seine Grundausstattung
-  // an Baellen. Gary wartet gleich daneben auf sein erstes Duell.
+  // an Bällen. Gary wartet gleich daneben auf sein erstes Duell.
   lab:{name:'Pokemon-Labor',npc:{name:'Professor Eichenholz',shirt:'#f0f0f0',hair:'#3a2a1a',lines:s=>professorLines(s),
     onEnd:()=>{ const s=G.s;
       if(!s.flags.gotStarter){ setTimeout(()=>G.openStarterPick(),200); return; }
@@ -6681,7 +6684,7 @@ const G = {
     this.s.active=0;
     this.s.dex[d.id]='caught';
     this.s.flags.gotStarter=true;
-    // Die Grundausstattung des Professors: genug Baelle fuer den Anfang.
+    // Die Grundausstattung des Professors: genug Bälle fuer den Anfang.
     this.s.balls=this.s.balls||{};
     this.s.balls.poke=(this.s.balls.poke||0)+50;
     this.s.balls.super=(this.s.balls.super||0)+5;
@@ -7782,7 +7785,7 @@ const G = {
     const p=this.s.team[this.s.active];let h='';
     p.moves.forEach((m,i)=>{h+=`<button class="btn btn-blue" onclick="G.bAtk(${i})" title="${m.pow} Starke">${m.name}<span style="font-size:0.7em;display:block;color:#889;">${m.pow}</span></button>`;});
     h+=`<button class="btn btn-blue" onclick="G.bSw()">Wechseln</button><button class="btn btn-blue" onclick="G.bItem()">\u{1F9EA} Heiltrank</button>`;
-    if(!this.s.trainerBattle){h+=`<button class="btn btn-green" onclick="G.bCat()">Fangen <span style="font-size:0.7em;display:block;color:#889;">${totalBalls(this.s)} Baelle</span></button><button class="btn btn-red" onclick="G.bRun()">Fliehen</button>`;}
+    if(!this.s.trainerBattle){h+=`<button class="btn btn-green" onclick="G.bCat()">Fangen <span style="font-size:0.7em;display:block;color:#889;">${totalBalls(this.s)} Bälle</span></button><button class="btn btn-red" onclick="G.bRun()">Fliehen</button>`;}
     a.innerHTML=h;},
 
   bl(m){const l=document.getElementById('b-log');l.innerHTML+=m+'<br>';l.scrollTop=l.scrollHeight;},
@@ -8117,7 +8120,7 @@ const G = {
   closeEnding(){ Au.cl(); document.getElementById('ending-screen').classList.remove('on'); },
   rShop(){
     document.getElementById('shop-cash').textContent=this.s.cash||0;
-    // Baelle sind Verbrauchsmaterial - der Laden fuehrt alle kaufbaren Sorten.
+    // Bälle sind Verbrauchsmaterial - der Laden fuehrt alle kaufbaren Sorten.
     const g=document.getElementById('shop-balls');
     if(!g)return;
     g.innerHTML='';
@@ -8233,7 +8236,7 @@ const G = {
     return true;}catch(e){return false;}},
 
   // Das Spiel faengt nicht auf der Landkarte an, sondern im eigenen Bett. Ohne
-  // Pokemon, ohne Geld, ohne Baelle - das alles bekommt man erst von der Mutter
+  // Pokemon, ohne Geld, ohne Bälle - das alles bekommt man erst von der Mutter
   // und vom Professor.
   startNewGame(){Au.cl();
     this.s={clock:450,char:this._cc,team:[],active:0,potions:0,cash:0,
