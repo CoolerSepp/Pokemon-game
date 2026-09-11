@@ -298,13 +298,13 @@ body.d3 #scr-battle.bg-arena::after { display: none; }
     <div class="title-stats" id="title-stats"></div>
   </div>
   <div id="scr-char" class="scr">
-    <div class="sel-title">Wahle deinen Trainer</div>
+    <div class="sel-title">Wähle deinen Trainer</div>
     <div class="sel-sub">Dein Abenteuer wartet</div>
     <div class="sel-grid" id="char-grid"></div>
     <button class="btn btn-gold" id="char-btn" disabled onclick="G.toStarterSelect()">Weiter</button>
   </div>
   <div id="scr-starter" class="scr">
-    <div class="sel-title">Wahle dein Starter-Pokemon</div>
+    <div class="sel-title">Wähle dein Starter-Pokemon</div>
     <div class="sel-sub">Dein erster Partner im Kampf</div>
     <div class="sel-grid" id="starter-grid"></div>
     <div class="pk-detail" id="starter-detail" style="display:none"></div>
@@ -330,14 +330,14 @@ body.d3 #scr-battle.bg-arena::after { display: none; }
     </div>
     <div id="b-log"></div>
   </div>
-  <div class="overlay" id="ov-team"><div class="ov-title">Dein Team</div><div class="ov-grid" id="team-grid"></div><div id="team-detail"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeTeam()">Schliessen</button></div></div>
-  <div class="overlay" id="ov-potions"><div class="ov-title">Heiltranke</div><p id="pot-info" style="color:#889;margin-bottom:12px;font-size:0.9em;"></p><div class="ov-grid" id="pot-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closePotions()">Schliessen</button></div></div>
+  <div class="overlay" id="ov-team"><div class="ov-title">Dein Team</div><div class="ov-grid" id="team-grid"></div><div id="team-detail"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeTeam()">Schließen</button></div></div>
+  <div class="overlay" id="ov-potions"><div class="ov-title">Heiltränke</div><p id="pot-info" style="color:#889;margin-bottom:12px;font-size:0.9em;"></p><div class="ov-grid" id="pot-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closePotions()">Schließen</button></div></div>
   <div class="overlay" id="ov-switch"><div class="ov-title">Pokemon wechseln</div><div class="ov-grid" id="switch-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeSwitch()">Abbrechen</button></div></div>
   <div class="overlay" id="ov-battle-item"><div class="ov-title">Heiltrank einsetzen</div><p id="battle-item-info" style="color:#889;margin-bottom:10px;font-size:0.85em;"></p><div class="ov-grid" id="battle-item-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeBattleItem()">Abbrechen</button></div></div>
-  <div class="overlay" id="ov-quests"><div class="ov-title">Quests</div><div id="quest-list" style="width:100%;max-width:600px;"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeQuests()">Schliessen</button></div></div>
-  <div class="overlay" id="ov-dex"><div class="ov-title">Pokedex</div><p id="dex-info" style="color:#889;margin-bottom:10px;font-size:0.9em;"></p><div class="ov-grid" id="dex-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeDex()">Schliessen</button></div></div>
+  <div class="overlay" id="ov-quests"><div class="ov-title">Quests</div><div id="quest-list" style="width:100%;max-width:600px;"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeQuests()">Schließen</button></div></div>
+  <div class="overlay" id="ov-dex"><div class="ov-title">Pokedex</div><p id="dex-info" style="color:#889;margin-bottom:10px;font-size:0.9em;"></p><div class="ov-grid" id="dex-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeDex()">Schließen</button></div></div>
   <div class="overlay" id="ov-ball"><div class="ov-title">Welchen Ball?</div><p id="ball-info" style="color:#889;margin-bottom:10px;font-size:0.85em;"></p><div class="ov-grid" id="ball-grid"></div><div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeBall()">Abbrechen</button></div></div>
-  <div class="overlay" id="ov-starter-pick" style="z-index:120;"><div class="ov-title">Wahle dein Starter-Pokemon</div><p style="color:#889;margin-bottom:12px;font-size:0.9em;">Dein erster Partner im Abenteuer</p><div class="ov-grid" id="ov-starter-grid"></div><div id="ov-starter-detail" style="margin-top:10px;font-size:0.85em;color:#bbc;"></div></div>
+  <div class="overlay" id="ov-starter-pick" style="z-index:120;"><div class="ov-title">Wähle dein Starter-Pokemon</div><p style="color:#889;margin-bottom:12px;font-size:0.9em;">Dein erster Partner im Abenteuer</p><div class="ov-grid" id="ov-starter-grid"></div><div id="ov-starter-detail" style="margin-top:10px;font-size:0.85em;color:#bbc;"></div></div>
   <div class="overlay" id="ov-shop">
     <div class="ov-title">Pokemon-Laden</div>
     <p style="color:#889;margin-bottom:14px;font-size:0.9em;">Dein PokeCash: <span id="shop-cash" style="color:#ffd860;font-weight:700;"></span></p>
@@ -357,13 +357,13 @@ body.d3 #scr-battle.bg-arena::after { display: none; }
       </div>
     </div>
     <div id="shop-food-select" style="width:100%;max-width:600px;display:none;"></div>
-    <div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeShop()">Schliessen</button></div>
+    <div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeShop()">Schließen</button></div>
   </div>
   <div class="overlay" id="ov-skin">
     <div class="ov-title">Neuer Look</div>
     <p style="color:#889;margin-bottom:14px;font-size:0.9em;">Dein PokeCash: <span id="skin-cash" style="color:#ffd860;font-weight:700;"></span> - ein Wechsel kostet <span style="color:#ffd860;font-weight:700;">120 &#128176;</span></p>
     <div class="ov-grid" id="skin-grid"></div>
-    <div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeSkin()">Schliessen</button></div>
+    <div style="margin-top:15px;"><button class="btn btn-blue" onclick="G.closeSkin()">Schließen</button></div>
   </div>
   <div class="overlay" id="ov-dialogue" style="align-items:center;justify-content:flex-end;padding-bottom:6vh;" onclick="G.advanceDialogue()">
     <div class="dialogue-box"><div class="dlg-name" id="dlg-name"></div><div class="dlg-text" id="dlg-text"></div><div class="dlg-next">&#9660; weiter</div></div>
@@ -2554,7 +2554,7 @@ const QUESTS={
     check:s=>s.battlesWon>=60,progress:s=>Math.min(s.battlesWon,60)+'/60',reward:{potions:6,cash:600}},
   q10:{id:'q10',giverName:'Kristallschürfer Finn',name:'Eisiger Meister',desc:'Bringe ein Pokemon auf Level 35.',
     check:s=>s.team.some(p=>p.lv>=35),progress:s=>(s.team.length?Math.max(...s.team.map(p=>p.lv)):0)+'/35',reward:{potions:7,cash:700,balls:{hyper:4}}},
-  q11:{id:'q11',giverName:'Schneejagerin Runa',name:'Vollstandige Zahlung',desc:'Trage 15 verschiedene Arten im Pokedex als gefangen ein.',
+  q11:{id:'q11',giverName:'Schneejägerin Runa',name:'Vollstandige Zahlung',desc:'Trage 15 verschiedene Arten im Pokedex als gefangen ein.',
     check:s=>Object.values(s.dex||{}).filter(v=>v==='caught').length>=15,
     progress:s=>Math.min(Object.values(s.dex||{}).filter(v=>v==='caught').length,15)+'/15',reward:{potions:8,cash:800,balls:{hyper:5}}},
 };
@@ -2664,10 +2664,10 @@ const HEROTXT={
       'Heute war ein Blatt dabei. Frisch. Diesmal aus diesem Frühling.'],
     ask:['Kristallschürfer Finn: {H}, komm mit runter in den Stollen.',
       'Bring ein Pokemon auf Level 35 mit, dann zeige ich dir meinen besten Fund.']},
-  runa:{done:['Schneejagerin Runa: Fünfzehn Arten, {H}. Sauber gezählt.','Dann stimmt alles, was sie über dich erzählen. Nimm das hier.'],
-    say:['Schneejagerin Runa: {H}. Ich zähle immer noch - aber jetzt zähle ich Neugeborene.',
+  runa:{done:['Schneejägerin Runa: Fünfzehn Arten, {H}. Sauber gezählt.','Dann stimmt alles, was sie über dich erzählen. Nimm das hier.'],
+    say:['Schneejägerin Runa: {H}. Ich zähle immer noch - aber jetzt zähle ich Neugeborene.',
       'Meine Liste wird jeden Monat länger statt kürzer.'],
-    ask:['Schneejagerin Runa: {H}, tu mir den Gefallen.',
+    ask:['Schneejägerin Runa: {H}, tu mir den Gefallen.',
       'Trag fünfzehn verschiedene Arten als gefangen ein. Dann ist meine Zählung vollständig.']},
   bjorn:{say:['Alter Fischer Bjorn: {H}! Es beißt wieder. Seit heute früh, ohne Unterbrechung.',
     'Vierzig Jahre am selben See - und dann kommt so ein junger Mensch daher.']},
@@ -2744,7 +2744,14 @@ function rivalLines(s){
   if(!s.flags.gotStarter) return ['Rivale Gary: Na endlich. Ich stehe hier seit einer Stunde.',
     'Der Professor wollte warten, bis du da bist. Nimm dir eines, dann sind wir beide dran.'];
   if(!s.flags.metRival) return ['Rivale Gary: Du hast deins, ich habe meins. Dann wissen wir ja, was jetzt kommt.',
-    'Ich gewinne das hier. Nur damit du es gleich von Anfang an weisst.'];
+    'Und weil ich fair bin, gebe ich dir gleich noch eine Aufgabe mit: Besiege die beiden Trainer hier im Dorf.',
+    'Wenn du das schaffst, habe ich etwas fuer dich. Aber erst kaempfen wir.'];
+  const st=questStatus('q4',s);
+  if(st==='ready') return ['Rivale Gary: Beide? Wirklich beide?',
+    'Gut. Ich hasse es, aber gut - das hier gehoert jetzt dir.',
+    'Und jetzt noch einmal zu uns beiden.'];
+  if(st==='active') return [`Rivale Gary: Fortschritt: ${QUESTS.q4.progress(s)} Dorftrainer besiegt.`,
+    'Erst wenn beide liegen, reden wir ueber die Belohnung. Kaempfen koennen wir trotzdem.'];
   if(w===0) return ['Rivale Gary: Diesmal gewinne ich. Ich habe trainiert, bis mir schlecht wurde.'];
   if(w>=3) return [`Rivale Gary: ${w} Niederlagen. Ich zähle mit.`,
     'Und ich höre trotzdem nicht auf. Das ist der ganze Punkt.'];
@@ -2887,14 +2894,14 @@ function finnLines(s){
 function runaLines(s){
   const st=questStatus('q11',s);
   if(isHero(s)&&st==='none') return hero('runa','ask');
-  if(st==='none') return ['Schneejagerin Runa: Ich jage nicht zum Töten - ich zähle.',
+  if(st==='none') return ['Schneejägerin Runa: Ich jage nicht zum Töten - ich zähle.',
     'Fünfzehn verschiedene Arten im Pokedex, als gefangen eingetragen. Das ist meine Messlatte.',
     'Wer das schafft, hat wirklich gesucht und nicht nur das Nächstbeste mitgenommen.'];
   if(isHero(s)&&st==='ready') return hero('runa','done');
-  if(st==='ready') return ['Schneejagerin Runa: Fünfzehn Arten. Sauber gezählt.','Dann stimmt es also, was sie über dich erzählen. Nimm das hier.'];
-  if(st==='active') return heroSay(s,'runa',[`Schneejagerin Runa: Fortschritt: ${QUESTS.q11.progress(s)}.`]);
+  if(st==='ready') return ['Schneejägerin Runa: Fünfzehn Arten. Sauber gezählt.','Dann stimmt es also, was sie über dich erzählen. Nimm das hier.'];
+  if(st==='active') return heroSay(s,'runa',[`Schneejägerin Runa: Fortschritt: ${QUESTS.q11.progress(s)}.`]);
   if(isHero(s)) return hero('runa');
-  return ['Schneejagerin Runa: Die seltenen Arten verstecken sich weit draußen im Schnee. Geh nicht ohne Heiltränke.'];
+  return ['Schneejägerin Runa: Die seltenen Arten verstecken sich weit draußen im Schnee. Geh nicht ohne Heiltränke.'];
 }
 function bjornLines(s){ if(isHero(s)) return hero('bjorn');
   return ['Alter Fischer Bjorn: Ich sitze seit vierzig Jahren an diesem See.',
@@ -3211,12 +3218,18 @@ const HOUSES={
   lab:{name:'Pokemon-Labor',npc:{name:'Professor Eichenholz',shirt:'#f0f0f0',hair:'#3a2a1a',lines:s=>professorLines(s),
     onEnd:()=>{ const s=G.s;
       if(!s.flags.gotStarter){ setTimeout(()=>G.openStarterPick(),200); return; }
-      G.updateHud(); G.saveGame();
+      // Wie bei allen Auftraggebern: annehmen, wenn noch offen - abgeben, wenn erfuellt.
+      const st=questStatus('q1',s);
+      if(st==='none') startQuest('q1');
+      else if(st==='ready') completeQuest('q1');
+      G.updateHud(); G.refreshQuest(); G.saveGame();
     }},
     extra:[{name:'Rivale Gary',shirt:'#2a6a2a',hair:'#e0a020',lines:s=>rivalLines(s),
       onEnd:()=>{ const s=G.s;
         if(!s.flags.gotStarter) return;
-        s.flags.metRival=true;
+        // Erstes Treffen: Gary stellt seine Aufgabe und fordert danach zum Duell.
+        if(!s.flags.metRival){ s.flags.metRival=true; startQuest('q4'); }
+        else if(questStatus('q4',s)==='ready'){ completeQuest('q4'); }
         G.refreshQuest(); G.saveGame();
         setTimeout(()=>G.startRivalBattle(),200);
       }}]},
@@ -3238,7 +3251,7 @@ const HOUSES={
   shop:{name:'Pokemon-Laden',npc:{name:'Händlerin Mia',shirt:'#e0a030',hair:'#601010',
     lines:s=>isHero(s)?hero('mia'):['Willkommen in meinem Laden!','Ich habe Heiltränke und starkendes Pokemon-Futter im Angebot - schau es dir an!'],
     onEnd:()=>{ G.openShop(); }}},
-  elder2:{name:'Haus der Altesten',npc:{name:'Älteste Elana',shirt:'#7030a0',hair:'#d0d0d0',lines:s=>elder2Lines(s),
+  elder2:{name:'Haus der Ältesten',npc:{name:'Älteste Elana',shirt:'#7030a0',hair:'#d0d0d0',lines:s=>elder2Lines(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q6',s); if(st==='none')startQuest('q6'); else if(st==='ready')completeQuest('q6'); }}},
   v3:{name:'Wohnhaus',npc:{name:'Reisender Kilian',shirt:'#305040',hair:'#302010',lines:s=>v3Lines(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q7',s); if(st==='none')startQuest('q7'); else if(st==='ready')completeQuest('q7'); }}},
@@ -3255,7 +3268,7 @@ const HOUSES={
     onEnd:()=>{ G.openShop(); }}},
   f3:{name:'Wohnhaus',npc:{name:'Kristallschürfer Finn',shirt:'#508090',hair:'#302010',lines:s=>finnLines(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q10',s); if(st==='none')startQuest('q10'); else if(st==='ready')completeQuest('q10'); }}},
-  f4:{name:'Wohnhaus',npc:{name:'Schneejagerin Runa',shirt:'#204868',hair:'#d0d8e0',lines:s=>runaLines(s),
+  f4:{name:'Wohnhaus',npc:{name:'Schneejägerin Runa',shirt:'#204868',hair:'#d0d8e0',lines:s=>runaLines(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q11',s); if(st==='none')startQuest('q11'); else if(st==='ready')completeQuest('q11'); }}},
   f5:{name:'Hutte',npc:{name:'Alter Fischer Bjorn',shirt:'#405860',hair:'#c0c0c0',lines:s=>bjornLines(s)}},
   liga:{name:'Halle der Champions',npc:{name:'Champion Seraphina',shirt:'#902030',hair:'#3a2a1a',lines:s=>ligaLines(s),
@@ -7307,7 +7320,10 @@ const G = {
       w.textContent='– in jedem Haus';
     }
   },
-  refreshPot(){const t=new Date().toDateString();if(this.s.lastPD!==t){this.s.potions=5;this.s.lastPD=t;}},
+  // Jeden Tag wird der Vorrat auf mindestens fuenf aufgefuellt. Wer mehr gekauft
+  // hat, behaelt sie - der Tageswechsel darf niemals Gekauftes vernichten.
+  refreshPot(){const t=new Date().toDateString();
+    if(this.s.lastPD!==t){this.s.potions=Math.max(this.s.potions||0,5);this.s.lastPD=t;}},
 
   // Pokemon-Center: restores the whole team at no cost.
   healTeamFree(){
@@ -7650,8 +7666,21 @@ const G = {
   // eine Arenaleitung schickt zwei, der Champion drei.
   beginBattle(foes,o){
     o=o||{};
-    if(!this.s.team.length)return;
+    if(!this.s.team.length){
+      this.popup('Du hast noch kein Pokemon!<div class="lvl-sub">Gehe ins Labor zu Professor Eichenholz</div>','caught-popup',3000);
+      return;
+    }
     if(!foes.length)return;
+    // Mit einem durchgehend besiegten Team gibt es keinen Kampf - sonst stuende
+    // man in einer Auseinandersetzung, die man gar nicht bestreiten kann.
+    if(!this.s.team.some(pk=>pk.hp>0)){
+      this.popup('Dein Team ist erschöpft!<div class="lvl-sub">Im Pokemon-Center wird kostenlos geheilt</div>','caught-popup',3200);
+      return;
+    }
+    // Immer mit einem kampffaehigen Pokemon starten.
+    if(!this.s.team[this.s.active]||this.s.team[this.s.active].hp<=0){
+      this.s.active=this.s.team.findIndex(pk=>pk.hp>0);
+    }
     Au.enc();
     this.s.inBattle=true; this.battleBusy=false; this.s.battleOver=false;
     this.s.trainerBattle=!!o.trainer;
@@ -7779,7 +7808,7 @@ const G = {
     this.battleBusy=false;this.rBA();},
 
   hFaint(){const p=this.s.team[this.s.active];this.bl(`${p.nm} ist besiegt!`);Au.cry(p,{faint:true,slow:true});Au.fail();
-    const n=this.s.team.findIndex(pk=>pk.hp>0);if(n>=0){this.s.active=n;this.bl(`${this.s.team[this.s.active].nm} ubernimmt!`);this.renderB();this.battleBusy=false;this.rBA();}
+    const n=this.s.team.findIndex(pk=>pk.hp>0);if(n>=0){this.s.active=n;this.bl(`${this.s.team[this.s.active].nm} übernimmt!`);this.renderB();this.battleBusy=false;this.rBA();}
     else{this.bl('Alle Pokemon besiegt!');this.s.battleOver=true;this.battleBusy=false;this.rBA();}},
 
   // Ein Gegner ist gefallen. Fuehrt die Gegnerseite noch ein weiteres Pokemon,
@@ -7798,7 +7827,7 @@ const G = {
       this.s.foeIdx++;
       const nx=this.s.foes[this.s.foeIdx];
       this.s.enemy=nx;
-      this.bl(`Noch ${foes.length-this.s.foeIdx} Pokemon uebrig: ${nx.nm} (Lv.${nx.lv}) kommt herein!`);
+      this.bl(`Noch ${foes.length-this.s.foeIdx} Pokemon übrig: ${nx.nm} (Lv.${nx.lv}) kommt herein!`);
       setTimeout(()=>Au.cry(nx),300);
       this.renderB();this.battleBusy=false;this.rBA();
       return;
@@ -7986,9 +8015,9 @@ const G = {
   rTG(){const g=document.getElementById('team-grid');g.innerHTML='';this.s.team.forEach((p,i)=>{const c=this.mkCard(p,i,true);c.onclick=()=>{Au.cry(p);if(p.hp>0){this.s.active=i;this.rTG();this.updateHud();this.sTD(p);}};g.appendChild(c);});},
   sTD(p){const d=document.getElementById('team-detail');const xp=p.xpN>0?Math.min(100,p.xp/p.xpN*100):0;d.innerHTML=`<div class="pk-detail"><div class="d-spr">${p.spr}</div><div class="d-nm">${p.nm} <span class="b-type-badge t-${p.t}">${p.t}</span></div><div style="font-size:0.85em;color:#889;">Level ${p.lv}</div><div class="d-stats"><div class="d-stat"><div class="label">HP</div><div class="val">${p.hp}/${p.mhp}</div></div><div class="d-stat"><div class="label">ATK</div><div class="val">${p.atk}</div></div><div class="d-stat"><div class="label">DEF</div><div class="val">${p.def}</div></div><div class="d-stat"><div class="label">SPD</div><div class="val">${p.spd}</div></div></div><div style="font-size:0.8em;color:#889;margin:6px 0;">XP: ${p.xp}/${p.xpN}</div><div class="xp-bg" style="width:80%;margin:0 auto;"><div class="xp-fill" style="width:${xp}%"></div></div><div style="margin-top:10px">${p.moves.map(m=>`<span class="d-move">${m.name} ${m.pow}/${m.acc}%</span>`).join('')}</div>${p.evoId?`<div style="margin-top:8px;font-size:0.8em;color:#889;">Evo ab Lv.${p.evoLv}</div>`:'<div style="margin-top:8px;font-size:0.8em;color:#556;">Max. Entwicklung</div>'}</div>`;},
 
-  openPotions(){if(this.s.inBattle)return;Au.cl();this.refreshPot();document.getElementById('ov-potions').classList.add('on');document.getElementById('pot-info').textContent=`Heiltränke: ${this.s.potions}/5 (Taglich)`;this.rPG();},
+  openPotions(){if(this.s.inBattle)return;Au.cl();this.refreshPot();document.getElementById('ov-potions').classList.add('on');document.getElementById('pot-info').textContent=`Heiltränke: ${this.s.potions} (täglich auf mindestens 5 aufgefüllt)`;this.rPG();},
   closePotions(){document.getElementById('ov-potions').classList.remove('on');},
-  rPG(){const g=document.getElementById('pot-grid');g.innerHTML='';this.s.team.forEach((p,i)=>{const need=p.hp<p.mhp;const c=this.mkCard(p,i,false);if(!need)c.classList.add('active');const info=document.createElement('div');info.style.cssText='font-size:0.7em;margin-top:4px;';if(need&&this.s.potions>0){info.textContent='Heilen';info.style.color='#4a4';c.onclick=()=>{Au.cl();p.hp=p.mhp;this.s.potions--;document.getElementById('pot-info').textContent=`Heiltränke: ${this.s.potions}/5`;this.rPG();this.updateHud();this.saveGame();};}else if(!need){info.textContent='Voll';info.style.color='#556';}else{info.textContent='Keine Tränke';info.style.color='#a33';}c.appendChild(info);g.appendChild(c);});},
+  rPG(){const g=document.getElementById('pot-grid');g.innerHTML='';this.s.team.forEach((p,i)=>{const need=p.hp<p.mhp;const c=this.mkCard(p,i,false);if(!need)c.classList.add('active');const info=document.createElement('div');info.style.cssText='font-size:0.7em;margin-top:4px;';if(need&&this.s.potions>0){info.textContent='Heilen';info.style.color='#4a4';c.onclick=()=>{Au.cl();p.hp=p.mhp;this.s.potions--;document.getElementById('pot-info').textContent=`Heiltränke: ${this.s.potions}`;this.rPG();this.updateHud();this.saveGame();};}else if(!need){info.textContent='Voll';info.style.color='#556';}else{info.textContent='Keine Tränke';info.style.color='#a33';}c.appendChild(info);g.appendChild(c);});},
 
   // Quests
   openQuests(){if(this.s.inBattle)return;Au.cl();document.getElementById('ov-quests').classList.add('on');this.rQL();},
@@ -8059,12 +8088,19 @@ const G = {
   // als Held. Die Meister-Sektion bleibt bis dahin verschlossen.
   onChampionWon(){
     this.s.flags.champion=true;
+    // Fuer die Jagd auf die vier legendaeren gibt es drei Meisterbaelle - genau
+    // die Sorte, die man sonst nirgends kaufen kann.
+    this.s.balls=this.s.balls||{};
+    this.s.balls.master=(this.s.balls.master||0)+3;
+    this.s.balls.hyper=(this.s.balls.hyper||0)+10;
+    this.updateHud();
     this.saveGame();
     document.getElementById('ending-text').innerHTML=
       `<b>${CHAMPION.name} ist besiegt.</b><br><br>Zwölf Orden, zwölf Arenen, eine Liga - du hast den Titel geholt.`
       +`<br><br>Doch am selben Abend kommen aus allen vier Regionen dieselben Meldungen: In jeder von ihnen ist ein legendäres Pokemon aufgetaucht.`
       +`<br><br><b>Lavados</b> im Auental.<br><b>Zapdos</b> in der Schattenregion.<br><b>Arktos</b> in der Frostregion.<br><b>Mewtu</b> in der Liga-Region.`
-      +`<br><br>Reise in jede Region und <b>fange</b> sie - besiegen allein reicht nicht. Erst dann bist du mehr als Liga-Siegerin oder Liga-Sieger.`;
+      +`<br><br>Reise in jede Region und <b>fange</b> sie - besiegen allein reicht nicht. Erst dann bist du mehr als Liga-Siegerin oder Liga-Sieger.`
+      +`<br><br><i>Professor Eichenholz hat dir dafür 3 Meisterbälle und 10 Hyperbälle geschickt.</i>`;
     document.getElementById('ending-screen').classList.add('on');
   },
   // Alle vier gefangen: ab jetzt gilt man als Held, und die Meister-Sektion oeffnet.
@@ -8127,7 +8163,7 @@ const G = {
     Au.cl();this.s.cash-=80;this.updateHud();this.rShop();this.saveGame();
     const el=document.getElementById('shop-food-select');
     el.style.display='block';
-    el.innerHTML='<p style="color:#889;font-size:0.85em;margin:10px 0 6px;">Wahle ein Pokemon für das Futter:</p>';
+    el.innerHTML='<p style="color:#889;font-size:0.85em;margin:10px 0 6px;">Wähle ein Pokemon für das Futter:</p>';
     const grid=document.createElement('div');grid.className='ov-grid';
     this.s.team.forEach((p,i)=>{
       const c=this.mkCard(p,i,false);
