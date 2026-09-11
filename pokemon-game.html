@@ -2552,7 +2552,7 @@ const QUESTS={
     check:s=>s.team.some(p=>p.lv>=25),progress:s=>(s.team.length?Math.max(...s.team.map(p=>p.lv)):0)+'/25',reward:{potions:6,cash:500,balls:{super:5}}},
   q9:{id:'q9',giverName:'Hüterin Frigga',name:'Bezwinge die Kalte',desc:'Gewinne insgesamt 60 Kämpfe.',
     check:s=>s.battlesWon>=60,progress:s=>Math.min(s.battlesWon,60)+'/60',reward:{potions:6,cash:600}},
-  q10:{id:'q10',giverName:'Kristallschurfer Finn',name:'Eisiger Meister',desc:'Bringe ein Pokemon auf Level 35.',
+  q10:{id:'q10',giverName:'Kristallschürfer Finn',name:'Eisiger Meister',desc:'Bringe ein Pokemon auf Level 35.',
     check:s=>s.team.some(p=>p.lv>=35),progress:s=>(s.team.length?Math.max(...s.team.map(p=>p.lv)):0)+'/35',reward:{potions:7,cash:700,balls:{hyper:4}}},
   q11:{id:'q11',giverName:'Schneejagerin Runa',name:'Vollstandige Zahlung',desc:'Trage 15 verschiedene Arten im Pokedex als gefangen ein.',
     check:s=>Object.values(s.dex||{}).filter(v=>v==='caught').length>=15,
@@ -2639,7 +2639,7 @@ const HEROTXT={
   toni:{done:['Kräuterfrau Toni: Level 25, {H}. Das schafft kaum jemand.','Hier - mein bestes Rezept. Viel Freude damit.'],
     say:['Kräuterfrau Toni: {H}! Meine Kräuter stehen so gut wie nie.',
       'Kein Feuervogel mehr über den Beeten. Das hilft ungemein.']},
-  silas:{say:['Handler Silas: {H}. Bar zahlen, keine Fragen - aber dein Name steht inzwischen in meinen Büchern.',
+  silas:{say:['Händler Silas: {H}. Bar zahlen, keine Fragen - aber dein Name steht inzwischen in meinen Büchern.',
     'Mein Sortiment wächst zum ersten Mal seit Jahren. Schau es dir an.']},
   vala:{say:['Geisterseherin Vala: Setz dich ruhig, {H}. Der Stuhl links ist heute frei.',
     'Die Geister hier sind harmlos. Das war das andere, was über der Region hing - und das hast du eingefangen.']},
@@ -2659,10 +2659,10 @@ const HEROTXT={
       'Arktos hat vier Wochen darauf gesessen. Ich habe vierzig Jahre hier verbracht und so etwas nie gesehen.'],
     ask:['Hüterin Frigga: {H}, eine Bitte habe ich noch.',
       '60 gewonnene Kämpfe - dann gehörst du auch offiziell hierher.']},
-  finn:{done:['Kristallschurfer Finn: Level 35, {H}. Der Fund gehört dir.','Halt ihn ins Licht - der Kristall ist klar geworden.'],
-    say:['Kristallschurfer Finn: {H}! Ich komme wieder in jeden Stollen, ohne nachzudenken.',
+  finn:{done:['Kristallschürfer Finn: Level 35, {H}. Der Fund gehört dir.','Halt ihn ins Licht - der Kristall ist klar geworden.'],
+    say:['Kristallschürfer Finn: {H}! Ich komme wieder in jeden Stollen, ohne nachzudenken.',
       'Heute war ein Blatt dabei. Frisch. Diesmal aus diesem Frühling.'],
-    ask:['Kristallschurfer Finn: {H}, komm mit runter in den Stollen.',
+    ask:['Kristallschürfer Finn: {H}, komm mit runter in den Stollen.',
       'Bring ein Pokemon auf Level 35 mit, dann zeige ich dir meinen besten Fund.']},
   runa:{done:['Schneejagerin Runa: Fünfzehn Arten, {H}. Sauber gezählt.','Dann stimmt alles, was sie über dich erzählen. Nimm das hier.'],
     say:['Schneejagerin Runa: {H}. Ich zähle immer noch - aber jetzt zähle ich Neugeborene.',
@@ -2671,7 +2671,7 @@ const HEROTXT={
       'Trag fünfzehn verschiedene Arten als gefangen ein. Dann ist meine Zählung vollständig.']},
   bjorn:{say:['Alter Fischer Bjorn: {H}! Es beißt wieder. Seit heute früh, ohne Unterbrechung.',
     'Vierzig Jahre am selben See - und dann kommt so ein junger Mensch daher.']},
-  nieve:{say:['Handlerin Nieve: {H}! Es ist immer noch kalt, aber es ist ein normaler Winter.',
+  nieve:{say:['Händlerin Nieve: {H}! Es ist immer noch kalt, aber es ist ein normaler Winter.',
     'Und normale Winter gehen vorbei. Was darf es sein?']},
   nora:{say:['Schaffnerin Nora: {H}. Ich fahre die Strecke inzwischen mit offenen Augen.',
     'Zur Liga? Steig ein.']},
@@ -2686,9 +2686,9 @@ const HEROTXT={
     'Geh durch, wann immer du willst.']},
   aldo:{say:['Chronist Aldo: {H}! Die Seite ist gefüllt.',
     'Dein Name steht jetzt ganz oben - und darunter ist wieder Platz für andere.']},
-  perle:{say:['Handlerin Perle: {H}! Für dich lege ich alles zurück, was hereinkommt.',
+  perle:{say:['Händlerin Perle: {H}! Für dich lege ich alles zurück, was hereinkommt.',
     'Hyperbälle inklusive. Schau dich um.']},
-  mia:{say:['Handlerin Mia: {H}! Für dich immer der beste Preis.',
+  mia:{say:['Händlerin Mia: {H}! Für dich immer der beste Preis.',
     'Seit die Straßen wieder sicher sind, kommt jede Woche Ware an. Schau dich um!']},
   kevin:{say:['Trainer Kevin: {H}! Gegen dich verloren zu haben ist inzwischen eine Auszeichnung.']},
   julia:{say:['Trainerin Julia: {H}! Ich erzähle die Sache mit unserem Kampf immer noch jedem.']},
@@ -2821,7 +2821,7 @@ function v4Lines(s){
   return ['Kräuterfrau Toni: Futter aus dem Laden hilft beim Trainieren. Und im Center heilen sie umsonst.'];
 }
 function silasLines(s){ if(isHero(s)) return hero('silas');
-  return ['Handler Silas: Willkommen. Bälle, Tränke, Futter - alles da.',
+  return ['Händler Silas: Willkommen. Bälle, Tränke, Futter - alles da.',
   'Wer ohne Bälle ins hohe Gras geht, kommt ohne neues Pokemon zurück. So einfach ist das.',
   'Schau dich um.']; }
 function v5Lines(s){ if(isHero(s)) return hero('vala');
@@ -2875,14 +2875,14 @@ function friggaLines(s){
 function finnLines(s){
   const st=questStatus('q10',s);
   if(isHero(s)&&st==='none') return hero('finn','ask');
-  if(st==='none') return ['Kristallschurfer Finn: Ich schürfe hier seit Jahren. Das Eis gibt Kristalle her, die es kaum geben dürfte.',
+  if(st==='none') return ['Kristallschürfer Finn: Ich schürfe hier seit Jahren. Das Eis gibt Kristalle her, die es kaum geben dürfte.',
     'In einem steckte ein Blatt. Grün, frisch, mitten im Eis. Ich habe es bis heute nicht erklären können.',
     'Bring ein Pokemon auf Level 35, dann zeige ich dir meinen besten Fund.'];
   if(isHero(s)&&st==='ready') return hero('finn','done');
-  if(st==='ready') return ['Kristallschurfer Finn: Level 35. Da - der Fund gehört dir.','Halt ihn ins Licht, dann siehst du das Blatt.'];
-  if(st==='active') return heroSay(s,'finn',[`Kristallschurfer Finn: Fortschritt: ${QUESTS.q10.progress(s)}.`]);
+  if(st==='ready') return ['Kristallschürfer Finn: Level 35. Da - der Fund gehört dir.','Halt ihn ins Licht, dann siehst du das Blatt.'];
+  if(st==='active') return heroSay(s,'finn',[`Kristallschürfer Finn: Fortschritt: ${QUESTS.q10.progress(s)}.`]);
   if(isHero(s)) return hero('finn');
-  return ['Kristallschurfer Finn: Die tiefsten Höhlen bergen die wertvollsten Kristalle. Und die kältesten Überraschungen.'];
+  return ['Kristallschürfer Finn: Die tiefsten Höhlen bergen die wertvollsten Kristalle. Und die kältesten Überraschungen.'];
 }
 function runaLines(s){
   const st=questStatus('q11',s);
@@ -2901,7 +2901,7 @@ function bjornLines(s){ if(isHero(s)) return hero('bjorn');
   'Wasser-Pokemon gibt es hier genug. Geduld braucht man trotzdem.',
   'Im Basar gibt es Vorräte. Und im Center heilen sie umsonst - nutz das.']; }
 function nieveLines(s){ if(isHero(s)) return hero('nieve');
-  return ['Handlerin Nieve: Willkommen! Ja, es ist kalt. Nein, daran gewöhnt man sich nicht.',
+  return ['Händlerin Nieve: Willkommen! Ja, es ist kalt. Nein, daran gewöhnt man sich nicht.',
   'Bälle, Heiltränke, stärkendes Futter - alles vorrätig. Selbst hier oben.']; }
 // The arena gate: a keeper bars the only way in and only yields to someone who has
 // already proved themselves in the field, and then only after a fight.
@@ -3180,7 +3180,7 @@ function lloreLines(s){ if(isHero(s)) return hero('aldo');
   'Ich halte immer eine Seite frei. Man weiß nie, wer als Nächstes hereinkommt.',
   'Vielleicht ja du.']; }
 function lshopLines(s){ if(isHero(s)) return hero('perle');
-  return ['Handlerin Perle: Willkommen im Liga-Shop. Das beste Sortiment im ganzen Land.',
+  return ['Händlerin Perle: Willkommen im Liga-Shop. Das beste Sortiment im ganzen Land.',
   'Hyperbälle, Heiltränke, Futter - alles da, und alles teuer.',
   'Kauf gut ein. Weiter oben gibt es keinen Laden mehr, nur noch die Championin.']; }
 
@@ -3224,7 +3224,7 @@ const HOUSES={
     onEnd:()=>{ const s=G.s; const st=questStatus('q2',s); if(st==='none')startQuest('q2'); else if(st==='ready')completeQuest('q2'); }}},
   v2:{name:'Wohnhaus',npc:{name:'Anwohner Tom',shirt:'#a06020',hair:'#1a1a1a',lines:s=>villagerLines2(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q3',s); if(st==='none')startQuest('q3'); else if(st==='ready')completeQuest('q3'); }}},
-  shop:{name:'Pokemon-Laden',npc:{name:'Handlerin Mia',shirt:'#e0a030',hair:'#601010',
+  shop:{name:'Pokemon-Laden',npc:{name:'Händlerin Mia',shirt:'#e0a030',hair:'#601010',
     lines:s=>isHero(s)?hero('mia'):['Willkommen in meinem Laden!','Ich habe Heiltränke und starkendes Pokemon-Futter im Angebot - schau es dir an!'],
     onEnd:()=>{ G.openShop(); }}},
   elder2:{name:'Haus der Altesten',npc:{name:'Älteste Elana',shirt:'#7030a0',hair:'#d0d0d0',lines:s=>elder2Lines(s),
@@ -3233,23 +3233,23 @@ const HOUSES={
     onEnd:()=>{ const s=G.s; const st=questStatus('q7',s); if(st==='none')startQuest('q7'); else if(st==='ready')completeQuest('q7'); }}},
   v4:{name:'Wohnhaus',npc:{name:'Kräuterfrau Toni',shirt:'#508030',hair:'#603010',lines:s=>v4Lines(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q8',s); if(st==='none')startQuest('q8'); else if(st==='ready')completeQuest('q8'); }}},
-  shop2:{name:'Basar der Schattenregion',npc:{name:'Handler Silas',shirt:'#902020',hair:'#101010',
+  shop2:{name:'Basar der Schattenregion',npc:{name:'Händler Silas',shirt:'#902020',hair:'#101010',
     lines:s=>silasLines(s),
     onEnd:()=>{ G.openShop(); }}},
   v5:{name:'Wohnhaus',npc:{name:'Geisterseherin Vala',shirt:'#5030a0',hair:'#e0e0f0',lines:s=>v5Lines(s)}},
   v6:{name:'Schmiede',npc:{name:'Schmied Boris',shirt:'#704020',hair:'#302010',lines:s=>v6Lines(s)}},
   f1:{name:'Haus der Huterin',npc:{name:'Hüterin Frigga',shirt:'#3070b0',hair:'#e0f0ff',lines:s=>friggaLines(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q9',s); if(st==='none')startQuest('q9'); else if(st==='ready')completeQuest('q9'); }}},
-  f2:{name:'Frost-Basar',npc:{name:'Handlerin Nieve',shirt:'#80c0e0',hair:'#f0f4f8',lines:s=>nieveLines(s),
+  f2:{name:'Frost-Basar',npc:{name:'Händlerin Nieve',shirt:'#80c0e0',hair:'#f0f4f8',lines:s=>nieveLines(s),
     onEnd:()=>{ G.openShop(); }}},
-  f3:{name:'Wohnhaus',npc:{name:'Kristallschurfer Finn',shirt:'#508090',hair:'#302010',lines:s=>finnLines(s),
+  f3:{name:'Wohnhaus',npc:{name:'Kristallschürfer Finn',shirt:'#508090',hair:'#302010',lines:s=>finnLines(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q10',s); if(st==='none')startQuest('q10'); else if(st==='ready')completeQuest('q10'); }}},
   f4:{name:'Wohnhaus',npc:{name:'Schneejagerin Runa',shirt:'#204868',hair:'#d0d8e0',lines:s=>runaLines(s),
     onEnd:()=>{ const s=G.s; const st=questStatus('q11',s); if(st==='none')startQuest('q11'); else if(st==='ready')completeQuest('q11'); }}},
   f5:{name:'Hutte',npc:{name:'Alter Fischer Bjorn',shirt:'#405860',hair:'#c0c0c0',lines:s=>bjornLines(s)}},
   liga:{name:'Halle der Champions',npc:{name:'Champion Seraphina',shirt:'#902030',hair:'#3a2a1a',lines:s=>ligaLines(s),
     onEnd:()=>{ if(!G.s.flags.champion) setTimeout(()=>G.startChampionBattle(),200); }}},
-  lshop:{name:'Liga-Shop',npc:{name:'Handlerin Perle',shirt:'#c09020',hair:'#e0d0a0',lines:s=>lshopLines(s),
+  lshop:{name:'Liga-Shop',npc:{name:'Händlerin Perle',shirt:'#c09020',hair:'#e0d0a0',lines:s=>lshopLines(s),
     onEnd:()=>{ G.openShop(); }}},
   llore:{name:'Ruhmeshalle',npc:{name:'Chronist Aldo',shirt:'#706040',hair:'#302010',lines:s=>lloreLines(s)}},
 };
@@ -3266,70 +3266,70 @@ const OUT_GOALS={
 };
 const OUT_MULT={r1:1,r2:1.9,r3:2.8,r4:3.6};
 const OUTPOST_DEFS=[
-  {nm:'Waldhutte',npc:'Einsiedler Ansgar',shirt:'#5a6a3a',hair:'#c8c8c0',goal:'battles',amt:7,rp:2,rc:70,
+  {nm:'Waldhütte',npc:'Einsiedler Ansgar',shirt:'#5a6a3a',hair:'#c8c8c0',goal:'battles',amt:7,rp:2,rc:70,
    qn:'Wächter der Lichtung',
-   intro:['Einsiedler Ansgar: Selten kommt jemand so weit hinaus.','Ich lebe seit dreissig Jahren zwischen diesen Bäumen und kenne jede Art, die hier durchkommt.','Wer so weit hinausgeht, sollte etwas können. Beweise es mir.'],
-   wait:['Einsiedler Ansgar: Die Wildnis lugt nicht. Kämpfe weiter.'],
-   done:['Einsiedler Ansgar: Du hast das Mark eines Wachters. Nimm das hier - du wirst es brauchen.'],
+   intro:['Einsiedler Ansgar: Selten kommt jemand so weit hinaus.','Ich lebe seit dreißig Jahren zwischen diesen Bäumen und kenne jede Art, die hier durchkommt.','Wer so weit hinausgeht, sollte etwas können. Beweise es mir.'],
+   wait:['Einsiedler Ansgar: Die Wildnis lügt nicht. Kämpfe weiter.'],
+   done:['Einsiedler Ansgar: Du hast das Mark eines Wächters. Nimm das hier - du wirst es brauchen.'],
    hero:['Einsiedler Ansgar: {H}. Der Wald steht still und atmet ruhig.','Selten kommt jemand so weit hinaus. Bei dir freue ich mich darüber.'],
    heroAsk:['Einsiedler Ansgar: {H}, setz dich einen Moment.','Gewinne mir sieben Kämpfe da draußen - ich will wissen, wie stark die Wildnis heute noch ist.'],
    after:['Einsiedler Ansgar: Hör genau hin. Der Wald ist lauter, als die Leute im Dorf glauben.']},
   {nm:'Fischerkate',npc:'Fischerin Marla',shirt:'#2a6a8a',hair:'#7a5a30',goal:'fangen',amt:5,rp:2,rc:80,
    qn:'Was das Wasser hergibt',
-   intro:['Fischerin Marla: Vorsicht, die Netze liegen aus.','Seit der Zersplitterung steigen Pokemon aus Tiefen auf, die es fruher gar nicht gab.','Ich kann sie nicht alle katalogisieren. Fang du sie - für die Aufzeichnungen.'],
+   intro:['Fischerin Marla: Vorsicht, die Netze liegen aus.','Im tiefen Wasser leben Arten, die man vom Ufer aus nie zu sehen bekommt.','Ich kann sie nicht alle katalogisieren. Fang du sie - für die Aufzeichnungen.'],
    wait:['Fischerin Marla: Noch nicht genug. Das Wasser ist geduldig, ich weniger.'],
    done:['Fischerin Marla: Beeindruckend. Die Aufzeichnungen werden dich überdauern.'],
-   hero:['Fischerin Marla: {H}! Die Netze sind voll und das Meer rauscht wieder vorwarts.','Meine Aufzeichnungen sind das erste Mal seit Jahren einfach nur langweilig. Wunderbar.'],
+   hero:['Fischerin Marla: {H}! Die Netze sind voll und der See liegt ruhig.','Meine Aufzeichnungen sind das erste Mal seit Jahren einfach nur langweilig. Wunderbar.'],
    heroAsk:['Fischerin Marla: {H}, hilf mir beim Katalog.','Fang fünf Pokemon - jetzt, wo man sie in Ruhe zählen kann.'],
-   after:['Fischerin Marla: Manche Nachte hore ich das Meer ruckwarts rauschen. Frag nicht.']},
+   after:['Fischerin Marla: Wasser-Pokemon beißen am besten früh am Morgen. Das ist keine Weisheit, das ist Erfahrung.']},
   {nm:'Bergwacht',npc:'Bergwächterin Sina',shirt:'#8a4a2a',hair:'#2a2a2a',goal:'level',amt:14,rp:3,rc:110,
    qn:'Der harte Aufstieg',
-   intro:['Bergwächterin Sina: Von hier oben sieht man, wie falsch alles steht.','Von hier oben sieht man alle drei Dörfer der Region auf einmal.','Ein schwaches Pokemon überlebt da oben keinen Tag. Zieh eines groß, dann reden wir.'],
-   wait:['Bergwächterin Sina: Noch zu grun. Der Berg vergibt keine Eile.'],
+   intro:['Bergwächterin Sina: Vorsicht auf dem letzten Stück, der Grat ist schmal.','Von hier oben sieht man alle drei Dörfer der Region auf einmal.','Ein schwaches Pokemon überlebt da oben keinen Tag. Zieh eines groß, dann reden wir.'],
+   wait:['Bergwächterin Sina: Noch zu grün. Der Berg vergibt keine Eile.'],
    done:['Bergwächterin Sina: Jetzt hast du eines, das den Grat hält. Respekt.'],
-   hero:['Bergwächterin Sina: {H}. Von hier oben steht wieder alles richtig.','Die Bergkette läuft bis zum Horizont durch. Ich habe sie gestern drei Stunden lang angeschaut.'],
+   hero:['Bergwächterin Sina: {H}. Von hier oben sieht man dein halbes Reiseziel.','Die Bergkette läuft bis zum Horizont durch. Ich habe sie gestern drei Stunden lang angeschaut.'],
    heroAsk:['Bergwächterin Sina: {H}, ich brauche jemanden für den Grat.','Zieh ein Pokemon auf Level 14 groß, dann gehen wir zusammen hoch.'],
    after:['Bergwächterin Sina: Bei klarer Sicht erkennt man von hier sogar die Arena im Nachbardorf.']},
   {nm:'Sternwarte',npc:'Sternenkundler Ove',shirt:'#30306a',hair:'#d8d8e8',goal:'dex',amt:8,rp:3,rc:120,
    qn:'Karte der Arten',
-   intro:['Sternenkundler Ove: Still! Ich zahle.','Achtzehn Sternbilder fehlen seit jener Nacht. Achtzehn.','Die Pokemon sind das letzte verlassliche Register dieser Welt.','Trage mir Arten in deinen Dex ein - jede einzelne ist ein Fixpunkt.'],
-   wait:['Sternenkundler Ove: Zu wenige Fixpunkte. Die Karte wackelt noch.'],
-   done:['Sternenkundler Ove: Ja! Die Rechnung geht wieder auf. Du ahnst nicht, was das bedeutet.'],
-   hero:['Sternenkundler Ove: {H}! Achtzehn Sternbilder sind zurück. Achtzehn!','Ich habe die halbe Nacht gezählt und zweimal von vorn angefangen, weil ich es nicht glauben wollte.'],
+   intro:['Sternenkundler Ove: Still! Ich zähle.','Achtzehn Sternbilder, und unter jedem davon leben andere Arten.','Ich führe darüber Buch, seit ich hier oben sitze.','Trage mir Arten in deinen Dex ein - jede einzelne ist ein Datenpunkt.'],
+   wait:['Sternenkundler Ove: Zu wenige Datenpunkte. Die Karte wackelt noch.'],
+   done:['Sternenkundler Ove: Ja! Die Rechnung geht auf. Du ahnst nicht, was das bedeutet.'],
+   hero:['Sternenkundler Ove: {H}! Achtzehn Sternbilder, achtzehn Register - und alle vollständig.','Ich habe die halbe Nacht gezählt und zweimal von vorn angefangen, weil ich es nicht glauben wollte.'],
    heroAsk:['Sternenkundler Ove: {H}, ich stelle das Register neu auf.','Trage mir acht Arten in deinen Dex ein - diesmal aus reiner Neugier.'],
-   after:['Sternenkundler Ove: Ein Orden ist kein Schmuck. Es ist eine Klammer. Sammle sie.']},
-  {nm:'Gehoft',npc:'Bauerin Hedda',shirt:'#7a8a30',hair:'#a08040',goal:'team',amt:3,rp:3,rc:90,
+   after:['Sternenkundler Ove: Ein Orden ist kein Schmuck, sondern ein Beleg. Sammle sie.']},
+  {nm:'Gehöft',npc:'Bäuerin Hedda',shirt:'#7a8a30',hair:'#a08040',goal:'team',amt:3,rp:3,rc:90,
    qn:'Niemand schafft es allein',
-   intro:['Bauerin Hedda: Setz dich, du siehst durchgefroren aus.','Mein Hof stand fruher zwei Taler weiter. Dann verschob sich der Boden - einfach so.','Weisst du, was uns gerettet hat? Dass wir zu viert waren.','Geh nicht allein da raus. Bau dir ein Team auf.'],
-   wait:['Bauerin Hedda: Ein Pokemon ist ein Freund. Zwei sind ein Anfang. Du brauchst mehr.'],
-   done:['Bauerin Hedda: So gefällst du mir. Das hält zusammen, was sonst zerbricht.'],
-   hero:['Bauerin Hedda: {H}! Setz dich, es gibt Eintopf.','Mein Hof steht, wo er stehen soll, und er bleibt auch dort. Iss was.'],
-   heroAsk:['Bauerin Hedda: {H}, einen Rat gebe ich trotzdem noch.','Bau dir ein Team aus drei Pokemon auf. Zu dritt macht der Weg mehr Spass.'],
-   after:['Bauerin Hedda: Iss was, bevor du gehst. Die Welt lauft dir nicht davon. Hoffentlich.']},
-  {nm:'Ruinenlager',npc:'Ausgraberin Perel',shirt:'#6a5a8a',hair:'#402a1a',goal:'battles',amt:16,rp:4,rc:160,
+   intro:['Bäuerin Hedda: Setz dich, du siehst durchgefroren aus.','Ich habe diesen Hof mit drei Pokemon aufgebaut. Allein hätte ich keine Woche durchgehalten.','Weißt du, was uns über den ersten Winter gebracht hat? Dass wir zu viert waren.','Geh nicht allein da raus. Bau dir ein Team auf.'],
+   wait:['Bäuerin Hedda: Ein Pokemon ist ein Freund. Zwei sind ein Anfang. Du brauchst mehr.'],
+   done:['Bäuerin Hedda: So gefällst du mir. Das hält zusammen, was sonst zerbricht.'],
+   hero:['Bäuerin Hedda: {H}! Setz dich, es gibt Eintopf.','Der Hof läuft, die Felder stehen. Iss was.'],
+   heroAsk:['Bäuerin Hedda: {H}, einen Rat gebe ich trotzdem noch.','Bau dir ein Team aus drei Pokemon auf. Zu dritt macht der Weg mehr Spaß.'],
+   after:['Bäuerin Hedda: Iss was, bevor du gehst. Die Welt läuft dir nicht davon.']},
+  {nm:'Ruinenlager',npc:'Ausgräberin Perel',shirt:'#6a5a8a',hair:'#402a1a',goal:'battles',amt:16,rp:4,rc:160,
    qn:'Was unter dem Staub liegt',
-   intro:['Ausgraberin Perel: Fass nichts an, das alter aussieht als du.','Unter diesem Lager liegt eine Halle. Ihre Wände zeigen Trainer mit Orden - gemalt vor tausend Jahren.','Dieselben zwölf Arenen, dieselben Typen. Das System ist älter, als die Liga zugibt.','Hol dir Orden, dann zeige ich dir die Wand.'],
-   wait:['Ausgraberin Perel: Die Halle offnet sich nur Leuten mit Geschichte. Sammle welche.'],
-   done:['Ausgraberin Perel: Da - genau deine Haltung auf der Wand. Vor tausend Jahren stand hier schon jemand wie du.'],
-   hero:['Ausgraberin Perel: {H}! Die letzte Kammer zeigt jetzt eine ganze Welt.','Die leere Wand dahinter ist bemalt worden. Von wem, weiß keiner.'],
-   heroAsk:['Ausgraberin Perel: {H}, grab mit mir weiter.','Ich brauche jemanden mit Erfahrung an meiner Seite - sammle unterwegs Siege.'],
-   after:['Ausgraberin Perel: Die letzte Kammer zeigt die Liga. Und danach: leere Wand. Kein gutes Zeichen.']},
+   intro:['Ausgräberin Perel: Fass nichts an, das älter aussieht als du.','Unter diesem Lager liegt eine Halle. Ihre Wände zeigen Trainer mit Orden - gemalt vor tausend Jahren.','Dieselben zwölf Arenen, dieselben Typen. Das System ist älter, als die Liga zugibt.','Sammle Siege, dann zeige ich dir die Wand.'],
+   wait:['Ausgräberin Perel: Die Halle öffnet sich nur Leuten mit Geschichte. Sammle welche.'],
+   done:['Ausgräberin Perel: Da - genau deine Haltung auf der Wand. Vor tausend Jahren stand hier schon jemand wie du.'],
+   hero:['Ausgräberin Perel: {H}! Die letzte Kammer ist freigelegt.','Ganz hinten steht eine Figur mit vier Bällen in der Hand. Vier. Ich sage nichts weiter.'],
+   heroAsk:['Ausgräberin Perel: {H}, grab mit mir weiter.','Ich brauche jemanden mit Erfahrung an meiner Seite - sammle unterwegs Siege.'],
+   after:['Ausgräberin Perel: Die letzte Kammer zeigt die Liga-Halle. Erstaunlich genau getroffen.']},
   {nm:'Leuchtturm',npc:'Wärterin Isolde',shirt:'#204a6a',hair:'#e8e0c0',goal:'fangen',amt:9,rp:4,rc:170,
-   qn:'Licht gegen die Leere',
+   qn:'Licht über dem Wasser',
    intro:['Wärterin Isolde: Der Turm brennt seit dreihundert Jahren ohne Unterbrechung.','Einmal ging er aus. Vier Sekunden. Ich habe sie gezählt.','Seither zähle ich lieber Pokemon - das beruhigt mehr.','Fang mir welche, dann kommt meine Liste endlich voran.'],
    wait:['Wärterin Isolde: Noch zu viele draußen. Ich sehe sie im Lichtkegel.'],
    done:['Wärterin Isolde: Der Kegel ist ruhig heute Nacht. Das war lange nicht so.'],
    hero:['Wärterin Isolde: {H}. Und der Turm brennt immer noch.','Vierhundert Jahre schafft er auch noch, denke ich.'],
    heroAsk:['Wärterin Isolde: {H}, eine letzte Wache halte ich noch.','Leiste mir Gesellschaft, indem du dich draußen bewährst.'],
-   after:['Wärterin Isolde: Wenn du die Liga erreichst - komm noch einmal vorbei und erzähl davon.']},
+   after:['Wärterin Isolde: Nachts sieht man vom Turm aus nur Geist- und Unlicht-Arten. Tagsüber ist es hier bunter.']},
   {nm:'Grenzposten',npc:'Grenzerin Vike',shirt:'#5a2a2a',hair:'#101010',goal:'level',amt:22,rp:5,rc:220,
    qn:'Bis hierher und weiter',
-   intro:['Grenzerin Vike: Halt. Dahinter faltet sich das Land.','Ich lasse niemanden durch, der nicht bestehen würde. Das ist keine Schikane, das ist Statistik.','Bring mir ein Pokemon, das dieser Gegend gewachsen ist, dann offne ich den Weg.'],
-   wait:['Grenzerin Vike: Nicht stark genug. Ich habe zu viele begraben, die es trotzdem versucht haben.'],
+   intro:['Grenzerin Vike: Halt. Dahinter beginnt die Wildnis, und die ist keine Wiese.','Ich lasse niemanden durch, der nicht bestehen würde. Das ist keine Schikane, das ist Statistik.','Bring mir ein Pokemon, das dieser Gegend gewachsen ist, dann öffne ich den Weg.'],
+   wait:['Grenzerin Vike: Nicht stark genug. Ich habe zu viele zurückholen müssen, die es trotzdem versucht haben.'],
    done:['Grenzerin Vike: Durchgelassen. Und - komm zurück. Das sage ich sonst nie.'],
-   hero:['Grenzerin Vike: {H}! Die Faltung ist weg. Die Grenze ist wieder eine Linie im Gras.','Ich patrouilliere aus Gewohnheit. Es ist der schönste Dienst meines Lebens.'],
+   hero:['Grenzerin Vike: {H}! Der Weg dahinter ist offen und sicher.','Ich patrouilliere aus Gewohnheit. Es ist der schönste Dienst meines Lebens.'],
    heroAsk:['Grenzerin Vike: {H}, lauf die Grenze mit mir ab.','Zeig mir unterwegs, was du kannst - dann trage ich dich als Grenzgängerin ein.'],
-   after:['Grenzerin Vike: Die Faltung wandert. Jeden Tag ein Stuck naher. Beeil dich.']},
+   after:['Grenzerin Vike: Hinter der Grenze wird es deutlich härter. Geh nicht ohne volle Heiltränke.']},
 ];
 function outQuestId(region,idx){ return 'o_'+(region||'r1')+'_'+idx; }
 function registerOutpostQuests(region,outposts){
@@ -3395,7 +3395,7 @@ function houseCfgFor(id){
 }
 
 // Random wandering trainers scattered across the map
-const RANDOM_TRAINER_NAMES=['Wanderer Ben','Youngster Timo','Camper Lena','Wanderin Sofia','Angler Paul','Schulerin Nina','Kraftprotz Max','Rocker Dennis','Wanderin Petra','Sammler Jonas','Youngster Finn','Camper Greta'];
+const RANDOM_TRAINER_NAMES=['Wanderer Ben','Youngster Timo','Camper Lena','Wanderin Sofia','Angler Paul','Schülerin Nina','Kraftprotz Max','Rocker Dennis','Wanderin Petra','Sammler Jonas','Youngster Finn','Camper Greta'];
 const RANDOM_SHIRTS=['#2050a0','#c04070','#40a040','#a0a020','#8040a0','#c07020','#409090','#6060c0'];
 function buildRandomTrainerNpc(rt){
   const flagId='rt'+rt.idx+'Beaten';
