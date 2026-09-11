@@ -72,6 +72,12 @@ body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
 
 #scr-world { flex-direction: column; }
 #scr-world.on { display: flex; }
+#furn-btn { position: fixed; left: 50%; transform: translateX(-50%); bottom: 108px; display: none; align-items: center; gap: 7px; padding: 8px 15px; background: linear-gradient(180deg, #2a3550, #161f33); color: #dce6ff; border: 2px solid #6a86c8; border-radius: 22px; font-family: inherit; font-size: 0.86em; font-weight: 600; cursor: pointer; z-index: 30; box-shadow: 0 3px 14px rgba(0,0,0,0.55), 0 0 14px rgba(110,150,230,0.32); animation: furnpop 0.22s ease-out; }
+#furn-btn:hover { background: linear-gradient(180deg, #35436a, #1d2842); border-color: #8fa8e0; }
+#furn-btn:active { transform: translateX(-50%) scale(0.95); }
+#furn-btn.on { display: flex; }
+@keyframes furnpop { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+@media (max-width: 560px) { #furn-btn { bottom: 152px; font-size: 0.8em; } }
 #questbar { display: flex; align-items: center; gap: 8px; padding: 5px 12px; padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); background: linear-gradient(180deg, rgba(40,24,8,0.92), rgba(24,14,4,0.75)); border-bottom: 1px solid #6a4a18; font-size: 0.86em; z-index: 10; width: 100%; flex-shrink: 0; }
 #qb-icon { flex-shrink: 0; filter: drop-shadow(0 0 4px rgba(255,120,60,0.9)); animation: qbpulse 1.6s ease-in-out infinite; }
 #qb-text { color: #ffd880; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -95,6 +101,18 @@ body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
 @media (pointer: coarse) { #tracker-label { bottom: max(238px, calc(238px + env(safe-area-inset-bottom))); width: 104px; } }
 
 #scr-battle { background: linear-gradient(180deg, #5a9ad0 0%, #3a7a40 55%, #2a5a20 100%); position: relative; overflow: hidden; }
+/* Der Kampfhintergrund richtet sich danach, wo gekaempft wird: im Freien nach der
+   Region, in einer Arena nach dem Typ der Halle. */
+#scr-battle.bg-r2 { background: linear-gradient(180deg, #2a1c44 0%, #46386a 52%, #221838 100%); }
+#scr-battle.bg-r3 { background: linear-gradient(180deg, #9cc8e4 0%, #cfe6f2 50%, #8fb0c4 100%); }
+#scr-battle.bg-r4 { background: linear-gradient(180deg, #d8b860 0%, #b08a34 55%, #6a5018 100%); }
+#scr-battle.bg-arena { background: linear-gradient(180deg, #2b2a34 0%, #46424f 45%, #6a6152 100%); }
+#scr-battle.bg-arena::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(90deg, rgba(0,0,0,0.18) 0 3px, transparent 3px 46px),
+              radial-gradient(ellipse 62% 34% at 50% 72%, rgba(214,182,120,0.30), transparent 70%); }
+#scr-battle.bg-champion { background: linear-gradient(180deg, #3a2450 0%, #6a4a18 48%, #2a1c10 100%); }
+#scr-battle.bg-legend { background: linear-gradient(180deg, #140a24 0%, #4a1c58 45%, #12060f 100%); }
+#scr-battle.bg-arena .battle-bg-clouds, #scr-battle.bg-champion .battle-bg-clouds { display: none; }
 .battle-bg-clouds { position: absolute; top: 0; left: 0; width: 200%; height: 40%; background: repeating-linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 10%, transparent 20%); animation: cl 30s linear infinite; }
 @keyframes cl { 0%{transform:translateX(0)}100%{transform:translateX(-50%)} }
 .b-area { width: 100%; max-width: 700px; padding: 15px; z-index: 1; }
@@ -296,6 +314,7 @@ body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
       <div class="hud-r"><span class="potion-ct" id="h-potions"></span><span id="h-cash" style="color:#ffd860;font-weight:600;"></span><span id="h-badges" style="color:#e0a020;font-weight:600;"></span><span id="h-battles" style="color:#556;font-size:0.8em;"></span><button class="hud-btn" onclick="G.openTeam()">Team</button><button class="hud-btn" onclick="G.openPotions()">Heilen</button><button class="hud-btn" onclick="G.openQuests()">Quests</button><button class="hud-btn" onclick="G.openDex()">Dex</button><button class="hud-btn" id="h-3d" onclick="G.toggle3D()" title="Ansicht umschalten">2D</button></div>
     </div>
     <div id="questbar"><span id="qb-icon">\u{1F4CD}</span><span id="qb-text"></span><span id="qb-where"></span></div>
+    <button id="furn-btn" onclick="G.showFurnInfo()"><span id="furn-btn-icon">\u{2139}\u{FE0F}</span><span id="furn-btn-label"></span></button>
     <canvas id="world-canvas"></canvas>
   </div>
   <div id="scr-battle" class="scr">
@@ -321,8 +340,9 @@ body.d3 #scr-battle .b-area { max-width: 760px; padding: 6px 10px; }
     <div class="ov-title">Pokemon-Laden</div>
     <p style="color:#889;margin-bottom:14px;font-size:0.9em;">Dein PokeCash: <span id="shop-cash" style="color:#ffd860;font-weight:700;"></span></p>
     <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px;">
+      <div id="shop-balls" style="display:flex;flex-direction:column;gap:10px;"></div>
       <div style="background:#0e1520;border:1px solid #1a2a3a;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
-        <div><div style="font-weight:700;">Heiltrank</div><div style="font-size:0.75em;color:#889;">Fullt einen Heiltrank in dein Inventar</div></div>
+        <div><div style="font-weight:700;">Heiltrank</div><div style="font-size:0.75em;color:#889;">Fuellt einen Heiltrank in dein Inventar</div></div>
         <button class="btn btn-green" style="min-width:auto;padding:8px 14px;" onclick="G.buyPotion()">30 &#128176;</button>
       </div>
       <div style="background:#0e1520;border:1px solid #1a2a3a;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
@@ -3049,6 +3069,10 @@ const CHAMPION={name:'Championin Seraphina',shirt:'#e0c040',hair:'#f0e8d0',
   team:[{id:'tauboss',lv:62},{id:'relaxo',lv:64},{id:'glurak',lv:66}]};
 // Regionsnamen und die drei Doerfer, die es je Region wirklich gibt.
 const REGION_NAME={r1:'Auental',r2:'Schattenregion',r3:'Frostregion',r4:'Liga-Region'};
+// Regionsnamen mit der jeweils richtigen Praeposition - "im Auental", aber
+// "in der Frostregion". Wird ueberall dort verwendet, wo ein Ort im Satz steht.
+const REGION_IN={r1:'im Auental',r2:'in der Schattenregion',r3:'in der Frostregion',r4:'in der Liga-Region'};
+const REGION_TO={r1:'ins Auental',r2:'in die Schattenregion',r3:'in die Frostregion',r4:'in die Liga-Region'};
 const REGION_TOWNS={
   r1:['Auenhain','Muhlbach','Ahornfurt'],
   r2:['Dammerstein','Rabenfels','Nachtwacht'],
@@ -3105,11 +3129,11 @@ function currentStep(s){
     const mine='legendR'+s.region.slice(1);
     if(lid&&!f[mine]){
       const d=DB.find(x=>x.id===lid);
-      return {id:'legend_'+s.region,text:`Fange ${d?d.nm:'das legendaere Pokemon'} im ${REGION_NAME[s.region]}`,
+      return {id:'legend_'+s.region,text:`Fange ${d?d.nm:'das legendaere Pokemon'} ${REGION_IN[s.region]||''}`,
         where:'irgendwo in der Region',legend:true};
     }
     const open=REGION_ORDER.filter(r=>!f['legendR'+r.slice(1)]);
-    if(open.length) return {id:'legend_travel',text:`Reise in ${REGION_NAME[open[0]]} - dort wartet ein legendaeres Pokemon`,
+    if(open.length) return {id:'legend_travel',text:`Reise ${REGION_TO[open[0]]} - dort wartet ein legendaeres Pokemon`,
       where:'am Bahnhof',station:true};
   }
   return null;
@@ -3466,25 +3490,44 @@ const IFCH={'.':T.FLOOR,'#':T.IWALL,'D':T.EXITDOOR,'=':T.RUG,'T':T.TABLE,'c':T.C
   'o':T.BARREL,'g':T.SIGNI,'1':T.FLOOR,'2':T.FLOOR,'3':T.FLOOR};
 // Moebeldaten: solide Kacheln blockieren, Servicetheken leiten zum Personal weiter.
 const FURN={
-  [T.RUG]:    {nm:'Teppich',   walk:true, txt:'Ein weicher, abgetretener Teppich.'},
-  [T.TABLE]:  {nm:'Tisch',     txt:'Auf dem Tisch liegen Krumel und eine halb gelesene Karte.'},
-  [T.CHAIR]:  {nm:'Stuhl',     txt:'Ein schlichter Holzstuhl.'},
-  [T.BED]:    {nm:'Liege',     txt:'Eine frisch bezogene Liege. Hier ruhen sich Pokemon aus.'},
-  [T.SHELF]:  {nm:'Regal',     txt:'Regalweise Traenke, Baelle und Futter - alles an der Kasse erhaltlich.'},
-  [T.COUNTER]:{nm:'Theke',     svc:true, txt:'Eine lange Theke.'},
-  [T.TILL]:   {nm:'Kasse',     svc:true, txt:'Eine Registrierkasse klimpert erwartungsvoll.'},
-  [T.PLANT]:  {nm:'Zimmerpflanze', txt:'Eine erstaunlich gut gepflegte Topfpflanze.'},
-  [T.BOOKS]:  {nm:'Bucherregal',   txt:'Baende uber Pokemon-Kunde, dick mit Staub bedeckt.'},
-  [T.STOVE]:  {nm:'Kuchenzeile',   txt:'Es riecht nach Eintopf.'},
-  [T.CRATE]:  {nm:'Kiste',     txt:'Gestapelte Kisten. Nichts Brauchbares darin.'},
-  [T.HEAL]:   {nm:'Heilstation', svc:true, txt:'Die Heilstation summt leise vor sich hin.'},
-  [T.LAMP]:   {nm:'Stehlampe', txt:'Warmes Licht faellt in den Raum.'},
-  [T.STATUE]: {nm:'Statue',    txt:'Eine Statue vergangener Meister blickt streng auf dich herab.'},
-  [T.ANVIL]:  {nm:'Amboss',    txt:'Der Amboss ist von tausend Schlagen blank poliert.'},
-  [T.SOFA]:   {nm:'Sofa',      txt:'Ein durchgesessenes Sofa - erstaunlich bequem.'},
-  [T.PCDESK]: {nm:'Terminal',  txt:'Auf dem Bildschirm laufen Messreihen durch.'},
-  [T.BARREL]: {nm:'Fass',      txt:'Ein Fass mit Beerensaft.'},
-  [T.SIGNI]:  {nm:'Aushang',   txt:'Ein Aushang mit den Hausregeln. Kurz gefasst: keine Kampfe drinnen.'},
+  [T.RUG]:    {nm:'Teppich',   walk:true, txt:'Ein weicher, abgetretener Teppich.',
+    use:'Reine Ausstattung. Man kann darueber laufen, mehr nicht - er daempft nur den Schritt.'},
+  [T.TABLE]:  {nm:'Tisch',     txt:'Auf dem Tisch liegen Kruemel und eine halb gelesene Karte.',
+    use:'Hier wird gegessen und geplant. Auf Karten wie dieser sind die Doerfer der Region eingezeichnet.'},
+  [T.CHAIR]:  {nm:'Stuhl',     txt:'Ein schlichter Holzstuhl.',
+    use:'Zum Sitzen. In Haeusern stehen sie meist am Tisch, in Laeden fuer wartende Kundschaft.'},
+  [T.BED]:    {nm:'Bett',      txt:'Ein frisch bezogenes Bett.',
+    use:'Zum Schlafen. Im Pokemon-Center liegen hier verletzte Pokemon, bis Schwester Joy sie versorgt hat.'},
+  [T.SHELF]:  {nm:'Regal',     txt:'Regalweise Traenke, Baelle und Futter.',
+    use:'Das Warenlager des Ladens. Kaufen kannst du nichts direkt vom Regal - dafuer gehst du an die Kasse.'},
+  [T.COUNTER]:{nm:'Theke',     svc:true, txt:'Eine lange Theke.',
+    use:'Hier wird man bedient. Stell dich davor und sprich die Person dahinter an.'},
+  [T.TILL]:   {nm:'Kasse',     svc:true, txt:'Eine Registrierkasse klimpert erwartungsvoll.',
+    use:'Der Verkaufstresen. Hier kaufst du Baelle, Heiltranke und Futter - und in manchen Laeden neue Kleidung.'},
+  [T.PLANT]:  {nm:'Zimmerpflanze', txt:'Eine erstaunlich gut gepflegte Topfpflanze.',
+    use:'Schmuck. Pflanzen-Pokemon fuehlen sich in solchen Raeumen nachweislich wohler.'},
+  [T.BOOKS]:  {nm:'Buecherregal',  txt:'Baende ueber Pokemon-Kunde, dick mit Staub bedeckt.',
+    use:'Nachschlagewerke. Hier steht, welcher Typ gegen welchen stark ist - dasselbe, was dir der Pokedex zeigt.'},
+  [T.STOVE]:  {nm:'Kuechenzeile',  txt:'Es riecht nach Eintopf.',
+    use:'Hier wird gekocht - fuer Menschen wie fuer Pokemon. Gutes Futter ist die halbe Ausbildung.'},
+  [T.CRATE]:  {nm:'Kiste',     txt:'Gestapelte Kisten.',
+    use:'Lagergut. In Laeden steht hier der Nachschub, im Labor Ausruestung fuer die Feldforschung.'},
+  [T.HEAL]:   {nm:'Heilstation', svc:true, txt:'Die Heilstation summt leise vor sich hin.',
+    use:'Stellt dein ganzes Team wieder her - kostenlos, in jedem Pokemon-Center. Sprich Schwester Joy an.'},
+  [T.LAMP]:   {nm:'Stehlampe', txt:'Warmes Licht faellt in den Raum.',
+    use:'Beleuchtung. Nachts brennt in bewohnten Haeusern Licht - daran erkennst du von draussen, wo jemand zu Hause ist.'},
+  [T.STATUE]: {nm:'Statue',    txt:'Eine Statue frueherer Arenaleiter.',
+    use:'Ein Denkmal. In jeder Arena steht eine - sie zeigt, welchem Typ die Halle gewidmet ist.'},
+  [T.ANVIL]:  {nm:'Amboss',    txt:'Der Amboss ist von tausend Schlaegen blank poliert.',
+    use:'Das Werkzeug des Schmieds. Orden werden hier nicht gemacht - die gibt es nur in den Arenen.'},
+  [T.SOFA]:   {nm:'Sofa',      txt:'Ein durchgesessenes Sofa - erstaunlich bequem.',
+    use:'Sitzgelegenheit fuer Gaeste. In Wohnhaeusern der uebliche Platz fuer lange Gespraeche.'},
+  [T.PCDESK]: {nm:'Terminal',  txt:'Auf dem Bildschirm laufen Messreihen durch.',
+    use:'Forschungsrechner des Labors. Hier wertet der Professor aus, welche Arten wo vorkommen.'},
+  [T.BARREL]: {nm:'Fass',      txt:'Ein Fass mit Beerensaft.',
+    use:'Vorratsbehaelter. Beerensaft ist der Grundstoff fuer Heiltranke.'},
+  [T.SIGNI]:  {nm:'Aushang',   txt:'Ein Aushang mit den Hausregeln.',
+    use:'Hausordnung. Kurz gefasst: keine Kampfe in Innenraeumen. Draussen im hohen Gras darfst du.'},
 };
 function furnAt(t){ return FURN[t]; }
 function isFurn(t){ return FURN[t]!==undefined; }
@@ -3655,7 +3698,7 @@ const IEXTRA={
 
 // Zugziele: die Ansage im Uebergang nennt die Region, in die der Zug wirklich faehrt.
 const REGION_ORDER=['r1','r2','r3','r4'];
-const TRAIN_DEST={r1:'ins Heimatdorf',r2:'in die Schattenregion',r3:'in die Frostregion',r4:'zur Pokemon-Liga'};
+const TRAIN_DEST={r1:'ins Auental',r2:'in die Schattenregion',r3:'in die Frostregion',r4:'in die Liga-Region'};
 const TILE=32;
 function villRFor(region){ return region==='r2'?18:(region==='r3'?13:(region==='r4'?8:9)); }
 
@@ -6179,10 +6222,14 @@ const R3 = {
   },
 
   // ---- battle stage ---------------------------------------------------------
-  buildBattle(region) {
-    if (this.battle && this.battle.region === region) return this.battle;
+  // Kampfschauplatz. Draussen ist es die Landschaft der Region, in einer Arena
+  // dagegen eine ummauerte Halle mit Steinboden - man sieht sofort, wo man steht.
+  buildBattle(region, arena) {
+    const key = region + (arena ? '|arena' : '');
+    if (this.battle && this.battle.region === key) return this.battle;
     const gl = this.gl;
     if (this.battle) { gl.deleteVertexArray(this.battle.vao); gl.deleteBuffer(this.battle.buf); }
+    if (arena) return this.buildArenaStage(region, key);
     this.beginMesh();
     const Lg = this.terrainLayer(region, 'grass'), Lsa = this.terrainLayer(region, 'sand');
     const Lt = this.terrainLayer(region, 'tree'), Ls = this.terrainLayer(region, 'stone');
@@ -6212,7 +6259,36 @@ const R3 = {
       else this.billboard(bx, bz, 0.9, 0.5, 0, Lb, 1);
     }
 
-    this.battle = this.upload(); this.battle.region = region;
+    this.battle = this.upload(); this.battle.region = key;
+    return this.battle;
+  },
+
+  // Die Arenahalle: Steinboden mit Kampfring, ringsum eine Mauer statt Baeumen.
+  buildArenaStage(region, key) {
+    this.beginMesh();
+    const Ls = this.terrainLayer(region, 'stone');
+    const Lsa = this.terrainLayer(region, 'sand');
+    const Lw = this.buildingLayer ? this.terrainLayer(region, 'stone') : Ls;
+    this.flat(-46, 0, -46, 92, 92, Ls, 0, 46, 46);
+
+    // Kampfring in der Mitte
+    const cxp = 0.1, czp = -0.25, rx = 9.6, rz = 6.9, N = 40;
+    for (let i = 0; i < N; i++) {
+      const a0 = i / N * Math.PI * 2, a1 = (i + 1) / N * Math.PI * 2;
+      const p0 = [cxp + Math.cos(a0)*rx, 0.016, czp + Math.sin(a0)*rz];
+      const p1 = [cxp + Math.cos(a1)*rx, 0.016, czp + Math.sin(a1)*rz];
+      this.tri([[cxp, 0.016, czp], p0, p1],
+        [[cxp/3, czp/3], [p0[0]/3, p0[2]/3], [p1[0]/3, p1[2]/3]], [0,1,0], Lsa, 0);
+    }
+    // Umlaufende Mauer mit Pfeilern - schliesst die Halle sichtbar ab
+    const wr = 15.5, wN = 30;
+    for (let i = 0; i < wN; i++) {
+      const a = i / wN * Math.PI * 2;
+      const bx = cxp + Math.cos(a)*wr, bz = czp + Math.sin(a)*wr*0.88;
+      const tall = (i % 5 === 0);
+      this.box(bx - 0.75, 0, bz - 0.75, bx + 0.75, tall ? 3.4 : 2.1, bz + 0.75, Lw, 1, tall ? 3 : 2);
+    }
+    this.battle = this.upload(); this.battle.region = key;
     return this.battle;
   },
 
@@ -6254,7 +6330,7 @@ const R3 = {
     this.resize();
     const region = s.region || 'r1';
     const env = ENV3[region] || ENV3.r1;
-    const st = this.buildBattle(region);
+    const st = this.buildBattle(region, !!s.arenaStage);
     if (this.mipDirty) { gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.tex); gl.generateMipmap(gl.TEXTURE_2D_ARRAY); this.mipDirty = false; }
 
     const fovy = this.fov(50);
@@ -6530,7 +6606,8 @@ const G = {
     const tr=document.getElementById('transition'); tr.classList.add('on');
     setTimeout(()=>{document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');
     if(id==='scr-world'){this.mmC.style.display='block';document.getElementById('mob-ctrl').classList.add('vis');}
-    else{this.mmC.style.display='none';document.getElementById('mob-ctrl').classList.remove('vis');const tl=document.getElementById('tracker-label');if(tl)tl.style.display='none';}
+    else{this.mmC.style.display='none';document.getElementById('mob-ctrl').classList.remove('vis');const tl=document.getElementById('tracker-label');if(tl)tl.style.display='none';
+      const fb=document.getElementById('furn-btn');if(fb)fb.classList.remove('on');}
     document.getElementById('gl3d').classList.toggle('on', this.d3 && R3.ok && (id==='scr-world'||id==='scr-battle'));
     setTimeout(()=>tr.classList.remove('on'),50);},300);
   },
@@ -7110,6 +7187,37 @@ const G = {
     this.refreshQuest();
   },
 
+  // ===== Gegenstaende im Haus =====
+  // Steht man in einem Raum vor einem Moebelstueck, blendet sich ein kleiner
+  // Knopf ein. Ein Klick darauf erklaert, was der Gegenstand ist und wofuer er
+  // da ist - ohne dass man dafuer in ein Menue wechseln muesste.
+  facedFurniture(){
+    const s=this.s;
+    if(!s||!s.inHouse||s.inBattle||s.dialogueOpen)return null;
+    const fx=s.px+s.facing.dx, fy=s.py+s.facing.dy;
+    const row=s.map[fy];
+    const t=row?row[fx]:undefined;
+    const fu=furnAt(t);
+    return fu?{fu,x:fx,y:fy}:null;
+  },
+  refreshFurnBtn(){
+    const btn=document.getElementById('furn-btn');
+    if(!btn)return;
+    const f=this.facedFurniture();
+    this._facedFurn=f?f.fu:null;
+    if(f){
+      document.getElementById('furn-btn-label').textContent=f.fu.nm+' ansehen';
+      btn.classList.add('on');
+    } else btn.classList.remove('on');
+  },
+  showFurnInfo(){
+    const fu=this._facedFurn;
+    if(!fu)return;
+    Au.cl();
+    this.showDialogue(fu.nm,[fu.txt,fu.use||'Ein gewoehnlicher Einrichtungsgegenstand.']);
+    document.getElementById('furn-btn').classList.remove('on');
+  },
+
   // Wo der rote Punkt auf der Karte steht. Ein Gebaeudeziel wird ueber sein
   // Tuerfeld gesucht, ein Fangauftrag ueber das naechstgelegene hohe Gras.
   // Das Ergebnis wird gepuffert, weil die Suche sonst in jedem Bild liefe.
@@ -7248,7 +7356,7 @@ const G = {
     this.s.px=nx;this.s.py=ny;
     if(!this.s.inHouse&&DOOR_HOUSE[tile]){this.enterHouse(DOOR_HOUSE[tile]);return;}
     if(this.s.inHouse&&tile===T.EXITDOOR){this.exitHouse();return;}
-    Au.st();this.renderWorld();this.updateHud();this.checkEnc();
+    Au.st();this.renderWorld();this.updateHud();this.refreshFurnBtn();this.checkEnc();
   },
 
   // Houses & NPC interaction
@@ -7296,7 +7404,7 @@ const G = {
     this.s.facing={dx:0,dy:-1};
     this.mmC.style.display='none';
     Au.cl();
-    this.renderWorld();this.updateHud();
+    this.renderWorld();this.updateHud();this.refreshFurnBtn();
   },
 
   // Auf den Liegen im Pokemon-Center schlafen Pokemon - das macht die Station
@@ -7322,6 +7430,7 @@ const G = {
     this.s.facing={dx:0,dy:1};
     this.mmC.style.display='block';
     this.renderWorld();this.updateHud();
+    document.getElementById('furn-btn').classList.remove('on');
   },
 
   interact() {
@@ -7333,7 +7442,8 @@ const G = {
       if(fu){
         // An Theke, Kasse und Heilstation wird man bedient statt beschrieben.
         if(fu.svc)npc=(this.s.currentNpcs||[]).find(n=>n.host);
-        if(!npc){Au.cl();this.showDialogue(fu.nm,[fu.txt]);return;}
+        if(!npc){Au.cl();this.showDialogue(fu.nm,[fu.txt,fu.use||'Ein gewoehnlicher Einrichtungsgegenstand.']);
+          document.getElementById('furn-btn').classList.remove('on');return;}
       }
     }
     if(!npc)return;
@@ -7360,6 +7470,7 @@ const G = {
       this.s.dialogueOpen=false;
       const cb=this._dlgOnEnd;this._dlgOnEnd=null;
       if(cb)cb();
+      this.refreshFurnBtn();
     } else {
       document.getElementById('dlg-text').textContent=this._dlgLines[this._dlgIdx];
     }
@@ -7422,15 +7533,15 @@ const G = {
     return null;
   },
 
-  // Der legendaere Wachter einer Region wird immer rund um ihr Dorf/Liga-Gelaende
-  // gesucht, nie an der zufaelligen Position des Spielers - so steht z.B. Dragoran
-  // garantiert in der Naehe der Pokemon-Liga und nicht irgendwo in der Wildnis.
+  // Der legendaere Waechter einer Region taucht immer im Umfeld eines ihrer
+  // Doerfer auf, nie irgendwo in der Wildnis - sonst waere er nicht zu finden.
   legendSpawnTile(){
     const s=this.s;
-    const cx=Math.floor(s.mw/2), cy=Math.floor(s.mh/2);
-    for(let k=0;k<80;k++){
-      const a=Math.random()*Math.PI*2, r=5+Math.random()*24;
-      const x=Math.round(cx+Math.cos(a)*r), y=Math.round(cy+Math.sin(a)*r);
+    const towns=s.towns&&s.towns.length?s.towns:[startTownPos(s.region)];
+    for(let k=0;k<160;k++){
+      const t0=towns[k%towns.length];
+      const a=Math.random()*Math.PI*2, r=(t0.r||12)+3+Math.random()*18;
+      const x=Math.round(t0.x+Math.cos(a)*r), y=Math.round(t0.y+Math.sin(a)*r);
       if(x<1||y<1||x>=s.mw-1||y>=s.mh-1)continue;
       const t=s.map[y][x];
       if(t!==T.TALL&&t!==T.GRASS&&t!==T.FLOWER&&t!==T.PATH)continue;
@@ -7450,8 +7561,9 @@ const G = {
         const sp=this.legendSpawnTile();
         if(sp){
           const def=DB.find(d=>d.id===lid);
+          // Das Level steht fest je Region - kein Mitwachsen mit dem Team.
           if(def)s.roamers.push({def, gx:sp.x, gy:sp.y, x:sp.x+0.5, z:sp.y+0.5,
-            tx:sp.x+0.5, tz:sp.y+0.5, lv:Math.max(35, (s.team[s.active]||s.team[0]).lv+5),
+            tx:sp.x+0.5, tz:sp.y+0.5, lv:LEGEND_LV[s.region]||68,
             yaw:Math.random()*6.283, phase:Math.random()*6.283, wait:0.5, legendary:true});
         }
       }
@@ -7536,12 +7648,28 @@ const G = {
     this.s.arenaStage=!!(o.gymFlag||o.champion);
     this.s.foes=foes; this.s.foeIdx=0; this.s.enemy=foes[0];
     foes.forEach(f=>this.markSeen(f));
+    this.applyBattleBg();
     const fl=document.createElement('div');fl.className='enc-flash';document.body.appendChild(fl);setTimeout(()=>fl.remove(),700);
     const intro=o.intro||`Ein wildes ${foes[0].nm} (Lv.${foes[0].lv}) erscheint!`;
     const count=foes.length>1?`<br>Gegnerteam: ${foes.length} Pokemon.`:'';
     setTimeout(()=>{this.showScreen('scr-battle');setTimeout(()=>{
       this.renderB();Au.cry(this.s.enemy);this.bl(intro+count);this.rBA();},350);},400);
   },
+  // Waehlt den Kampfhintergrund: Arena, Championhalle, legendaerer Gegner
+  // oder die Landschaft der aktuellen Region.
+  applyBattleBg(){
+    const el=document.getElementById('scr-battle');
+    if(!el)return;
+    el.className=el.className.replace(/\bbg-\S+/g,'').trim();
+    const s=this.s;
+    let cls;
+    if(s.legendaryBattle) cls='bg-legend';
+    else if(s.championBattle) cls='bg-champion';
+    else if(s.gymFlag) cls='bg-arena';
+    else cls='bg-'+(s.region||'r1');
+    el.classList.add(cls);
+  },
+
   // Das Level, an dem sich Gegner ohne feste Vorgabe orientieren.
   lead(){ return (this.s.team[this.s.active]||this.s.team[0]||{lv:5}).lv; },
   // Ein Gegner-Pokemon aus einer festen Vorgabe {id,lv}.
@@ -7770,7 +7898,7 @@ const G = {
       const flagKey='legendR'+reg.slice(1);
       this.s.flags[flagKey]=true;
       this.s.legendaryBattle=null;
-      this.popup(`${e.nm} bezwungen!<div class="lvl-sub">${TRAIN_DEST[reg]} ist befreit!</div>`,'caught-popup',3000);
+      this.popup(`${e.nm} gefangen!<div class="lvl-sub">${REGION_NAME[reg]||'Die Region'} ist wieder sicher</div>`,'caught-popup',3000);
       if(allLegendsCaught(this.s)){
         this.s.quests=this.s.quests||{};
         this.s.quests.qL='completed';
@@ -7930,7 +8058,45 @@ const G = {
     document.getElementById('ending-screen').classList.add('on');
   },
   closeEnding(){ Au.cl(); document.getElementById('ending-screen').classList.remove('on'); },
-  rShop(){document.getElementById('shop-cash').textContent=this.s.cash||0;},
+  rShop(){
+    document.getElementById('shop-cash').textContent=this.s.cash||0;
+    // Baelle sind Verbrauchsmaterial - der Laden fuehrt alle kaufbaren Sorten.
+    const g=document.getElementById('shop-balls');
+    if(!g)return;
+    g.innerHTML='';
+    BALLS.filter(b=>b.price>0).forEach(b=>{
+      const have=ballCount(this.s,b.id);
+      const row=document.createElement('div');
+      row.style.cssText='background:#0e1520;border:1px solid #1a2a3a;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;';
+      row.innerHTML=`<div><div style="font-weight:700;">${b.spr} ${b.nm} <span style="font-size:0.72em;color:#667;font-weight:400;">(${have}x im Beutel)</span></div>`
+        +`<div style="font-size:0.75em;color:#889;">${b.desc}</div></div>`;
+      const mk=(n,label)=>{
+        const btn=document.createElement('button');
+        btn.className='btn btn-green';
+        btn.style.cssText='min-width:auto;padding:8px 12px;white-space:nowrap;';
+        btn.innerHTML=label;
+        btn.onclick=()=>this.buyBall(b.id,n);
+        return btn;
+      };
+      const box=document.createElement('div');
+      box.style.cssText='display:flex;gap:6px;flex-shrink:0;';
+      box.appendChild(mk(1,`${b.price} \u{1F4B0}`));
+      box.appendChild(mk(10,`10x ${b.price*10} \u{1F4B0}`));
+      row.appendChild(box);
+      g.appendChild(row);
+    });
+  },
+  buyBall(id,n){
+    const b=ballById(id);
+    const cost=b.price*n;
+    if((this.s.cash||0)<cost){this.popup('Nicht genug PokeCash!','caught-popup',1500);return;}
+    Au.cl();
+    this.s.cash-=cost;
+    this.s.balls=this.s.balls||{};
+    this.s.balls[id]=(this.s.balls[id]||0)+n;
+    this.popup(`${n}x ${b.nm} gekauft!`,'caught-popup',1400);
+    this.updateHud();this.rShop();this.saveGame();
+  },
   buyPotion(){
     if((this.s.cash||0)<30){this.popup('Nicht genug PokeCash!','caught-popup',1500);return;}
     Au.cl();this.s.cash-=30;this.s.potions++;this.updateHud();this.rShop();this.saveGame();
