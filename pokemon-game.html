@@ -3066,6 +3066,10 @@ const ARENAS={
        'Die Halle des Champions ist offen. Seraphina wartet - sie weiß bereits, dass du kommst.']},
   ],
 };
+// Level der streunenden Trainer je Region und Rang. Fest eingetragen, damit die
+// Welt eine gleichmaessige Schwierigkeitskurve hat und nicht mit dem Spieler
+// mitwaechst. Rang 1 bis 3 - Rang 4 gibt es nicht, legendaere fuehrt niemand.
+const TRAINER_LV={r1:[6,12,18],r2:[22,28,34],r3:[37,43,48],r4:[50,56,62]};
 // Der Champion steht am Ende der zwoelften Arena - mit drei festen Pokemon.
 const CHAMPION={name:'Championin Seraphina',shirt:'#e0c040',hair:'#f0e8d0',
   team:[{id:'tauboss',lv:62},{id:'relaxo',lv:64},{id:'glurak',lv:66}]};
@@ -7691,7 +7695,8 @@ const G = {
 
   startRivalBattle(){
     const w=this.s.flags.rivalWins||0;
-    const lvl=Math.max(5,this.lead()+w*2);
+    // Gary faengt auf Augenhoehe an und legt mit jeder Niederlage nach.
+    const lvl=6+w*4;
     const pool=DB.filter(d=>(d.tier===1||d.tier===2)&&d.tier<4);
     const foes=[this.mkP(pool[w%pool.length],lvl)];
     // Ab dem zweiten Duell tritt der Rivale mit einem zweiten Pokemon an.
@@ -7699,9 +7704,13 @@ const G = {
     this.beginBattle(foes,{trainer:true,intro:'Rivale Gary fordert dich zum Kampf heraus!'});
   },
 
-  // Streunende Trainer: ab einem gewissen Rang fuehren sie ein zweites Pokemon mit.
+  // Streunende Trainer und Torwachen. Art und Level ihrer Pokemon haengen an
+  // Region und Rang, nicht am eigenen Team - ein Gegner ist beim zweiten Anlauf
+  // also genauso stark wie beim ersten. Ab einem gewissen Rang treten sie mit
+  // einem zweiten Pokemon an.
   startTrainerBattle(flagId,trainerName,tier,lvBonus){
-    const lvl=Math.max(5,this.lead()+lvBonus);
+    const base=(TRAINER_LV[this.s.region]||TRAINER_LV.r1)[Math.max(1,Math.min(3,tier))-1];
+    const lvl=Math.max(4,base+(lvBonus||0));
     const pool=DB.filter(d=>d.tier===tier&&d.tier<4);
     if(!pool.length)return;
     const pick=n=>pool[n%pool.length];
