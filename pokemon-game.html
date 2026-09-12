@@ -3110,7 +3110,7 @@ function nextArena(region,s){ return arenasOf(region).find(a=>!(s&&s.flags&&s.fl
 //   where : wo es hingeht, als Klartext
 //   house : Gebaeude-Kennung, auf die der rote Punkt auf der Karte zeigt
 //   tall  : statt eines Gebaeudes zeigt der Punkt auf das naechste hohe Gras
-const TRAIN_NEED_WINS=100;
+const TRAIN_NEED_WINS=50;
 function trainUnlocked(s){
   return !!s && regionComplete(s.region,s) && s.battlesWon>=TRAIN_NEED_WINS;
 }
